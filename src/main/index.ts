@@ -90,6 +90,9 @@ function createWindow(): BrowserWindow {
     backgroundColor: '#0d1017',
     autoHideMenuBar: true,
     title: '咕咕图库',
+    // 自绘标题栏：去掉系统边框，右上角用应用自己的按钮，
+    // 换掉 Windows 默认那条与整体风格不一致的标题栏
+    frame: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,

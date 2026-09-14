@@ -23,7 +23,15 @@ import ContextMenu, { type MenuEntry } from './components/ContextMenu'
 import Toast, { type ToastPayload } from './components/Toast'
 import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
 import { loadedPlugins } from './plugins'
-import { IconGrid, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
+import {
+  IconClose,
+  IconSearch,
+  IconSidebar,
+  IconWinClose,
+  IconWinMax,
+  IconWinMin,
+  IconWinRestore
+} from './components/Icons'
 
 export type View = 'gallery' | 'crawl' | 'settings'
 
@@ -53,6 +61,48 @@ const INITIAL_FILTERS: Filters = {
   minWidth: 0
 }
 
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'newest', label: '最新发布' },
+  { value: 'oldest', label: '最早上传' },
+  { value: 'views', label: '浏览量' },
+  { value: 'size', label: '文件体积' },
+  { value: 'resolution', label: '分辨率' },
+  { value: 'title', label: '标题' },
+  { value: 'random', label: '随机' }
+]
+
+const SORT_LABEL: Record<SortKey, string> = SORT_OPTIONS.reduce(
+  (acc, o) => ({ ...acc, [o.value]: o.label }),
+  {} as Record<SortKey, string>
+)
+
+/** 视图密度按钮：标准=一个竖长方形，紧凑=两个。切换时图标交叉渐隐 */
+function IconViewToggle({ dense }: { dense: boolean }): JSX.Element {
+  return (
+    <svg width={15} height={15} viewBox="0 0 24 24" aria-hidden>
+      <rect
+        className="vt-a"
+        x={dense ? 4 : 8.5}
+        y="4"
+        width={dense ? 5.5 : 7}
+        height="16"
+        rx="1.8"
+        fill="currentColor"
+      />
+      <rect
+        className="vt-b"
+        x="14.5"
+        y="4"
+        width="5.5"
+        height="16"
+        rx="1.8"
+        fill="currentColor"
+        style={{ opacity: dense ? 1 : 0, transition: 'opacity 0.08s var(--ease)' }}
+      />
+    </svg>
+  )
+}
+
 export default function App(): JSX.Element {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [info, setInfo] = useState<AppInfo | null>(null)
@@ -78,7 +128,18 @@ export default function App(): JSX.Element {
   const [toast, setToast] = useState<ToastPayload | null>(null)
   /** 右键菜单：卡片 + 弹出位置 */
   const [contextMenu, setContextMenu] = useState<{ item: ItemSummary; x: number; y: number } | null>(null)
+  /** 自绘标题栏：最大化状态与窗口按钮联动 */
+  const [maximized, setMaximized] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
+  const [appIconOk, setAppIconOk] = useState(true)
+  /** 侧栏宽度：拖动时走本地状态，松手才落盘 */
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SETTINGS.sidebarWidth)
+  /** 向下滚动时把过滤栏藏起来 */
+  const [barHidden, setBarHidden] = useState(false)
+  const [sortOpen, setSortOpen] = useState(false)
 
+  const lastScrollTop = useRef(0)
   const toastSeq = useRef(0)
   const requestId = useRef(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -163,11 +224,20 @@ export default function App(): JSX.Element {
   }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth])
 
   // 滚动到底自动追加
+  /**
+   * 滚动时：向下藏过滤栏（给内容让位），向上立刻唤回。
+   * 同时负责触底追加下一页。
+   */
   const onScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
       const el = event.currentTarget
-      if (loading || !cursor) return
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 900) void loadPage('append')
+      const top = el.scrollTop
+      const delta = top - lastScrollTop.current
+      if (Math.abs(delta) > 6) {
+        setBarHidden(delta > 0 && top > 96)
+        lastScrollTop.current = top
+      }
+      if (!loading && cursor && el.scrollHeight - top - el.clientHeight < 900) void loadPage('append')
     },
     [cursor, loading, loadPage]
   )
@@ -199,6 +269,25 @@ export default function App(): JSX.Element {
     return () => window.removeEventListener('gugu:navigate', handler)
   }, [items])
 
+  useEffect(() => {
+    setSidebarWidth(settings.sidebarWidth || DEFAULT_SETTINGS.sidebarWidth)
+  }, [settings.sidebarWidth])
+
+  // 排序菜单点空白处关闭
+  useEffect(() => {
+    if (!sortOpen) return
+    const onDown = (e: MouseEvent): void => {
+      if (!(e.target as Element).closest('.sort-picker')) setSortOpen(false)
+    }
+    document.addEventListener('mousedown', onDown, true)
+    return () => document.removeEventListener('mousedown', onDown, true)
+  }, [sortOpen])
+
+  // 自绘标题栏要跟着窗口状态走（比如用户双击标题栏最大化）
+  useEffect(() => {
+    void api.window.state().then((s) => setMaximized(s.maximized))
+  }, [])
+
   /** 轻提示：同一时刻只留一条，重复触发会重播动画 */
   const showToast = useCallback((text: string, duration = 1600, kind: ToastPayload['kind'] = 'info') => {
     toastSeq.current += 1
@@ -212,6 +301,17 @@ export default function App(): JSX.Element {
       const next = { ...prev, ...patch }
       // 换分类时必须清掉二级分类，否则会留下跨分类的无效条件
       if (patch.plate !== undefined) next.word = null
+      // 「待下载」与其他筛选项全部互斥；「已下载」只与「待下载」互斥
+      if (patch.downloaded === 'never') {
+        next.favorite = false
+        next.orientation = 'any'
+        next.minWidth = 0
+        next.plate = null
+        next.word = null
+        next.tags = []
+      } else if (patch.downloaded === 'only' && prev.downloaded === 'never') {
+        // 从「待下载」切到「已下载」：其它条件保持原样
+      }
       return next
     })
   }, [])
@@ -245,6 +345,29 @@ export default function App(): JSX.Element {
     },
     [refreshMeta, loadPage]
   )
+
+  /** 拖动侧栏右边缘调宽，上限为窗口宽度的 40%（依赖 onSettingsChange，故定义在其后） */
+  const startSidebarResize = (event: React.MouseEvent): void => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startWidth = sidebarWidth
+    let latest = startWidth
+    const maxWidth = (): number => Math.round(window.innerWidth * 0.4)
+
+    const onMove = (e: MouseEvent): void => {
+      latest = Math.max(180, Math.min(maxWidth(), startWidth + (e.clientX - startX)))
+      setSidebarWidth(latest)
+    }
+    const onUp = (): void => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.classList.remove('resizing')
+      void onSettingsChange({ sidebarWidth: latest })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    document.body.classList.add('resizing')
+  }
 
   const activeChipCount = useMemo(() => {
     let n = 0
@@ -313,24 +436,37 @@ export default function App(): JSX.Element {
     : []
 
   return (
-    <div className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
-      <div className="brand">
-        <div className="brand-mark">咕</div>
+    <div
+      className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
+      style={{ ['--sidebar-w' as string]: sidebarWidth + 'px' }}
+    >
+      <div className="brand" data-component="App/Brand">
+        {/* 品牌区同时是侧栏开关：鼠标移上去图标渐变为「展开/收起侧栏」 */}
+        <button
+          className="brand-mark"
+          onClick={() => void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed })}
+          title={settings.sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
+        >
+          <span className="brand-logo">{appIconOk ? <img src="./app-icon.png" alt="" onError={() => setAppIconOk(false)} /> : '咕'}</span>
+          <span className="brand-toggle">
+            <IconSidebar />
+          </span>
+        </button>
         {!settings.sidebarCollapsed && (
           <div className="brand-text">
             <span className="brand-title">咕咕图库</span>
-            <span className="brand-sub">GUGUXZ COLLECTOR</span>
+            <span className="brand-sub">来自 gugu 小站的爱~</span>
           </div>
         )}
       </div>
 
       <header className="topbar" data-component="App/TopBar">
         <button
-          className="btn icon ghost"
-          title="折叠/展开侧栏"
-          onClick={() => void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed })}
+          className="view-toggle"
+          onClick={() => setDense((v) => !v)}
+          title={dense ? '切换到标准视图' : '切换到紧凑视图'}
         >
-          <IconSidebar />
+          <IconViewToggle dense={dense} />
         </button>
 
         <div className="search">
@@ -350,30 +486,6 @@ export default function App(): JSX.Element {
 
         <div className="topbar-spacer" />
 
-        <select
-          className="select"
-          value={filters.sort}
-          onChange={(e) => patchFilters({ sort: e.target.value as SortKey })}
-          title="排序方式"
-        >
-          <option value="newest">最新发布</option>
-          <option value="oldest">最早上传</option>
-          <option value="views">浏览量</option>
-          <option value="size">文件体积</option>
-          <option value="resolution">分辨率</option>
-          <option value="title">标题</option>
-          <option value="random">随机</option>
-        </select>
-
-        <div className="seg">
-          <button className={!dense ? 'active' : ''} onClick={() => setDense(false)} title="标准视图">
-            <IconGrid width={13} height={13} />
-          </button>
-          <button className={dense ? 'active' : ''} onClick={() => setDense(true)} title="紧凑视图">
-            <IconRows width={13} height={13} />
-          </button>
-        </div>
-
         {loadedPlugins.map((plugin) =>
           plugin.TopBarAction ? (
             <plugin.TopBarAction
@@ -384,19 +496,36 @@ export default function App(): JSX.Element {
           ) : null
         )}
 
-        <div className="seg">
-          <button className={view === 'gallery' ? 'active' : ''} onClick={() => setView('gallery')}>
-            图库
+        {/* 自绘标题栏按钮：系统边框已在主进程关掉 */}
+        <div className="win-controls" data-component="App/WindowControls">
+          <button onClick={() => void api.window.minimize()} title="最小化" aria-label="最小化">
+            <IconWinMin width={14} height={14} />
           </button>
-          <button className={view === 'crawl' ? 'active' : ''} onClick={() => setView('crawl')}>
-            抓取
-            {jobActive && <span className="dot running" />}
+          <button
+            onClick={() => {
+              void api.window.toggleMaximize().then((maximized) => setMaximized(maximized))
+            }}
+            title={maximized ? '向下还原' : '最大化'}
+            aria-label={maximized ? '向下还原' : '最大化'}
+          >
+            {maximized ? <IconWinRestore width={14} height={14} /> : <IconWinMax width={13} height={13} />}
           </button>
-          <button className={view === 'settings' ? 'active' : ''} onClick={() => setView('settings')}>
-            设置
+          <button className="win-close" onClick={() => void api.window.close()} title="关闭" aria-label="关闭">
+            <IconWinClose width={14} height={14} />
           </button>
         </div>
       </header>
+
+      {/* 侧栏右边缘的拖动条 */}
+      {!settings.sidebarCollapsed && (
+        <div
+          className="sidebar-resizer"
+          onMouseDown={startSidebarResize}
+          title="拖动调整侧栏宽度"
+          role="separator"
+          aria-orientation="vertical"
+        />
+      )}
 
       <Sidebar
         collapsed={settings.sidebarCollapsed}
@@ -408,6 +537,8 @@ export default function App(): JSX.Element {
         jobActive={jobActive}
         onNavigateGallery={() => setView('gallery')}
         onNavigateCrawl={() => setView('crawl')}
+        onOpenSettings={() => setView('settings')}
+        onOpenHelp={() => setHelpOpen(true)}
         onFilters={patchFilters}
         onToggleTag={toggleTag}
       />
@@ -415,7 +546,37 @@ export default function App(): JSX.Element {
       <main className="main" ref={scrollRef} onScroll={onScroll}>
         {view === 'gallery' && (
           <>
-            <div className="filter-bar" data-component="App/FilterBar">
+            <div
+              className={`filter-bar${barHidden ? ' hidden' : ''}`}
+              data-component="App/FilterBar"
+            >
+              <div className="sort-picker">
+                <button
+                  className={`pill${sortOpen ? ' active' : ''}`}
+                  onClick={() => setSortOpen((v) => !v)}
+                  title="排序方式"
+                >
+                  排序：{SORT_LABEL[filters.sort]}
+                  <span className={`caret-inline${sortOpen ? ' open' : ''}`}>▾</span>
+                </button>
+                {sortOpen && (
+                  <div className="sort-menu">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        className={`sort-item${filters.sort === option.value ? ' active' : ''}`}
+                        onClick={() => {
+                          patchFilters({ sort: option.value })
+                          setSortOpen(false)
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button
                 className={`pill${filters.downloaded === 'any' && !filters.favorite && !filters.plate && filters.tags.length === 0 ? ' active' : ''}`}
                 onClick={() =>
@@ -433,6 +594,7 @@ export default function App(): JSX.Element {
               <button
                 className={`pill${filters.downloaded === 'only' ? ' active' : ''}`}
                 onClick={() => patchFilters({ downloaded: filters.downloaded === 'only' ? 'any' : 'only' })}
+                title="仅已下载（只与「待下载」互斥）"
               >
                 已下载
               </button>
@@ -597,6 +759,41 @@ export default function App(): JSX.Element {
           entries={contextEntries}
           onClose={() => setContextMenu(null)}
         />
+      )}
+
+      {helpOpen && (
+        <div className="modal-mask" onClick={() => setHelpOpen(false)}>
+          <div className="modal" data-component="App/Help" onClick={(e) => e.stopPropagation()}>
+            <h3>帮助</h3>
+            <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
+              <dt>搜索</dt>
+              <dd>标题、标签、分类、Pixiv ID 都能搜</dd>
+              <dt>卡片右键</dt>
+              <dd>收藏 / 复制 pid / 打开于（文件管理器、Pixiv）</dd>
+              <dt>灯箱</dt>
+              <dd>← → 翻页，Esc 关闭，滚轮缩放，左键拖动</dd>
+              <dt>标注重叠</dt>
+              <dd>左侧资料库与分类树可点击筛选</dd>
+            </dl>
+            <div className="sep" />
+            <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
+              <dt>版本</dt>
+              <dd className="mono">{info?.version ?? '—'}</dd>
+              <dt>图库目录</dt>
+              <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
+              <dt>已装载工具</dt>
+              <dd>{loadedPlugins.length > 0 ? loadedPlugins.map((p) => p.manifest.name).join('、') : '无'}</dd>
+            </dl>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
+                数据来源
+              </button>
+              <button className="btn primary" onClick={() => setHelpOpen(false)}>
+                知道了
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />

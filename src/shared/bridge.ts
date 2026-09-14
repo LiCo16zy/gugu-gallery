@@ -64,6 +64,13 @@ export interface GuguBridge {
   plugins: PluginBridge
   openExternal(url: string): Promise<void>
   copyText(text: string): Promise<boolean>
+  /** 自绘标题栏用：系统边框已被关闭 */
+  window: {
+    minimize(): Promise<boolean>
+    toggleMaximize(): Promise<boolean>
+    close(): Promise<boolean>
+    state(): Promise<{ maximized: boolean }>
+  }
 }
 
 declare global {

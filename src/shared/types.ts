@@ -234,6 +234,8 @@ export interface AppSettings {
   /** 代理，例如 http://127.0.0.1:7890 ；留空表示直连 */
   proxy: string
   sidebarCollapsed: boolean
+  /** 侧栏宽度（像素），可拖动调整，上限为窗口宽度的 40% */
+  sidebarWidth: number
   pageSize: number
 }
 
@@ -250,6 +252,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   naming: 'id-slug',
   proxy: '',
   sidebarCollapsed: false,
+  sidebarWidth: 248,
   pageSize: 60
 }
 

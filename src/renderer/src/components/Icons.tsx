@@ -114,6 +114,39 @@ export const IconTrash = (p: P) => (
   </svg>
 )
 
+export const IconInfo = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5" />
+    <path d="M12 7.8h.01" />
+  </svg>
+)
+
+export const IconWinMin = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 12h12" />
+  </svg>
+)
+
+export const IconWinMax = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="6" y="6" width="12" height="12" rx="1.5" />
+  </svg>
+)
+
+export const IconWinRestore = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="8" y="4" width="12" height="12" rx="1.5" />
+    <path d="M16 20H5a1 1 0 0 1-1-1V8" />
+  </svg>
+)
+
+export const IconWinClose = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+)
+
 export const IconCopy = (p: P) => (
   <svg {...base(p)}>
     <rect x="9" y="9" width="11" height="11" rx="2" />

@@ -124,8 +124,40 @@ textarea {
     radial-gradient(900px 500px at 10% 110%, rgba(185, 140, 255, 0.07), transparent 60%), var(--bg);
 }
 
+.app {
+  /* 侧栏宽度可拖动，展开/收起与拖宽都要有过渡 */
+  transition: grid-template-columns 0.16s var(--ease);
+}
+
 .app.sidebar-collapsed {
   --sidebar-w: 64px;
+}
+
+body.resizing {
+  cursor: col-resize;
+}
+body.resizing .app {
+  transition: none;
+}
+body.resizing * {
+  user-select: none;
+}
+
+/* ------------------------------------------------------------ 侧栏拖动手柄 */
+
+.sidebar-resizer {
+  position: fixed;
+  top: var(--topbar-h);
+  bottom: 0;
+  left: calc(var(--sidebar-w) - 3px);
+  width: 6px;
+  z-index: 12;
+  cursor: col-resize;
+  transition: left 0.16s var(--ease), background 0.14s var(--ease);
+}
+.sidebar-resizer:hover {
+  background: linear-gradient(to right, transparent, var(--accent), transparent);
+  opacity: 0.5;
 }
 
 /* ------------------------------------------------------------------ 品牌 */
@@ -142,9 +174,12 @@ textarea {
 }
 
 .brand-mark {
+  position: relative;
   width: 28px;
   height: 28px;
   flex: none;
+  padding: 0;
+  border: none;
   border-radius: 9px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   display: grid;
@@ -152,7 +187,111 @@ textarea {
   color: #fff;
   font-weight: 700;
   font-size: 14px;
+  cursor: pointer;
+  overflow: hidden;
   box-shadow: 0 4px 14px -4px var(--accent);
+}
+.brand-logo,
+.brand-toggle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transition: opacity 0.16s var(--ease), transform 0.16s var(--ease);
+}
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.brand-toggle {
+  opacity: 0;
+  transform: scale(0.86);
+}
+.brand-mark:hover .brand-logo {
+  opacity: 0;
+  transform: scale(0.86);
+}
+.brand-mark:hover .brand-toggle {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --------------------------------------------------------- 侧栏折叠动画 */
+
+.side-collapsible {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.16s var(--ease), opacity 0.16s var(--ease);
+}
+.side-collapsible.open {
+  max-height: 900px;
+  opacity: 1;
+}
+
+.caret {
+  flex: none;
+  color: var(--text-faint);
+  transition: transform 0.16s var(--ease);
+}
+.caret.open {
+  transform: rotate(0deg);
+}
+.caret:not(.open) {
+  transform: rotate(-90deg);
+}
+
+.side-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.side-toggle:hover {
+  color: var(--text-dim);
+}
+
+.side-stats {
+  padding: 0 9px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  line-height: 1.9;
+}
+
+/* 侧栏滚动条隐藏，保留滚动能力 */
+.sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.sidebar-foot {
+  flex: none;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* 收起时图标要真正居中：子项本身是 flex，去掉内边距带来的偏移 */
+.sidebar.collapsed .side-item {
+  justify-content: center;
+  padding: 8px 0;
+}
+.sidebar.collapsed .side-item .label,
+.sidebar.collapsed .side-item .count {
+  display: none;
 }
 
 .brand-text {
@@ -179,10 +318,106 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 14px;
+  padding: 0 10px 0 14px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 82%, transparent);
   backdrop-filter: blur(12px);
+}
+
+/* 自绘标题栏：这两个区域负责拖动窗口 */
+.brand,
+.topbar {
+  -webkit-app-region: drag;
+}
+.topbar button,
+.topbar input,
+.topbar .search,
+.brand button,
+.win-controls {
+  -webkit-app-region: no-drag;
+}
+
+.view-toggle {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+.view-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.view-toggle .vt-a {
+  transition: x 0.08s var(--ease), width 0.08s var(--ease);
+}
+
+/* ------------------------------------------------------------ 窗口按钮 */
+
+.win-controls {
+  display: flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+.win-controls button {
+  width: 38px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.win-controls button:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.win-controls button.win-close:hover {
+  background: #e5484d;
+  color: #fff;
+}
+
+/* ------------------------------------------------------------ 通用弹窗 */
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 6, 10, 0.62);
+  backdrop-filter: blur(4px);
+  animation: fade 0.14s var(--ease);
+}
+.modal {
+  width: min(560px, calc(100vw - 80px));
+  max-height: 76vh;
+  overflow-y: auto;
+  padding: 20px 22px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+.modal h3 {
+  font-size: 15px;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .search {
@@ -292,10 +527,12 @@ textarea {
 
 .sidebar {
   grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border-right: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-soft) 55%, transparent);
-  overflow-y: auto;
-  padding: 12px 10px 24px;
+  padding: 12px 10px 0;
 }
 
 .side-section {
@@ -424,6 +661,66 @@ textarea {
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(12px);
+  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease);
+}
+
+/* 向下滚动时收起，向上滚动立刻回来；收起比展开快一点 */
+.filter-bar.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  transition-duration: 0.12s;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------- 排序 */
+
+.sort-picker {
+  position: relative;
+}
+.caret-inline {
+  margin-left: 3px;
+  font-size: 9px;
+  opacity: 0.7;
+  display: inline-block;
+  transition: transform 0.16s var(--ease);
+}
+.caret-inline.open {
+  transform: rotate(180deg);
+}
+
+.sort-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 8;
+  min-width: 132px;
+  padding: 5px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(14px);
+  animation: ctxIn 0.1s var(--ease) both;
+}
+.sort-item {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+.sort-item:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.sort-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .pill {

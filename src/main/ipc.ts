@@ -33,6 +33,10 @@ export const IPC = {
   libraryPickRoot: 'library:pickRoot',
   openExternal: 'app:openExternal',
   copyText: 'app:copyText',
+  windowMinimize: 'window:minimize',
+  windowToggleMaximize: 'window:toggleMaximize',
+  windowClose: 'window:close',
+  windowState: 'window:state',
   siteInfo: 'crawl:siteInfo',
   crawlStart: 'crawl:start',
   crawlPause: 'crawl:pause',
@@ -125,6 +129,30 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
     clipboard.writeText(String(text ?? ''))
     return true
   })
+
+  /* ------------------------------------------------------------ 窗口控制 */
+
+  handle(IPC.windowMinimize, (): boolean => {
+    getWindow()?.minimize()
+    return true
+  })
+
+  handle(IPC.windowToggleMaximize, (): boolean => {
+    const win = getWindow()
+    if (!win) return false
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+    return win.isMaximized()
+  })
+
+  handle(IPC.windowClose, (): boolean => {
+    getWindow()?.close()
+    return true
+  })
+
+  handle(IPC.windowState, (): { maximized: boolean } => ({
+    maximized: Boolean(getWindow()?.isMaximized())
+  }))
 
   handle(IPC.siteInfo, () => ctx.crawler.fetchSiteInfo(false))
 

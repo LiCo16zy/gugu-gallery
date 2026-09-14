@@ -155,29 +155,38 @@ const SCRIPT = `(async () => {
     }
   }
 
-  // 7) 排序切换
-  const sort = document.querySelector('.topbar select.select')
-  if (sort) {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
-    setter.call(sort, 'resolution')
-    sort.dispatchEvent(new Event('change', { bubbles: true }))
+  // 7) 排序切换（排序已从顶栏挪到过滤栏，改成折叠菜单）
+  const sortPill = document.querySelector('.sort-picker .pill')
+  if (sortPill) {
+    sortPill.click()
+    await sleep(250)
+    out.sortMenuOpen = Boolean(document.querySelector('.sort-menu'))
+    const items = Array.from(document.querySelectorAll('.sort-menu .sort-item'))
+    const target = items.find((b) => b.textContent.trim() === '分辨率')
+    out.sortItemCount = items.length
+    target?.click()
     await sleep(1100)
-    out.sortValue = sort.value
+    out.sortValue = (document.querySelector('.sort-picker .pill')?.textContent || '').includes('分辨率')
+      ? 'resolution'
+      : 'other'
     out.sortMeta = meta()
   }
 
-  // 8) 微缩视图
-  const denseBtn = qa('.topbar .seg button')[1]
+  // 8) 视图密度：合并成了一个按钮
+  const denseBtn = document.querySelector('.view-toggle')
+  out.viewToggleCount = qa('.view-toggle').length
   if (denseBtn) {
+    const before = getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length
     denseBtn.click()
     await sleep(700)
     out.denseColumns = getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length
-    qa('.topbar .seg button')[0].click()
+    out.denseBefore = before
+    denseBtn.click()
     await sleep(600)
   }
 
   // 9) 切到设置页并切浅色主题
-  const settingsBtn = byText('.topbar .seg button', '设置')
+  const settingsBtn = document.querySelector('.sidebar-foot .side-item[title="设置"]')
   if (settingsBtn) {
     settingsBtn.click()
     await sleep(800)
@@ -251,7 +260,9 @@ const checks = [
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
   ['分类树能展开出二级分类', (result.subItems ?? 0) > 0],
   ['二级分类筛选生效', /共 \d+ 条/.test(result.plateMeta || '')],
+  ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 7],
   ['切换排序生效', result.sortValue === 'resolution'],
+  ['视图密度只剩一个按钮', result.viewToggleCount === 1],
   ['微缩视图列数更多', (result.denseColumns ?? 0) >= 4],
   ['浅色主题可切换', result.theme === 'light'],
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0]

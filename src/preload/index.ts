@@ -22,6 +22,10 @@ const IPC = {
   libraryPickRoot: 'library:pickRoot',
   openExternal: 'app:openExternal',
   copyText: 'app:copyText',
+  windowMinimize: 'window:minimize',
+  windowToggleMaximize: 'window:toggleMaximize',
+  windowClose: 'window:close',
+  windowState: 'window:state',
   siteInfo: 'crawl:siteInfo',
   crawlStart: 'crawl:start',
   crawlPause: 'crawl:pause',
@@ -84,7 +88,13 @@ const api = {
       ipcRenderer.invoke(pluginIpc.invoke, pluginId, method, payload)
   },
   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url),
-  copyText: (text: string) => ipcRenderer.invoke(IPC.copyText, text)
+  copyText: (text: string) => ipcRenderer.invoke(IPC.copyText, text),
+  window: {
+    minimize: () => ipcRenderer.invoke(IPC.windowMinimize),
+    toggleMaximize: () => ipcRenderer.invoke(IPC.windowToggleMaximize),
+    close: () => ipcRenderer.invoke(IPC.windowClose),
+    state: () => ipcRenderer.invoke(IPC.windowState)
+  }
 }
 
 contextBridge.exposeInMainWorld('gugu', api)
