@@ -53,6 +53,19 @@
       "summary": "按 34 条界面标注做整体改版（瀑布流、侧栏、顶栏窗口、卡片、灯箱、设置、过渡），并修掉标注工具的工具栏层级与自动收起问题。",
       "hasAnnotations": true,
       "finishedAt": "2026-09-14 17:20"
+    },
+    {
+      "id": "0005-20260914-1827",
+      "slug": "interaction-polish",
+      "title": "交互补全与关键缺陷修复",
+      "createdAt": "2026-09-14 18:27",
+      "baseCommit": "8a28c4e",
+      "endCommit": "6795419",
+      "branch": "master",
+      "status": "closed",
+      "summary": "处理 23 条标注：修掉筛选 SQL、灯箱长图与滚轮、侧栏收起、工具栏被窗口拖动区吞点击；补齐沉浸模式、回到顶部、两步删除、下载中状态等交互。",
+      "hasAnnotations": true,
+      "finishedAt": "2026-09-14 18:55"
     }
   ]
 }

@@ -1,0 +1,3054 @@
+# 轮次 0005-20260914-1827 代码差异
+# 基线提交 8a28c4e -> 6795419
+
+diff --git a/devlog/rounds/0005-20260914-1827/README.md b/devlog/rounds/0005-20260914-1827/README.md
+new file mode 100644
+index 0000000..4617606
+--- /dev/null
++++ b/devlog/rounds/0005-20260914-1827/README.md
+@@ -0,0 +1,28 @@
++# 轮次 0005-20260914-1827
++
++> 由页面标注工具自动生成，请在完成本轮改动后补全下面的小节。
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++左侧栏折叠问题、竖图显示问题、筛选逻辑问题
++基础调整
++
++## 反馈标注
++
++共 23 条，详见 [`annotations.md`](annotations.md) 与 [`annotations.json`](annotations.json)。
++
++导出时视口 1348×716，界面 gallery，应用版本 0.1.0。
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
+diff --git a/devlog/rounds/0005-20260914-1827/annotations.json b/devlog/rounds/0005-20260914-1827/annotations.json
+new file mode 100644
+index 0000000..4ba9c19
+--- /dev/null
++++ b/devlog/rounds/0005-20260914-1827/annotations.json
+@@ -0,0 +1,1573 @@
++{
++  "roundId": "0005-20260914-1827",
++  "exportedAt": "2026-09-14T10:27:45.817Z",
++  "view": "gallery",
++  "note": "左侧栏折叠问题、竖图显示问题、筛选逻辑问题\n基础调整",
++  "viewport": {
++    "width": 1348,
++    "height": 716
++  },
++  "devicePixelRatio": 1.4249999523162842,
++  "appVersion": "0.1.0",
++  "annotations": [
++    {
++      "id": "h4yh8ntx",
++      "index": 1,
++      "comment": "这个×按钮的图标不在按钮中心, 将 按钮左移4px距离，图标放大2px",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378035972,
++      "rect": {
++        "x": 666.0635986328125,
++        "y": 17.64254379272461,
++        "width": 21.995615005493164,
++        "height": 21.995615005493164
++      },
++      "pageRect": {
++        "x": 666.0635986328125,
++        "y": 17.64254379272461,
++        "width": 21.995615005493164,
++        "height": 21.995615005493164
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > header.topbar > div.search:nth-of-type(1) > button.search-clear",
++        "component": "App/TopBar › button.search-clear",
++        "tag": "button",
++        "classes": "search-clear",
++        "text": "",
++        "parentChain": [
++          "div.search",
++          "header.topbar",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "position": "absolute",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "21.9956px",
++          "height": "21.9956px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(34, 42, 58)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "6px",
++          "white-space": "normal",
++          "transition": "all",
++          "── 对比度": "12.04:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "2rad4e2l",
++      "index": 2,
++      "comment": "鼠标移动到卡片上时，下方暗角内容，我希望不显示图片大小，仅显示图片分辨率和日期",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378111711,
++      "rect": {
++        "x": 194.82789611816406,
++        "y": 113.10820770263672,
++        "width": 228.7213897705078,
++        "height": 430.55767822265625
++      },
++      "pageRect": {
++        "x": 194.82789611816406,
++        "y": 113.10820770263672,
++        "width": 228.7213897705078,
++        "height": 430.55767822265625
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "main.main > div.grid:nth-of-type(2) > div.card:nth-of-type(1) > div.card-media:nth-of-type(1) > img",
++        "component": "GalleryGrid/Card › img",
++        "tag": "img",
++        "classes": "",
++        "text": "",
++        "parentChain": [
++          "div.card-media",
++          "div.card",
++          "div.grid",
++          "main.main",
++          "div.app"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "220.987px",
++          "height": "415.998px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "overflow": "clip",
++          "white-space": "normal",
++          "transition": "transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "object-fit": "cover"
++        },
++        "attributes": {
++          "src": "gugu://thumb/19495"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "alrdgeuk",
++      "index": 3,
++      "comment": "图标使用空心的长方体，横边12px 竖边16px；紧凑视图使用2个空心长方体横边8px 竖边16px 间隔4px",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378371471,
++      "rect": {
++        "x": 202.48904418945312,
++        "y": 21.140350341796875,
++        "width": 15,
++        "height": 15
++      },
++      "pageRect": {
++        "x": 202.48904418945312,
++        "y": 21.140350341796875,
++        "width": 15,
++        "height": 15
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > header.topbar > button.view-toggle:nth-of-type(1) > svg",
++        "component": "App/TopBar › svg",
++        "tag": "svg",
++        "classes": "",
++        "text": "",
++        "parentChain": [
++          "button.view-toggle",
++          "header.topbar",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "15px",
++          "height": "15px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "overflow": "hidden",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "um2bmbik",
++      "index": 4,
++      "comment": "不显示此栏",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378429434,
++      "rect": {
++        "x": 416.7324523925781,
++        "y": 427.8179931640625,
++        "width": 103.99122619628906,
++        "height": 18.585525512695312
++      },
++      "pageRect": {
++        "x": 416.7324523925781,
++        "y": 427.8179931640625,
++        "width": 103.99122619628906,
++        "height": 18.585525512695312
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(2) > dt:nth-of-type(3)",
++        "component": "App/Help › dt",
++        "tag": "dt",
++        "classes": "",
++        "text": "已装载工具",
++        "parentChain": [
++          "dl.kv",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "103.991px",
++          "height": "18.5855px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "18.6px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "kmzygngg",
++      "index": 5,
++      "comment": "不显示此栏",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378454815,
++      "rect": {
++        "x": 416.7324523925781,
++        "y": 329.0789489746094,
++        "width": 103.99122619628906,
++        "height": 18.585525512695312
++      },
++      "pageRect": {
++        "x": 416.7324523925781,
++        "y": 329.0789489746094,
++        "width": 103.99122619628906,
++        "height": 18.585525512695312
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dt:nth-of-type(4)",
++        "component": "App/Help › dt",
++        "tag": "dt",
++        "classes": "",
++        "text": "标注重叠",
++        "parentChain": [
++          "dl.kv",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "103.991px",
++          "height": "18.5855px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "18.6px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "rce80wr6",
++      "index": 6,
++      "comment": "\"访问网站\"",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378482233,
++      "rect": {
++        "x": 773.5855102539062,
++        "y": 462.40130615234375,
++        "width": 81.38157653808594,
++        "height": 33.99123001098633
++      },
++      "pageRect": {
++        "x": 773.5855102539062,
++        "y": 462.40130615234375,
++        "width": 81.38157653808594,
++        "height": 33.99123001098633
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(2) > button.btn:nth-of-type(1)",
++        "component": "App/Help › button.btn",
++        "tag": "button",
++        "classes": "btn",
++        "text": "数据来源",
++        "parentChain": [
++          "div.modal-actions",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "81.3816px",
++          "height": "33.9912px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 14px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(26, 32, 45)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "9px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "13.64:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "tl8n6zdj",
++      "index": 7,
++      "comment": "点击左侧栏时，不呼出\"保存已设置\"",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378518761,
++      "rect": {
++        "x": 15.997807502746582,
++        "y": 14.649123191833496,
++        "width": 27.99342155456543,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 15.997807502746582,
++        "y": 14.649123191833496,
++        "width": 27.99342155456543,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.brand:nth-of-type(1) > button.brand-mark > span.brand-toggle:nth-of-type(2)",
++        "component": "App/Brand › span.brand-toggle",
++        "tag": "span",
++        "classes": "brand-toggle",
++        "text": "",
++        "parentChain": [
++          "button.brand-mark",
++          "div.brand",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "position": "absolute",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "27.9934px",
++          "width": "27.9934px",
++          "height": "27.9934px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "14px",
++          "font-weight": "700",
++          "line-height": "normal",
++          "color": "rgb(255, 255, 255)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(255, 255, 255)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "opacity 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "a6locb00",
++      "index": 8,
++      "comment": "调整左栏时不呼出设置已保存",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378580530,
++      "rect": {
++        "x": 266.99560546875,
++        "y": 57.9934196472168,
++        "width": 5.997807025909424,
++        "height": 658.497802734375
++      },
++      "pageRect": {
++        "x": 266.99560546875,
++        "y": 57.9934196472168,
++        "width": 5.997807025909424,
++        "height": 658.497802734375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "html > body > div > div.app > div.sidebar-resizer:nth-of-type(2)",
++        "component": null,
++        "tag": "div",
++        "classes": "sidebar-resizer",
++        "text": "",
++        "parentChain": [
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "position": "fixed",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "5.99781px",
++          "height": "658.498px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "background-image": "linear-gradient(to right, rgba(0, 0, 0, 0), rgb(124, 156, 255), rgba(0, 0, 0, 0))",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "opacity": "0.5",
++          "white-space": "normal",
++          "z-index": "12",
++          "transition": "left 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), background 0.14s cubic-bezier(0.22, 0.61, 0.36, 1)"
++        },
++        "attributes": {
++          "title": "拖动调整侧栏宽度",
++          "role": "separator"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "kx8vuqil",
++      "index": 9,
++      "comment": "左栏展开/收起功能失效，不能正确收起，收起时不能调整左侧栏宽度",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378646836,
++      "rect": {
++        "x": 0,
++        "y": 57.9934196472168,
++        "width": 270,
++        "height": 658.497802734375
++      },
++      "pageRect": {
++        "x": 0,
++        "y": 57.9934196472168,
++        "width": 270,
++        "height": 658.497802734375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "html > body > div > div.app > aside.sidebar",
++        "component": "Sidebar",
++        "tag": "aside",
++        "classes": "sidebar",
++        "text": "资料库全部图片240我的收藏1已下载35待下载205抓取任务分类ACG图片240Pixiv萌图240热门标签女孩子94碧蓝档案28赤脚28东方20脚底20崩坏：星穹铁道19明日方舟18插画17脚指17着袜足底16崩坏314白裤袜12黑丝袜11泳装10黑裤袜10萝莉8博丽灵梦7知更鸟（星穹铁道）7流萤（星穹铁道）6碧蓝航线6兽耳5双马尾5太美了5瑟莉姆（崩坏3）5白发5初音未来4恋足癖4旗袍4应用与存储原图 220.74 MB索引 448.0 KB帮助设置",
++        "parentChain": [
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "column",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "270px",
++          "height": "658.498px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "12px 10px 0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "color(srgb 0.0588235 0.0745098 0.105882 / 0.55)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "eot0b7zo",
++      "index": 10,
++      "comment": "这里的收藏图标同样改成爱心",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378753779,
++      "rect": {
++        "x": 1041.4693603515625,
++        "y": 338.8157958984375,
++        "width": 12.99342155456543,
++        "height": 12.99342155456543
++      },
++      "pageRect": {
++        "x": 1041.4693603515625,
++        "y": 338.8157958984375,
++        "width": 12.99342155456543,
++        "height": 12.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(1) > svg",
++        "component": "Lightbox/Actions › svg",
++        "tag": "svg",
++        "classes": "",
++        "text": "",
++        "parentChain": [
++          "button.btn.sm",
++          "div.lb-actions",
++          "div.lightbox-side",
++          "div.lightbox",
++          "div.app"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "12.9934px",
++          "height": "12.9934px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(248, 113, 113)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(248, 113, 113)",
++          "border-radius": "0px",
++          "overflow": "hidden",
++          "white-space": "nowrap",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "d12d66lj",
++      "index": 11,
++      "comment": "\"访问网站\"",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789378803887,
++      "rect": {
++        "x": 1030.767578125,
++        "y": 366.3048400878906,
++        "width": 89.375,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 1030.767578125,
++        "y": 366.3048400878906,
++        "width": 89.375,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(4)",
++        "component": "Lightbox/Actions › button.btn",
++        "tag": "button",
++        "classes": "btn sm",
++        "text": "原始页面",
++        "parentChain": [
++          "div.lb-actions",
++          "div.lightbox-side",
++          "div.lightbox",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "89.375px",
++          "height": "27.9934px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(26, 32, 45)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "7px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "13.64:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "opymeixq",
++      "index": 12,
++      "comment": "三角形箭头 用大一点的指向右边的三角形的2边图标，无需转动动画。\n当鼠标移动到此选项上时候展开折叠，离开此选项时收起折叠，当然鼠标处于折叠子项中时不要折叠。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789379088830,
++      "rect": {
++        "x": 341.6995544433594,
++        "y": 416.7653503417969,
++        "width": 160.59210205078125,
++        "height": 31.53508758544922
++      },
++      "pageRect": {
++        "x": 341.6995544433594,
++        "y": 416.7653503417969,
++        "width": 160.59210205078125,
++        "height": 31.53508758544922
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.ctx-menu:nth-of-type(4) > div:nth-of-type(3) > button.ctx-item",
++        "component": "ContextMenu › button.ctx-item",
++        "tag": "button",
++        "classes": "ctx-item",
++        "text": "打开于…▸",
++        "parentChain": [
++          "div",
++          "div.ctx-menu",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "9px",
++          "grid-template-columns": "none",
++          "width": "160.592px",
++          "height": "31.5351px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "7px 10px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(34, 42, 58)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "7px",
++          "white-space": "normal",
++          "transition": "background 0.12s cubic-bezier(0.22, 0.61, 0.36, 1), color 0.12s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "12.04:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "1aa21k7y",
++      "index": 13,
++      "comment": "子筛选项下取消分辨率这一筛选。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789379233932,
++      "rect": {
++        "x": 197.99342346191406,
++        "y": 68.99122619628906,
++        "width": 98.09210968017578,
++        "height": 25.997806549072266
++      },
++      "pageRect": {
++        "x": 197.99342346191406,
++        "y": 68.99122619628906,
++        "width": 98.09210968017578,
++        "height": 25.997806549072266
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > main.main > div.filter-bar:nth-of-type(1) > div.sort-picker > button.pill",
++        "component": "App/FilterBar › button.pill",
++        "tag": "button",
++        "classes": "pill",
++        "text": "排序：随机▾",
++        "parentChain": [
++          "div.sort-picker",
++          "div.filter-bar",
++          "main.main",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "inline-flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "6px",
++          "grid-template-columns": "none",
++          "width": "98.0921px",
++          "height": "25.9978px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(20, 25, 36)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "99px",
++          "white-space": "normal",
++          "transition": "0.14s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "14.72:1（AAA）"
++        },
++        "attributes": {
++          "title": "排序方式"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "teyt7rin",
++      "index": 14,
++      "comment": "没有解决竖图显示超出页面问题\n滚轮动作无效",
++      "category": "bug",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789379414530,
++      "rect": {
++        "x": 23.991228103637695,
++        "y": 23.991228103637695,
++        "width": 964.0899047851562,
++        "height": 1712.9715576171875
++      },
++      "pageRect": {
++        "x": 23.991228103637695,
++        "y": 23.991228103637695,
++        "width": 964.0899047851562,
++        "height": 1712.9715576171875
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-stage:nth-of-type(1) > img",
++        "component": "Lightbox/Stage › img",
++        "tag": "img",
++        "classes": "",
++        "text": "",
++        "parentChain": [
++          "div.lightbox-stage",
++          "div.lightbox",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "964.09px",
++          "height": "1712.97px",
++          "min-width": "auto",
++          "max-width": "100%",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "6px",
++          "box-shadow": "rgba(0, 0, 0, 0.75) 0px 24px 60px -20px",
++          "overflow": "clip",
++          "white-space": "normal",
++          "transition": "all",
++          "object-fit": "contain"
++        },
++        "attributes": {
++          "src": "gugu://media/19520"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "c2o6hdm6",
++      "index": 15,
++      "comment": "在右上角×按钮左侧添加“沉浸模式”隐藏右边栏\n收起时有过渡动画向右移动的平滑动画0.4s\n左侧图片预览区 移动到居中\n右上角保留“沉浸模式”按钮\n再次点击展开右侧栏\n沉浸模式仅手动切换，每次预览图片默认打开上次沉浸/详细状态",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789379989512,
++      "rect": {
++        "x": 1012.0723876953125,
++        "y": 0,
++        "width": 335.997802734375,
++        "height": 716.4912109375
++      },
++      "pageRect": {
++        "x": 1012.0723876953125,
++        "y": 0,
++        "width": 335.997802734375,
++        "height": 716.4912109375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2)",
++        "component": "Lightbox/SidePanel",
++        "tag": "div",
++        "classes": "lightbox-side",
++        "text": "3557x6658 6.14M [匿名-分享]编号19495分辨率3557 × 6658 · 23.7 MP文件大小6.14 MB格式JPG分类ACG图片 / Pixiv萌图发布时间2026-09-11 14:00浏览量16上传者users/51648995Pixiv111307782本地路径originals/ACG图片/Pixiv萌图/19495_女孩子-初音未来-pid111307782.jpg已收藏打开位置下载此图原始页面删除40%重置滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭标签女孩子初音未来",
++        "parentChain": [
++          "div.lightbox",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "335.998px",
++          "height": "716.491px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "16px 18px 40px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "color(srgb 0.0588235 0.0745098 0.105882 / 0.92)",
++          "border-radius": "0px",
++          "overflow": "auto",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "8yr7izqd",
++      "index": 16,
++      "comment": "注意折叠右边栏时这个元素也要移动到右侧",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789380049931,
++      "rect": {
++        "x": 956.0855102539062,
++        "y": 324.2489013671875,
++        "width": 41.99561309814453,
++        "height": 67.99342346191406
++      },
++      "pageRect": {
++        "x": 956.0855102539062,
++        "y": 324.2489013671875,
++        "width": 41.99561309814453,
++        "height": 67.99342346191406
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-stage:nth-of-type(1) > button.lb-nav.next:nth-of-type(2)",
++        "component": "Lightbox/Stage › button.lb-nav",
++        "tag": "button",
++        "classes": "lb-nav next",
++        "text": "",
++        "parentChain": [
++          "div.lightbox-stage",
++          "div.lightbox",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "position": "absolute",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "40.5921px",
++          "width": "41.9956px",
++          "height": "67.9934px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(255, 255, 255)",
++          "background-color": "rgba(124, 156, 255, 0.22)",
++          "border": "0.701754px solid rgba(124, 156, 255, 0.4)",
++          "border-radius": "12px",
++          "white-space": "normal",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)"
++        },
++        "attributes": {
++          "title": "下一张 (→)"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "gspxrd3o",
++      "index": 17,
++      "comment": "这个图标也需要在折叠左侧栏时居中",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789380207045,
++      "rect": {
++        "x": 15.997807502746582,
++        "y": 14.649123191833496,
++        "width": 27.99342155456543,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 15.997807502746582,
++        "y": 14.649123191833496,
++        "width": 27.99342155456543,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app.sidebar-collapsed > div.brand:nth-of-type(1) > button.brand-mark > span.brand-toggle:nth-of-type(2)",
++        "component": "App/Brand › span.brand-toggle",
++        "tag": "span",
++        "classes": "brand-toggle",
++        "text": "",
++        "parentChain": [
++          "button.brand-mark",
++          "div.brand",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "position": "absolute",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "27.9934px",
++          "width": "27.9934px",
++          "height": "27.9934px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "14px",
++          "font-weight": "700",
++          "line-height": "normal",
++          "color": "rgb(255, 255, 255)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(255, 255, 255)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "opacity 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "8f5vtz72",
++      "index": 18,
++      "comment": "内容页在标准视图下仅4栏，宽松视图下有6栏\n你可以适当调整宽度",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789380325046,
++      "rect": {
++        "x": 236.44737243652344,
++        "y": 106.6885986328125,
++        "width": 1084.25439453125,
++        "height": 10804.4189453125
++      },
++      "pageRect": {
++        "x": 236.44737243652344,
++        "y": 106.6885986328125,
++        "width": 1084.25439453125,
++        "height": 10804.4189453125
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
++        "component": "GalleryGrid",
++        "tag": "div",
++        "classes": "grid",
++        "text": "3584×6368·8.76 MB·2026-09-14白发 · 女仆pid 119512232 · 11 浏览2160×3456·1.69 MB·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 9 浏览1600×2000·1.52 MB·2026-09-14女孩子 · 插画pid 118770165 · 15 浏览4144×9000·13.64 MB·2026-09-13碧蓝档案pid 114882512 · 12 浏览1856×1280·222.4 KB·2026-09-13脚底 · 白裤袜pid 117507782 · 17 浏览1158×1637·1.48 MB·2026-09-13白发 · 女孩子pid 119521367 · 13 浏览1106×1800·1005.4 KB·2026-09-13崩坏3pid 117213814 · 12 浏览2400×3",
++        "parentChain": [
++          "main.main",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "start",
++          "gap": "0px 14px",
++          "grid-template-columns": "205.592px 205.592px 205.592px 205.592px 205.592px",
++          "width": "1084.25px",
++          "height": "10804.4px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "16px 18px 60px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "g6nuqsdo",
++      "index": 19,
++      "comment": "当用户界面中没有看到第一行图片时，且用户正在上滑，则在右下角显示一个圆形按钮，点击即可快速跳转到顶部。当用户下滑时隐藏按钮，显示/隐藏有过度动画0.2s",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789380493347,
++      "rect": {
++        "x": 253.99122619628906,
++        "y": 106.6885986328125,
++        "width": 1084.25439453125,
++        "height": 10804.4189453125
++      },
++      "pageRect": {
++        "x": 253.99122619628906,
++        "y": 106.6885986328125,
++        "width": 1084.25439453125,
++        "height": 10804.4189453125
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
++        "component": "GalleryGrid",
++        "tag": "div",
++        "classes": "grid",
++        "text": "3584×6368·8.76 MB·2026-09-14白发 · 女仆pid 119512232 · 11 浏览2160×3456·1.69 MB·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 9 浏览1600×2000·1.52 MB·2026-09-14女孩子 · 插画pid 118770165 · 15 浏览4144×9000·13.64 MB·2026-09-13碧蓝档案pid 114882512 · 12 浏览1856×1280·222.4 KB·2026-09-13脚底 · 白裤袜pid 117507782 · 17 浏览1158×1637·1.48 MB·2026-09-13白发 · 女孩子pid 119521367 · 13 浏览1106×1800·1005.4 KB·2026-09-13崩坏3pid 117213814 · 12 浏览2400×3",
++        "parentChain": [
++          "main.main",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "start",
++          "gap": "0px 14px",
++          "grid-template-columns": "205.592px 205.592px 205.592px 205.592px 205.592px",
++          "width": "1084.25px",
++          "height": "10804.4px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "16px 18px 60px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "vdhxqkw4",
++      "index": 20,
++      "comment": "点击删除按钮后，并不立刻执行删除，按钮文本先变成\"你确定吗?\" 再次点击后变成 “已删除”，且不可再交互。仅在从灯箱打开预览图时，检查一次图片是否可删除，再转变成初始的样子。2次变化均有0.2s过渡动画。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789380775093,
++      "rect": {
++        "x": 1127.13818359375,
++        "y": 366.3048400878906,
++        "width": 65.38377380371094,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 1127.13818359375,
++        "y": 366.3048400878906,
++        "width": 65.38377380371094,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app.sidebar-collapsed > div.lightbox:nth-of-type(2) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(5)",
++        "component": "Lightbox/Actions › button.btn",
++        "tag": "button",
++        "classes": "btn sm danger",
++        "text": "删除",
++        "parentChain": [
++          "div.lb-actions",
++          "div.lightbox-side",
++          "div.lightbox",
++          "div.app.sidebar-collapsed",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "65.3838px",
++          "height": "27.9934px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(248, 113, 113)",
++          "background-color": "color(srgb 0.972549 0.443137 0.443137 / 0.18)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "7px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "l6kyxmw3",
++      "index": 21,
++      "comment": "对于已下载的图片预览不显示此选项。\n点击下载此图后，没有立刻执行下载任务，下载任务执行完成后预览界面未刷新。\n期望，点击后，该按钮的图标转化为箭头转圈动画，文字变成“下载中“，缓解用户等待焦虑，左下角再来个弹窗进度条，弹窗进度条的来源应当与抓取界面下的进度同步",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789381149891,
++      "rect": {
++        "x": 1199.517578125,
++        "y": 266.65570068359375,
++        "width": 89.375,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 1199.517578125,
++        "y": 266.65570068359375,
++        "width": 89.375,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app.sidebar-collapsed > div.lightbox:nth-of-type(2) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(3)",
++        "component": "Lightbox/Actions › button.btn",
++        "tag": "button",
++        "classes": "btn sm",
++        "text": "下载此图",
++        "parentChain": [
++          "div.lb-actions",
++          "div.lightbox-side",
++          "div.lightbox",
++          "div.app.sidebar-collapsed",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "89.375px",
++          "height": "27.9934px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(26, 32, 45)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "7px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "13.64:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "v1rhl085",
++      "index": 22,
++      "comment": "你要一次全榨干吗...",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789381423319,
++      "rect": {
++        "x": 801.9846801757812,
++        "y": 362.0723571777344,
++        "width": 237.65350341796875,
++        "height": 17.039474487304688
++      },
++      "pageRect": {
++        "x": 801.9846801757812,
++        "y": 362.0723571777344,
++        "width": 237.65350341796875,
++        "height": 17.039474487304688
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.page > section.card-panel:nth-of-type(2) > div.field-grid:nth-of-type(2) > div.field:nth-of-type(3) > span.help",
++        "component": "CrawlPanel › span.help",
++        "tag": "span",
++        "classes": "help",
++        "text": "先跑 200 张试试水",
++        "parentChain": [
++          "div.field",
++          "div.field-grid",
++          "section.card-panel",
++          "div.page",
++          "main.main"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "237.654px",
++          "height": "17.0395px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "11px",
++          "font-weight": "400",
++          "line-height": "17.05px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "ein472c8",
++      "index": 23,
++      "comment": "筛选逻辑存在问题，自行重整",
++      "category": "bug",
++      "severity": "should",
++      "kind": "region",
++      "createdAt": 1789381552892,
++      "rect": {
++        "x": 261,
++        "y": 61,
++        "width": 553,
++        "height": 42
++      },
++      "pageRect": {
++        "x": 261,
++        "y": 61,
++        "width": 553,
++        "height": 42
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "区域中心命中 → div > div.app > main.main > div.filter-bar:nth-of-type(1) > button.pill:nth-of-type(3)",
++        "component": "App/FilterBar › button.pill",
++        "tag": "button",
++        "classes": "pill",
++        "text": "[区域中心元素] 已下载",
++        "parentChain": [
++          "div.filter-bar",
++          "main.main",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "6px",
++          "grid-template-columns": "none",
++          "width": "57.3904px",
++          "height": "25.9978px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(151, 161, 181)",
++          "background-color": "rgb(20, 25, 36)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.07)",
++          "border-radius": "99px",
++          "white-space": "normal",
++          "transition": "0.14s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "6.77:1（AA）"
++        },
++        "attributes": {
++          "title": "仅已下载（只与「待下载」互斥）"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/devlog/rounds/0005-20260914-1827/annotations.md b/devlog/rounds/0005-20260914-1827/annotations.md
+new file mode 100644
+index 0000000..4b9d653
+--- /dev/null
++++ b/devlog/rounds/0005-20260914-1827/annotations.md
+@@ -0,0 +1,296 @@
++# 界面标注 · 轮次 0005-20260914-1827
++
++- 导出时间：2026-09-14T10:27:45.817Z
++- 所在界面：gallery
++- 视口：1348×716（DPR 1.4249999523162842）
++- 应用版本：0.1.0
++- 标注条数：23
++
++## 总体说明
++
++左侧栏折叠问题、竖图显示问题、筛选逻辑问题
++基础调整
++
++## 逐条标注
++
++### 1. 这个×按钮的图标不在按钮中心, 将 按钮左移4px距离，图标放大2px
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/TopBar › button.search-clear`
++- **选择器**：`div > div.app > header.topbar > div.search:nth-of-type(1) > button.search-clear`
++- **父级链**：`div.search` ← `header.topbar` ← `div.app` ← `div` ← `body`
++- **位置尺寸**：x=666 y=18 22×22
++- **关键样式**：display: grid; position: absolute; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: none; width: 21.9956px; height: 21.9956px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(34, 42, 58); border: 0px none rgb(231, 235, 243); border-radius: 6px; white-space: normal; transition: all; ── 对比度: 12.04:1（AAA）
++
++> 这个×按钮的图标不在按钮中心, 将 按钮左移4px距离，图标放大2px
++
++### 2. 鼠标移动到卡片上时，下方暗角内容，我希望不显示图片大小，仅显示图片分辨率和日期
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid/Card › img`
++- **选择器**：`main.main > div.grid:nth-of-type(2) > div.card:nth-of-type(1) > div.card-media:nth-of-type(1) > img`
++- **父级链**：`div.card-media` ← `div.card` ← `div.grid` ← `main.main` ← `div.app`
++- **位置尺寸**：x=195 y=113 229×431
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 220.987px; height: 415.998px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; overflow: clip; white-space: normal; transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s cubic-bezier(0.22, 0.61, 0.36, 1); object-fit: cover
++- **属性**：src="gugu://thumb/19495"
++
++> 鼠标移动到卡片上时，下方暗角内容，我希望不显示图片大小，仅显示图片分辨率和日期
++
++### 3. 图标使用空心的长方体，横边12px 竖边16px；紧凑视图使用2个空心长方体横边8px 竖边16px 间隔4px
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/TopBar › svg`
++- **选择器**：`div > div.app > header.topbar > button.view-toggle:nth-of-type(1) > svg`
++- **父级链**：`button.view-toggle` ← `header.topbar` ← `div.app` ← `div` ← `body`
++- **位置尺寸**：x=202 y=21 15×15
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 15px; height: 15px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; overflow: hidden; white-space: normal; transition: all
++
++> 图标使用空心的长方体，横边12px 竖边16px；紧凑视图使用2个空心长方体横边8px 竖边16px 间隔4px
++
++### 4. 不显示此栏
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › dt`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(2) > dt:nth-of-type(3)`
++- **父级链**：`dl.kv` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：已装载工具
++- **位置尺寸**：x=417 y=428 104×19
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 103.991px; height: 18.5855px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 12px; font-weight: 400; line-height: 18.6px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 不显示此栏
++
++### 5. 不显示此栏
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › dt`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dt:nth-of-type(4)`
++- **父级链**：`dl.kv` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：标注重叠
++- **位置尺寸**：x=417 y=329 104×19
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 103.991px; height: 18.5855px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 12px; font-weight: 400; line-height: 18.6px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 不显示此栏
++
++### 6. "访问网站"
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › button.btn`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(2) > button.btn:nth-of-type(1)`
++- **父级链**：`div.modal-actions` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：数据来源
++- **位置尺寸**：x=774 y=462 81×34
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 81.3816px; height: 33.9912px; min-width: auto; max-width: none; padding: 0px 14px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(26, 32, 45); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 9px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 13.64:1（AAA）
++
++> "访问网站"
++
++### 7. 点击左侧栏时，不呼出"保存已设置"
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Brand › span.brand-toggle`
++- **选择器**：`div > div.app > div.brand:nth-of-type(1) > button.brand-mark > span.brand-toggle:nth-of-type(2)`
++- **父级链**：`button.brand-mark` ← `div.brand` ← `div.app` ← `div` ← `body`
++- **位置尺寸**：x=16 y=15 28×28
++- **关键样式**：display: grid; position: absolute; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: 27.9934px; width: 27.9934px; height: 27.9934px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 14px; font-weight: 700; line-height: normal; color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(255, 255, 255); border-radius: 0px; white-space: normal; transition: opacity 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)
++
++> 点击左侧栏时，不呼出"保存已设置"
++
++### 8. 调整左栏时不呼出设置已保存
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **选择器**：`html > body > div > div.app > div.sidebar-resizer:nth-of-type(2)`
++- **父级链**：`div.app` ← `div` ← `body`
++- **位置尺寸**：x=267 y=58 6×658
++- **关键样式**：position: fixed; flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 5.99781px; height: 658.498px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgb(124, 156, 255), rgba(0, 0, 0, 0)); border: 0px none rgb(231, 235, 243); border-radius: 0px; opacity: 0.5; white-space: normal; z-index: 12; transition: left 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), background 0.14s cubic-bezier(0.22, 0.61, 0.36, 1)
++- **属性**：title="拖动调整侧栏宽度" role="separator"
++
++> 调整左栏时不呼出设置已保存
++
++### 9. 左栏展开/收起功能失效，不能正确收起，收起时不能调整左侧栏宽度
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Sidebar`
++- **选择器**：`html > body > div > div.app > aside.sidebar`
++- **父级链**：`div.app` ← `div` ← `body`
++- **元素文本**：资料库全部图片240我的收藏1已下载35待下载205抓取任务分类ACG图片240Pixiv萌图240热门标签女孩子94碧蓝档案28赤脚28东方20脚底20崩坏：星穹��道19明日方舟18插画17脚指17着袜足底16崩坏314白裤袜12黑丝袜1…
++- **位置尺寸**：x=0 y=58 270×658
++- **关键样式**：display: flex; flex-direction: column; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 270px; height: 658.498px; min-width: auto; max-width: none; padding: 12px 10px 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: color(srgb 0.0588235 0.0745098 0.105882 / 0.55); border-radius: 0px; white-space: normal; transition: all
++
++> 左栏展开/收起功能失效，不能正确收起，收起时不能调整左侧栏宽度
++
++### 10. 这里的收藏图标同样改成爱心
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Actions › svg`
++- **选择器**：`div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(1) > svg`
++- **父级链**：`button.btn.sm` ← `div.lb-actions` ← `div.lightbox-side` ← `div.lightbox` ← `div.app`
++- **位置尺寸**：x=1041 y=339 13×13
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 12.9934px; height: 12.9934px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(248, 113, 113); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(248, 113, 113); border-radius: 0px; overflow: hidden; white-space: nowrap; transition: all
++
++> 这里的收藏图标同样改成爱心
++
++### 11. "访问网站"
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Actions › button.btn`
++- **选择器**：`div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(4)`
++- **父级链**：`div.lb-actions` ← `div.lightbox-side` ← `div.lightbox` ← `div.app` ← `div`
++- **元素文本**：原始页面
++- **位置尺寸**：x=1031 y=366 89×28
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 89.375px; height: 27.9934px; min-width: auto; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(26, 32, 45); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 7px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 13.64:1（AAA）
++
++> "访问网站"
++
++### 12. 三角形箭头 用大一点的指向右边的三角形的2边图标，无需转动动画。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`ContextMenu › button.ctx-item`
++- **选择器**：`div > div.app > div.ctx-menu:nth-of-type(4) > div:nth-of-type(3) > button.ctx-item`
++- **父级链**：`div` ← `div.ctx-menu` ← `div.app` ← `div` ← `body`
++- **元素文本**：打开于…▸
++- **位置尺寸**：x=342 y=417 161×32
++- **关键样式**：display: flex; flex-direction: row; justify-content: normal; align-items: center; gap: 9px; grid-template-columns: none; width: 160.592px; height: 31.5351px; min-width: 0px; max-width: none; padding: 7px 10px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(34, 42, 58); border: 0px none rgb(231, 235, 243); border-radius: 7px; white-space: normal; transition: background 0.12s cubic-bezier(0.22, 0.61, 0.36, 1), color 0.12s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 12.04:1（AAA）
++
++> 三角形箭头 用大一点的指向右边的三角形的2边图标，无需转动动画。
++> 当鼠标移动到此选项上时候展开折叠，离开此选项时收起折叠，当然鼠标处于折叠子项中时不要折叠。
++
++### 13. 子筛选项下取消分辨率这一筛选。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/FilterBar › button.pill`
++- **选择器**：`div.app > main.main > div.filter-bar:nth-of-type(1) > div.sort-picker > button.pill`
++- **父级链**：`div.sort-picker` ← `div.filter-bar` ← `main.main` ← `div.app` ← `div`
++- **元素文本**：排序：随机▾
++- **位置尺寸**：x=198 y=69 98×26
++- **关键样式**：display: inline-flex; flex-direction: row; justify-content: normal; align-items: center; gap: 6px; grid-template-columns: none; width: 98.0921px; height: 25.9978px; min-width: 0px; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(20, 25, 36); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 99px; white-space: normal; transition: 0.14s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 14.72:1（AAA）
++- **属性**：title="排序方式"
++
++> 子筛选项下取消分辨率这一筛选。
++
++### 14. 没有解决竖图显示超出页面问题
++
++- **类别**：缺陷 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Stage › img`
++- **选择器**：`div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-stage:nth-of-type(1) > img`
++- **父级链**：`div.lightbox-stage` ← `div.lightbox` ← `div.app` ← `div` ← `body`
++- **位置尺寸**：x=24 y=24 964×1713
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 964.09px; height: 1712.97px; min-width: auto; max-width: 100%; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 6px; box-shadow: rgba(0, 0, 0, 0.75) 0px 24px 60px -20px; overflow: clip; white-space: normal; transition: all; object-fit: contain
++- **属性**：src="gugu://media/19520"
++
++> 没有解决竖图显示超出页面问题
++> 滚轮动作无效
++
++### 15. 在右上角×按钮左侧添加“沉浸模式”隐藏右边栏
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/SidePanel`
++- **选择器**：`body > div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2)`
++- **父级链**：`div.lightbox` ← `div.app` ← `div` ← `body`
++- **元素文本**：3557x6658 6.14M [匿名-分享]编号19495分辨率3557 × 6658 · 23.7 MP文件大小6.14 MB格式JPG分类ACG图片 / Pixiv萌图发布时间2026-09-11 14:00浏览量16上传者users…
++- **位置尺寸**：x=1012 y=0 336×716
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 335.998px; height: 716.491px; min-width: auto; max-width: none; padding: 16px 18px 40px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: color(srgb 0.0588235 0.0745098 0.105882 / 0.92); border-radius: 0px; overflow: auto; white-space: normal; transition: all
++
++> 在右上角×按钮左侧添加“沉浸模式”隐藏右边栏
++> 收起时有过渡动画向右移动的平滑动画0.4s
++> 左侧图片预览区 移动到居中
++> 右上角保留“沉浸模式”按钮
++> 再次点击展开右侧栏
++> 沉浸模式仅手动切换，每次预览图片默认打开上次沉浸/详细状态
++
++### 16. 注意折叠右边栏时这个元素也要移动到右侧
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Stage › button.lb-nav`
++- **选择器**：`div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-stage:nth-of-type(1) > button.lb-nav.next:nth-of-type(2)`
++- **父级链**：`div.lightbox-stage` ← `div.lightbox` ← `div.app` ← `div` ← `body`
++- **位置尺寸**：x=956 y=324 42×68
++- **关键样式**：display: grid; position: absolute; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: 40.5921px; width: 41.9956px; height: 67.9934px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(255, 255, 255); background-color: rgba(124, 156, 255, 0.22); border: 0.701754px solid rgba(124, 156, 255, 0.4); border-radius: 12px; white-space: normal; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1)
++- **属性**：title="下一张 (→)"
++
++> 注意折叠右边栏时这个元素也要移动到右侧
++
++### 17. 这个图标也需要在折叠左侧栏时居中
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Brand › span.brand-toggle`
++- **选择器**：`div > div.app.sidebar-collapsed > div.brand:nth-of-type(1) > button.brand-mark > span.brand-toggle:nth-of-type(2)`
++- **父级链**：`button.brand-mark` ← `div.brand` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **位置尺寸**：x=16 y=15 28×28
++- **关键样式**：display: grid; position: absolute; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: 27.9934px; width: 27.9934px; height: 27.9934px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 14px; font-weight: 700; line-height: normal; color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(255, 255, 255); border-radius: 0px; white-space: normal; transition: opacity 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)
++
++> 这个图标也需要在折叠左侧栏时居中
++
++### 18. 内容页在标准视图下仅4栏，宽松视图下有6栏
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid`
++- **选择器**：`body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)`
++- **父级链**：`main.main` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **元素文本**：3584×6368·8.76 MB·2026-09-14白发 · 女仆pid 119512232 · 11 浏览2160×3456·1.69 MB·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 9 浏览1600×2…
++- **位置尺寸**：x=236 y=107 1084×10804
++- **关键样式**：display: grid; flex-direction: row; justify-content: normal; align-items: start; gap: 0px 14px; grid-template-columns: 205.592px 205.592px 205.592px 205.592px 205.592px; width: 1084.25px; height: 10804.4px; min-width: 0px; max-width: none; padding: 16px 18px 60px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 内容页在标准视图下仅4栏，宽松视图下有6栏
++> 你可以适当调整宽度
++
++### 19. 当用户界面中没有看到第一行图片时，且用户正在上滑，则在右下角显示一个圆形按钮，点击即可快速跳转到顶部。当用户下滑时隐藏按
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid`
++- **选择器**：`body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)`
++- **父级链**：`main.main` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **元素文本**：3584×6368·8.76 MB·2026-09-14白发 · 女仆pid 119512232 · 11 浏览2160×3456·1.69 MB·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 9 浏览1600×2…
++- **位置尺寸**：x=254 y=107 1084×10804
++- **关键样式**：display: grid; flex-direction: row; justify-content: normal; align-items: start; gap: 0px 14px; grid-template-columns: 205.592px 205.592px 205.592px 205.592px 205.592px; width: 1084.25px; height: 10804.4px; min-width: 0px; max-width: none; padding: 16px 18px 60px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 当用户界面中没有看到第一行图片时，且用户正在上滑，则在右下角显示一个圆形按钮，点击即可快速跳转到顶部。当用户下滑时隐藏按钮，显示/隐藏有过度动画0.2s
++
++### 20. 点击删除按钮后，并不立刻执行删除，按钮文本先变成"你确定吗?" 再次点击后变成 “已删除”，且不可再交互。仅在从灯箱打开
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Actions › button.btn`
++- **选择器**：`div.app.sidebar-collapsed > div.lightbox:nth-of-type(2) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(5)`
++- **父级链**：`div.lb-actions` ← `div.lightbox-side` ← `div.lightbox` ← `div.app.sidebar-collapsed` ← `div`
++- **元素文本**：删除
++- **位置尺寸**：x=1127 y=366 65×28
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 65.3838px; height: 27.9934px; min-width: auto; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(248, 113, 113); background-color: color(srgb 0.972549 0.443137 0.443137 / 0.18); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 7px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1)
++
++> 点击删除按钮后，并不立刻执行删除，按钮文本先变成"你确定吗?" 再次点击后变成 “已删除”，且不可再交互。仅在从灯箱打开预览图时，检查一次图片是否可删除，再转变成初始的样子。2次变化均有0.2s过渡动画。
++
++### 21. 对于已下载的图片预览不显示此选项。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Actions › button.btn`
++- **选择器**：`div.app.sidebar-collapsed > div.lightbox:nth-of-type(2) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(3)`
++- **父级链**：`div.lb-actions` ← `div.lightbox-side` ← `div.lightbox` ← `div.app.sidebar-collapsed` ← `div`
++- **元素文本**：下载此图
++- **位置尺寸**：x=1200 y=267 89×28
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 89.375px; height: 27.9934px; min-width: auto; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(26, 32, 45); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 7px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 13.64:1（AAA）
++
++> 对于已下载的图片预览不显示此选项。
++> 点击下载此图后，没有立刻执行下载任务，下载任务执行完成后预览界面未刷新。
++> 期望，点击后，该按钮的图标转化为箭头转圈动画，文字变成“下载中“，缓解用户等待焦虑，左下角再来个弹窗进度条，弹窗进度条的来源应当与抓取界面下的进度同步
++
++### 22. 你要一次全榨干吗...
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`CrawlPanel › span.help`
++- **选择器**：`div.page > section.card-panel:nth-of-type(2) > div.field-grid:nth-of-type(2) > div.field:nth-of-type(3) > span.help`
++- **父级链**：`div.field` ← `div.field-grid` ← `section.card-panel` ← `div.page` ← `main.main`
++- **元素文本**：先跑 200 张试试水
++- **位置尺寸**：x=802 y=362 238×17
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 237.654px; height: 17.0395px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 11px; font-weight: 400; line-height: 17.05px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 你要一次全榨干吗...
++
++### 23. 筛选逻辑存在问题，自行重整
++
++- **类别**：缺陷 ｜ **优先级**：建议改 ｜ **方式**：框选区域
++- **组件**：`App/FilterBar › button.pill`
++- **选择器**：`区域中心命中 → div > div.app > main.main > div.filter-bar:nth-of-type(1) > button.pill:nth-of-type(3)`
++- **父级链**：`div.filter-bar` ← `main.main` ← `div.app` ← `div` ← `body`
++- **元素文本**：[区域中心元素] 已下载
++- **位置尺寸**：x=261 y=61 553×42
++- **关键样式**：display: flex; flex-direction: row; justify-content: normal; align-items: center; gap: 6px; grid-template-columns: none; width: 57.3904px; height: 25.9978px; min-width: auto; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(151, 161, 181); background-color: rgb(20, 25, 36); border: 0.701754px solid rgba(255, 255, 255, 0.07); border-radius: 99px; white-space: normal; transition: 0.14s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 6.77:1（AA）
++- **属性**：title="仅已下载（只与「待下载」互斥）"
++
++> 筛选逻辑存在问题，自行重整
+diff --git a/devlog/rounds/0005-20260914-1827/screenshots/00-full.png b/devlog/rounds/0005-20260914-1827/screenshots/00-full.png
+new file mode 100644
+index 0000000..88435e8
+Binary files /dev/null and b/devlog/rounds/0005-20260914-1827/screenshots/00-full.png differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/001-\350\277\231\344\270\252\303\227\346\214\211\351\222\256\347\232\204\345\233\276\346\240\207\344\270\215\345\234\250\346\214\211\351\222\256\344\270\255\345\277\203,-\345\260\206-\346\214\211\351\222\256\345\267\246\347\247\2734px\350\267\235\347\246\273\345\233\276.png" "b/devlog/rounds/0005-20260914-1827/screenshots/001-\350\277\231\344\270\252\303\227\346\214\211\351\222\256\347\232\204\345\233\276\346\240\207\344\270\215\345\234\250\346\214\211\351\222\256\344\270\255\345\277\203,-\345\260\206-\346\214\211\351\222\256\345\267\246\347\247\2734px\350\267\235\347\246\273\345\233\276.png"
+new file mode 100644
+index 0000000..31d1e36
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/001-\350\277\231\344\270\252\303\227\346\214\211\351\222\256\347\232\204\345\233\276\346\240\207\344\270\215\345\234\250\346\214\211\351\222\256\344\270\255\345\277\203,-\345\260\206-\346\214\211\351\222\256\345\267\246\347\247\2734px\350\267\235\347\246\273\345\233\276.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/002-\351\274\240\346\240\207\347\247\273\345\212\250\345\210\260\345\215\241\347\211\207\344\270\212\346\227\266\344\270\213\346\226\271\346\232\227\350\247\222\345\206\205\345\256\271\346\210\221\345\270\214\346\234\233\344\270\215\346\230\276\347\244\272\345\233\276\347\211\207\345\244\247\345\260\217\344\273\205\346\230\276\347\244\272.png" "b/devlog/rounds/0005-20260914-1827/screenshots/002-\351\274\240\346\240\207\347\247\273\345\212\250\345\210\260\345\215\241\347\211\207\344\270\212\346\227\266\344\270\213\346\226\271\346\232\227\350\247\222\345\206\205\345\256\271\346\210\221\345\270\214\346\234\233\344\270\215\346\230\276\347\244\272\345\233\276\347\211\207\345\244\247\345\260\217\344\273\205\346\230\276\347\244\272.png"
+new file mode 100644
+index 0000000..5b68740
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/002-\351\274\240\346\240\207\347\247\273\345\212\250\345\210\260\345\215\241\347\211\207\344\270\212\346\227\266\344\270\213\346\226\271\346\232\227\350\247\222\345\206\205\345\256\271\346\210\221\345\270\214\346\234\233\344\270\215\346\230\276\347\244\272\345\233\276\347\211\207\345\244\247\345\260\217\344\273\205\346\230\276\347\244\272.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/003-\345\233\276\346\240\207\344\275\277\347\224\250\347\251\272\345\277\203\347\232\204\351\225\277\346\226\271\344\275\223\346\250\252\350\276\27112px-\347\253\226\350\276\27116px\347\264\247\345\207\221\350\247\206\345\233\276\344\275\277.png" "b/devlog/rounds/0005-20260914-1827/screenshots/003-\345\233\276\346\240\207\344\275\277\347\224\250\347\251\272\345\277\203\347\232\204\351\225\277\346\226\271\344\275\223\346\250\252\350\276\27112px-\347\253\226\350\276\27116px\347\264\247\345\207\221\350\247\206\345\233\276\344\275\277.png"
+new file mode 100644
+index 0000000..a079af1
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/003-\345\233\276\346\240\207\344\275\277\347\224\250\347\251\272\345\277\203\347\232\204\351\225\277\346\226\271\344\275\223\346\250\252\350\276\27112px-\347\253\226\350\276\27116px\347\264\247\345\207\221\350\247\206\345\233\276\344\275\277.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/004-\344\270\215\346\230\276\347\244\272\346\255\244\346\240\217.png" "b/devlog/rounds/0005-20260914-1827/screenshots/004-\344\270\215\346\230\276\347\244\272\346\255\244\346\240\217.png"
+new file mode 100644
+index 0000000..36ad289
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/004-\344\270\215\346\230\276\347\244\272\346\255\244\346\240\217.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/005-\344\270\215\346\230\276\347\244\272\346\255\244\346\240\217.png" "b/devlog/rounds/0005-20260914-1827/screenshots/005-\344\270\215\346\230\276\347\244\272\346\255\244\346\240\217.png"
+new file mode 100644
+index 0000000..9933cab
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/005-\344\270\215\346\230\276\347\244\272\346\255\244\346\240\217.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/006-\350\256\277\351\227\256\347\275\221\347\253\231.png" "b/devlog/rounds/0005-20260914-1827/screenshots/006-\350\256\277\351\227\256\347\275\221\347\253\231.png"
+new file mode 100644
+index 0000000..2b94a48
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/006-\350\256\277\351\227\256\347\275\221\347\253\231.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/007-\347\202\271\345\207\273\345\267\246\344\276\247\346\240\217\346\227\266\344\270\215\345\221\274\345\207\272\344\277\235\345\255\230\345\267\262\350\256\276\347\275\256.png" "b/devlog/rounds/0005-20260914-1827/screenshots/007-\347\202\271\345\207\273\345\267\246\344\276\247\346\240\217\346\227\266\344\270\215\345\221\274\345\207\272\344\277\235\345\255\230\345\267\262\350\256\276\347\275\256.png"
+new file mode 100644
+index 0000000..475cacc
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/007-\347\202\271\345\207\273\345\267\246\344\276\247\346\240\217\346\227\266\344\270\215\345\221\274\345\207\272\344\277\235\345\255\230\345\267\262\350\256\276\347\275\256.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/008-\350\260\203\346\225\264\345\267\246\346\240\217\346\227\266\344\270\215\345\221\274\345\207\272\350\256\276\347\275\256\345\267\262\344\277\235\345\255\230.png" "b/devlog/rounds/0005-20260914-1827/screenshots/008-\350\260\203\346\225\264\345\267\246\346\240\217\346\227\266\344\270\215\345\221\274\345\207\272\350\256\276\347\275\256\345\267\262\344\277\235\345\255\230.png"
+new file mode 100644
+index 0000000..7d8ecd5
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/008-\350\260\203\346\225\264\345\267\246\346\240\217\346\227\266\344\270\215\345\221\274\345\207\272\350\256\276\347\275\256\345\267\262\344\277\235\345\255\230.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/009-\345\267\246\346\240\217\345\261\225\345\274\200\346\224\266\350\265\267\345\212\237\350\203\275\345\244\261\346\225\210\344\270\215\350\203\275\346\255\243\347\241\256\346\224\266\350\265\267\346\224\266\350\265\267\346\227\266\344\270\215\350\203\275\350\260\203\346\225\264\345\267\246\344\276\247\346\240\217\345\256\275\345\272\246.png" "b/devlog/rounds/0005-20260914-1827/screenshots/009-\345\267\246\346\240\217\345\261\225\345\274\200\346\224\266\350\265\267\345\212\237\350\203\275\345\244\261\346\225\210\344\270\215\350\203\275\346\255\243\347\241\256\346\224\266\350\265\267\346\224\266\350\265\267\346\227\266\344\270\215\350\203\275\350\260\203\346\225\264\345\267\246\344\276\247\346\240\217\345\256\275\345\272\246.png"
+new file mode 100644
+index 0000000..6691518
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/009-\345\267\246\346\240\217\345\261\225\345\274\200\346\224\266\350\265\267\345\212\237\350\203\275\345\244\261\346\225\210\344\270\215\350\203\275\346\255\243\347\241\256\346\224\266\350\265\267\346\224\266\350\265\267\346\227\266\344\270\215\350\203\275\350\260\203\346\225\264\345\267\246\344\276\247\346\240\217\345\256\275\345\272\246.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/010-\350\277\231\351\207\214\347\232\204\346\224\266\350\227\217\345\233\276\346\240\207\345\220\214\346\240\267\346\224\271\346\210\220\347\210\261\345\277\203.png" "b/devlog/rounds/0005-20260914-1827/screenshots/010-\350\277\231\351\207\214\347\232\204\346\224\266\350\227\217\345\233\276\346\240\207\345\220\214\346\240\267\346\224\271\346\210\220\347\210\261\345\277\203.png"
+new file mode 100644
+index 0000000..bb0713c
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/010-\350\277\231\351\207\214\347\232\204\346\224\266\350\227\217\345\233\276\346\240\207\345\220\214\346\240\267\346\224\271\346\210\220\347\210\261\345\277\203.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/011-\350\256\277\351\227\256\347\275\221\347\253\231.png" "b/devlog/rounds/0005-20260914-1827/screenshots/011-\350\256\277\351\227\256\347\275\221\347\253\231.png"
+new file mode 100644
+index 0000000..ef0db96
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/011-\350\256\277\351\227\256\347\275\221\347\253\231.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/012-\344\270\211\350\247\222\345\275\242\347\256\255\345\244\264-\347\224\250\345\244\247\344\270\200\347\202\271\347\232\204\346\214\207\345\220\221\345\217\263\350\276\271\347\232\204\344\270\211\350\247\222\345\275\242\347\232\2042\350\276\271\345\233\276\346\240\207\346\227\240\351\234\200\350\275\254\345\212\250.png" "b/devlog/rounds/0005-20260914-1827/screenshots/012-\344\270\211\350\247\222\345\275\242\347\256\255\345\244\264-\347\224\250\345\244\247\344\270\200\347\202\271\347\232\204\346\214\207\345\220\221\345\217\263\350\276\271\347\232\204\344\270\211\350\247\222\345\275\242\347\232\2042\350\276\271\345\233\276\346\240\207\346\227\240\351\234\200\350\275\254\345\212\250.png"
+new file mode 100644
+index 0000000..1b9ec1d
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/012-\344\270\211\350\247\222\345\275\242\347\256\255\345\244\264-\347\224\250\345\244\247\344\270\200\347\202\271\347\232\204\346\214\207\345\220\221\345\217\263\350\276\271\347\232\204\344\270\211\350\247\222\345\275\242\347\232\2042\350\276\271\345\233\276\346\240\207\346\227\240\351\234\200\350\275\254\345\212\250.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/013-\345\255\220\347\255\233\351\200\211\351\241\271\344\270\213\345\217\226\346\266\210\345\210\206\350\276\250\347\216\207\350\277\231\344\270\200\347\255\233\351\200\211.png" "b/devlog/rounds/0005-20260914-1827/screenshots/013-\345\255\220\347\255\233\351\200\211\351\241\271\344\270\213\345\217\226\346\266\210\345\210\206\350\276\250\347\216\207\350\277\231\344\270\200\347\255\233\351\200\211.png"
+new file mode 100644
+index 0000000..5de6d18
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/013-\345\255\220\347\255\233\351\200\211\351\241\271\344\270\213\345\217\226\346\266\210\345\210\206\350\276\250\347\216\207\350\277\231\344\270\200\347\255\233\351\200\211.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/014-\346\262\241\346\234\211\350\247\243\345\206\263\347\253\226\345\233\276\346\230\276\347\244\272\350\266\205\345\207\272\351\241\265\351\235\242\351\227\256\351\242\230.png" "b/devlog/rounds/0005-20260914-1827/screenshots/014-\346\262\241\346\234\211\350\247\243\345\206\263\347\253\226\345\233\276\346\230\276\347\244\272\350\266\205\345\207\272\351\241\265\351\235\242\351\227\256\351\242\230.png"
+new file mode 100644
+index 0000000..21ee8d4
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/014-\346\262\241\346\234\211\350\247\243\345\206\263\347\253\226\345\233\276\346\230\276\347\244\272\350\266\205\345\207\272\351\241\265\351\235\242\351\227\256\351\242\230.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/015-\345\234\250\345\217\263\344\270\212\350\247\222\303\227\346\214\211\351\222\256\345\267\246\344\276\247\346\267\273\345\212\240\342\200\234\346\262\211\346\265\270\346\250\241\345\274\217\342\200\235\351\232\220\350\227\217\345\217\263\350\276\271\346\240\217.png" "b/devlog/rounds/0005-20260914-1827/screenshots/015-\345\234\250\345\217\263\344\270\212\350\247\222\303\227\346\214\211\351\222\256\345\267\246\344\276\247\346\267\273\345\212\240\342\200\234\346\262\211\346\265\270\346\250\241\345\274\217\342\200\235\351\232\220\350\227\217\345\217\263\350\276\271\346\240\217.png"
+new file mode 100644
+index 0000000..5b2d665
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/015-\345\234\250\345\217\263\344\270\212\350\247\222\303\227\346\214\211\351\222\256\345\267\246\344\276\247\346\267\273\345\212\240\342\200\234\346\262\211\346\265\270\346\250\241\345\274\217\342\200\235\351\232\220\350\227\217\345\217\263\350\276\271\346\240\217.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/016-\346\263\250\346\204\217\346\212\230\345\217\240\345\217\263\350\276\271\346\240\217\346\227\266\350\277\231\344\270\252\345\205\203\347\264\240\344\271\237\350\246\201\347\247\273\345\212\250\345\210\260\345\217\263\344\276\247.png" "b/devlog/rounds/0005-20260914-1827/screenshots/016-\346\263\250\346\204\217\346\212\230\345\217\240\345\217\263\350\276\271\346\240\217\346\227\266\350\277\231\344\270\252\345\205\203\347\264\240\344\271\237\350\246\201\347\247\273\345\212\250\345\210\260\345\217\263\344\276\247.png"
+new file mode 100644
+index 0000000..b1db5b3
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/016-\346\263\250\346\204\217\346\212\230\345\217\240\345\217\263\350\276\271\346\240\217\346\227\266\350\277\231\344\270\252\345\205\203\347\264\240\344\271\237\350\246\201\347\247\273\345\212\250\345\210\260\345\217\263\344\276\247.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/017-\350\277\231\344\270\252\345\233\276\346\240\207\344\271\237\351\234\200\350\246\201\345\234\250\346\212\230\345\217\240\345\267\246\344\276\247\346\240\217\346\227\266\345\261\205\344\270\255.png" "b/devlog/rounds/0005-20260914-1827/screenshots/017-\350\277\231\344\270\252\345\233\276\346\240\207\344\271\237\351\234\200\350\246\201\345\234\250\346\212\230\345\217\240\345\267\246\344\276\247\346\240\217\346\227\266\345\261\205\344\270\255.png"
+new file mode 100644
+index 0000000..475cacc
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/017-\350\277\231\344\270\252\345\233\276\346\240\207\344\271\237\351\234\200\350\246\201\345\234\250\346\212\230\345\217\240\345\267\246\344\276\247\346\240\217\346\227\266\345\261\205\344\270\255.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/018-\345\206\205\345\256\271\351\241\265\345\234\250\346\240\207\345\207\206\350\247\206\345\233\276\344\270\213\344\273\2054\346\240\217\345\256\275\346\235\276\350\247\206\345\233\276\344\270\213\346\234\2116\346\240\217.png" "b/devlog/rounds/0005-20260914-1827/screenshots/018-\345\206\205\345\256\271\351\241\265\345\234\250\346\240\207\345\207\206\350\247\206\345\233\276\344\270\213\344\273\2054\346\240\217\345\256\275\346\235\276\350\247\206\345\233\276\344\270\213\346\234\2116\346\240\217.png"
+new file mode 100644
+index 0000000..7aa8573
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/018-\345\206\205\345\256\271\351\241\265\345\234\250\346\240\207\345\207\206\350\247\206\345\233\276\344\270\213\344\273\2054\346\240\217\345\256\275\346\235\276\350\247\206\345\233\276\344\270\213\346\234\2116\346\240\217.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/019-\345\275\223\347\224\250\346\210\267\347\225\214\351\235\242\344\270\255\346\262\241\346\234\211\347\234\213\345\210\260\347\254\254\344\270\200\350\241\214\345\233\276\347\211\207\346\227\266\344\270\224\347\224\250\346\210\267\346\255\243\345\234\250\344\270\212\346\273\221\345\210\231\345\234\250\345\217\263\344\270\213\350\247\222.png" "b/devlog/rounds/0005-20260914-1827/screenshots/019-\345\275\223\347\224\250\346\210\267\347\225\214\351\235\242\344\270\255\346\262\241\346\234\211\347\234\213\345\210\260\347\254\254\344\270\200\350\241\214\345\233\276\347\211\207\346\227\266\344\270\224\347\224\250\346\210\267\346\255\243\345\234\250\344\270\212\346\273\221\345\210\231\345\234\250\345\217\263\344\270\213\350\247\222.png"
+new file mode 100644
+index 0000000..2a85f87
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/019-\345\275\223\347\224\250\346\210\267\347\225\214\351\235\242\344\270\255\346\262\241\346\234\211\347\234\213\345\210\260\347\254\254\344\270\200\350\241\214\345\233\276\347\211\207\346\227\266\344\270\224\347\224\250\346\210\267\346\255\243\345\234\250\344\270\212\346\273\221\345\210\231\345\234\250\345\217\263\344\270\213\350\247\222.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/020-\347\202\271\345\207\273\345\210\240\351\231\244\346\214\211\351\222\256\345\220\216\345\271\266\344\270\215\347\253\213\345\210\273\346\211\247\350\241\214\345\210\240\351\231\244\346\214\211\351\222\256\346\226\207\346\234\254\345\205\210\345\217\230\346\210\220\344\275\240\347\241\256\345\256\232\345\220\227-\345\206\215.png" "b/devlog/rounds/0005-20260914-1827/screenshots/020-\347\202\271\345\207\273\345\210\240\351\231\244\346\214\211\351\222\256\345\220\216\345\271\266\344\270\215\347\253\213\345\210\273\346\211\247\350\241\214\345\210\240\351\231\244\346\214\211\351\222\256\346\226\207\346\234\254\345\205\210\345\217\230\346\210\220\344\275\240\347\241\256\345\256\232\345\220\227-\345\206\215.png"
+new file mode 100644
+index 0000000..850c78a
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/020-\347\202\271\345\207\273\345\210\240\351\231\244\346\214\211\351\222\256\345\220\216\345\271\266\344\270\215\347\253\213\345\210\273\346\211\247\350\241\214\345\210\240\351\231\244\346\214\211\351\222\256\346\226\207\346\234\254\345\205\210\345\217\230\346\210\220\344\275\240\347\241\256\345\256\232\345\220\227-\345\206\215.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/021-\345\257\271\344\272\216\345\267\262\344\270\213\350\275\275\347\232\204\345\233\276\347\211\207\351\242\204\350\247\210\344\270\215\346\230\276\347\244\272\346\255\244\351\200\211\351\241\271.png" "b/devlog/rounds/0005-20260914-1827/screenshots/021-\345\257\271\344\272\216\345\267\262\344\270\213\350\275\275\347\232\204\345\233\276\347\211\207\351\242\204\350\247\210\344\270\215\346\230\276\347\244\272\346\255\244\351\200\211\351\241\271.png"
+new file mode 100644
+index 0000000..c9314cb
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/021-\345\257\271\344\272\216\345\267\262\344\270\213\350\275\275\347\232\204\345\233\276\347\211\207\351\242\204\350\247\210\344\270\215\346\230\276\347\244\272\346\255\244\351\200\211\351\241\271.png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/022-\344\275\240\350\246\201\344\270\200\346\254\241\345\205\250\346\246\250\345\271\262\345\220\227....png" "b/devlog/rounds/0005-20260914-1827/screenshots/022-\344\275\240\350\246\201\344\270\200\346\254\241\345\205\250\346\246\250\345\271\262\345\220\227....png"
+new file mode 100644
+index 0000000..d4312ab
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/022-\344\275\240\350\246\201\344\270\200\346\254\241\345\205\250\346\246\250\345\271\262\345\220\227....png" differ
+diff --git "a/devlog/rounds/0005-20260914-1827/screenshots/023-\347\255\233\351\200\211\351\200\273\350\276\221\345\255\230\345\234\250\351\227\256\351\242\230\350\207\252\350\241\214\351\207\215\346\225\264.png" "b/devlog/rounds/0005-20260914-1827/screenshots/023-\347\255\233\351\200\211\351\200\273\350\276\221\345\255\230\345\234\250\351\227\256\351\242\230\350\207\252\350\241\214\351\207\215\346\225\264.png"
+new file mode 100644
+index 0000000..0a47f7c
+Binary files /dev/null and "b/devlog/rounds/0005-20260914-1827/screenshots/023-\347\255\233\351\200\211\351\200\273\350\276\221\345\255\230\345\234\250\351\227\256\351\242\230\350\207\252\350\241\214\351\207\215\346\225\264.png" differ
+diff --git a/plugins/annotator/bin/check.mjs b/plugins/annotator/bin/check.mjs
+index 27283b4..7e8c40b 100644
+--- a/plugins/annotator/bin/check.mjs
++++ b/plugins/annotator/bin/check.mjs
+@@ -124,6 +124,15 @@ const SCRIPT = `(async () => {
+     await sleep(450)
+   }
+   out.pinsBeforeTopCheck = document.querySelectorAll('.gugu-anno-pin').length
++  // 工具栏必须整体落在窗口拖动区下方，否则真实鼠标点击会被窗口吞掉
++  {
++    const tr2 = document.querySelector('.gugu-anno-toolbar').getBoundingClientRect()
++    const topbarEl = document.querySelector('.topbar') || document.querySelector('header')
++    const dragBottom = topbarEl ? topbarEl.getBoundingClientRect().bottom : 58
++    out.dragZoneBottom = Math.round(dragBottom)
++    out.toolbarTopY = Math.round(tr2.top)
++    out.toolbarBelowDragZone = tr2.top >= dragBottom
++  }
+   const toolbar = document.querySelector('.gugu-anno-toolbar')
+   const firstPin = document.querySelector('.gugu-anno-pin')
+   out.toolbarZ = toolbar ? Number(getComputedStyle(toolbar).zIndex) || 0 : -1
+@@ -251,6 +260,7 @@ const checks = [
+   ['每条标注都有裁片', shots.filter((f) => /^\d{3}-/.test(f)).length === 2],
+   ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
+   ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
++  ['工具栏整体位于窗口拖动区下方', result.toolbarBelowDragZone === true],
+   ['工具栏层级高于标注记号', result.toolbarAbovePins === true],
+   ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
+   ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],
+diff --git a/plugins/annotator/renderer/annotator.css b/plugins/annotator/renderer/annotator.css
+index f12a27d..2fca9de 100644
+--- a/plugins/annotator/renderer/annotator.css
++++ b/plugins/annotator/renderer/annotator.css
+@@ -30,7 +30,7 @@
+ 
+ .gugu-anno-toolbar {
+   position: absolute;
+-  top: 12px;
++  top: 66px;
+   left: 50%;
+   transform: translateX(-50%);
+   pointer-events: auto;
+@@ -126,7 +126,7 @@
+ 
+ .gugu-anno-hint {
+   position: absolute;
+-  top: 66px;
++  top: 120px;
+   left: 50%;
+   transform: translateX(-50%);
+   pointer-events: none;
+diff --git a/plugins/annotator/renderer/toolbar.css b/plugins/annotator/renderer/toolbar.css
+index 44e0739..8673e29 100644
+--- a/plugins/annotator/renderer/toolbar.css
++++ b/plugins/annotator/renderer/toolbar.css
+@@ -5,6 +5,14 @@
+ 
+ /* 工具栏必须盖住标注记号：标注多了以后，记号是后渲染的兄弟节点，
+    不给层级就会被压在下面。 */
++/*
++ * 工具栏放在顶栏下方（58px 标题栏 + 8px 间隙），刻意避开窗口拖动区。
++ *
++ * 原因：自绘标题栏把上方的 .topbar 整条设成了 -webkit-app-region: drag，
++ * 覆盖层即便写了 no-drag，Chromium 也不一定会从拖动区里把它挖出来 ——
++ * 实测表现就是工具栏左半压在搜索框（no-drag）上能点，右半被窗口吞掉点不动。
++ * 与其赌实现细节，不如直接让工具栏不落在拖动区里。
++ */
+ .gugu-anno-toolbar {
+   z-index: 30;
+   transition:
+@@ -43,7 +51,7 @@
+ 
+ .gugu-anno-handle {
+   position: absolute;
+-  top: 0;
++  top: 44px;
+   left: 50%;
+   transform: translateX(-50%);
+   z-index: 31;
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index cf1fbf5..084479b 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -184,16 +184,63 @@ const SCRIPT = `(async () => {
+     await sleep(250)
+     out.sortMenuOpen = Boolean(document.querySelector('.sort-menu'))
+     const items = Array.from(document.querySelectorAll('.sort-menu .sort-item'))
+-    const target = items.find((b) => b.textContent.trim() === '分辨率')
++    const target = items.find((b) => b.textContent.trim() === '浏览量')
+     out.sortItemCount = items.length
+     target?.click()
+     await sleep(1100)
+-    out.sortValue = (document.querySelector('.sort-picker .pill')?.textContent || '').includes('分辨率')
+-      ? 'resolution'
++    out.sortValue = (document.querySelector('.sort-picker .pill')?.textContent || '').includes('浏览量')
++      ? 'views'
+       : 'other'
+     out.sortMeta = meta()
+   }
+ 
++  // 7.5) 横向溢出
++  {
++    const m = document.querySelector('.main')
++    out.mainOverflowX = m ? m.scrollWidth - m.clientWidth : -1
++  }
++
++  // 7.6) 灯箱沉浸模式与删除/下载按钮（先切到「已下载」，保证打开的是本地有文件的图）
++  {
++    const dlPill = qa('.filter-bar .pill').find((b) => b.textContent.trim() === '已下载')
++    dlPill?.click()
++    await sleep(1200)
++    out.downloadedCount = qa('.card').length
++    const firstCard2 = document.querySelector('.card')
++    firstCard2?.click()
++    await sleep(1300)
++    const lb = document.querySelector('.lightbox')
++    const toggle = document.querySelector('.lb-immersive')
++    out.immersiveToggle = Boolean(toggle)
++    const side = document.querySelector('.lightbox-side')
++    const before = side ? getComputedStyle(side).opacity : null
++    toggle?.click()
++    await sleep(700)
++    out.immersiveHidesPanel = lb?.classList.contains('immersive') === true && side ? Number(getComputedStyle(side).opacity) < 0.5 : false
++    out.immersiveOpacityBefore = before
++    toggle?.click()
++    await sleep(700)
++
++    // 删除两步确认
++    const delBtn = document.querySelector('.del-2step')
++    out.deleteSteps = '未测'
++    out.downloadBtnHiddenWhenReady = !document.querySelector('.dl-btn')
++    if (delBtn && !delBtn.disabled) {
++      delBtn.click(); await sleep(300)
++      const first = (delBtn.textContent || '').trim()
++      delBtn.click(); await sleep(400)
++      const second = (delBtn.textContent || '').trim()
++      out.deleteSteps = (first.includes('确定') ? '确认' : first) + '->' + (second.includes('已删除') ? '已删除' : second)
++    } else {
++      out.deleteSteps = delBtn ? '按钮被禁用（本地无文件）' : '无删除按钮'
++    }
++    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
++    await sleep(600)
++    const clearPill = qa('.filter-bar .pill').find((b) => b.textContent.trim() === '清空筛选')
++    clearPill?.click()
++    await sleep(900)
++  }
++
+   // 8) 视图密度：合并成了一个按钮
+   const denseBtn = document.querySelector('.view-toggle')
+   out.viewToggleCount = qa('.view-toggle').length
+@@ -205,6 +252,7 @@ const SCRIPT = `(async () => {
+     out.denseBefore = before
+     denseBtn.click()
+     await sleep(600)
++    out.normalColumnsAfter = getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length
+   }
+ 
+   // 9) 切到设置页并切浅色主题
+@@ -284,10 +332,17 @@ const checks = [
+   ['Esc 能关闭灯箱', result.lightboxClosed === true],
+   ['分类树能展开出二级分类', (result.subItems ?? 0) > 0],
+   ['二级分类筛选生效', /共 \d+ 条/.test(result.plateMeta || '')],
+-  ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 7],
+-  ['切换排序生效', result.sortValue === 'resolution'],
++  ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
++  ['切换排序生效', result.sortValue === 'views'],
++  ['内容页无横向溢出', result.mainOverflowX === 0],
++  ['灯箱有沉浸模式开关', result.immersiveToggle === true],
++  ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
++  ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
++  ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
+   ['视图密度只剩一个按钮', result.viewToggleCount === 1],
+-  ['微缩视图列数更多', (result.denseColumns ?? 0) >= 4],
++  ['标准视图为 4 栏', result.masonryColumns === 4],
++  ['紧凑视图为 6 栏', result.denseColumns === 6],
++  ['切回标准视图恢复 4 栏', result.normalColumnsAfter === 4],
+   ['浅色主题可切换', result.theme === 'light'],
+   ['运行期无控制台错误', (consoleErrors ?? []).length === 0]
+ ]
+diff --git a/src/main/store/repository.ts b/src/main/store/repository.ts
+index c984c6e..a74cd30 100644
+--- a/src/main/store/repository.ts
++++ b/src/main/store/repository.ts
+@@ -261,7 +261,16 @@ export class Repository {
+     const limit = Math.max(1, Math.min(500, query.limit ?? 60))
+     const offset = Number.parseInt(query.cursor ?? '0', 10) || 0
+ 
+-    const total = Number(this.db.scalar<number>(`SELECT COUNT(*) FROM items i ${where}`, params) ?? 0)
++    // 计数查询必须带上与 ITEM_SELECT 相同的 LEFT JOIN：
++    // where 里可能引用 f.id（已下载 / 待下载），少了 JOIN 会直接报 no such column
++    const total = Number(
++      this.db.scalar<number>(
++        `SELECT COUNT(*) FROM items i
++         LEFT JOIN files f ON f.item_id = i.id AND f.variant = 'original'
++         ${where}`,
++        params
++      ) ?? 0
++    )
+     const order = buildOrder(query.sort ?? 'newest')
+     const rows = this.db.all<Row>(`${ITEM_SELECT} ${where} ORDER BY ${order} LIMIT ? OFFSET ?`, [
+       ...params,
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index caac947..10ea430 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -24,6 +24,7 @@ import Toast, { type ToastPayload } from './components/Toast'
+ import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
+ import { loadedPlugins } from './plugins'
+ import {
++  IconArrowUp,
+   IconClose,
+   IconSearch,
+   IconSidebar,
+@@ -74,7 +75,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+   { value: 'oldest', label: '最早上传' },
+   { value: 'views', label: '浏览量' },
+   { value: 'size', label: '文件体积' },
+-  { value: 'resolution', label: '分辨率' },
+   { value: 'title', label: '标题' },
+   { value: 'random', label: '随机' }
+ ]
+@@ -86,27 +86,25 @@ const SORT_LABEL: Record<SortKey, string> = SORT_OPTIONS.reduce(
+ 
+ /** 视图密度按钮：标准=一个竖长方形，紧凑=两个。切换时图标交叉渐隐 */
+ function IconViewToggle({ dense }: { dense: boolean }): JSX.Element {
++  // 空心长方体：标准视图 12×16，紧凑视图两个 8×16、间隔 4
+   return (
+-    <svg width={15} height={15} viewBox="0 0 24 24" aria-hidden>
+-      <rect
+-        className="vt-a"
+-        x={dense ? 4 : 8.5}
+-        y="4"
+-        width={dense ? 5.5 : 7}
+-        height="16"
+-        rx="1.8"
+-        fill="currentColor"
+-      />
+-      <rect
+-        className="vt-b"
+-        x="14.5"
+-        y="4"
+-        width="5.5"
+-        height="16"
+-        rx="1.8"
+-        fill="currentColor"
+-        style={{ opacity: dense ? 1 : 0, transition: 'opacity 0.08s var(--ease)' }}
+-      />
++    <svg
++      width={20}
++      height={20}
++      viewBox="0 0 20 20"
++      fill="none"
++      stroke="currentColor"
++      strokeWidth={1.6}
++      aria-hidden
++    >
++      {dense ? (
++        <>
++          <rect x={0} y={2} width={8} height={16} rx={1.6} />
++          <rect x={12} y={2} width={8} height={16} rx={1.6} />
++        </>
++      ) : (
++        <rect x={4} y={2} width={12} height={16} rx={1.8} />
++      )}
+     </svg>
+   )
+ }
+@@ -147,6 +145,8 @@ export default function App(): JSX.Element {
+   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SETTINGS.sidebarWidth)
+   /** 向下滚动时把过滤栏藏起来 */
+   const [barHidden, setBarHidden] = useState(false)
++  /** 向上滚��且已经离开首屏时，右下角出现回到顶部 */
++  const [showToTop, setShowToTop] = useState(false)
+   const [sortOpen, setSortOpen] = useState(false)
+ 
+   const lastScrollTop = useRef(0)
+@@ -254,7 +254,10 @@ export default function App(): JSX.Element {
+       const top = el.scrollTop
+       const delta = top - lastScrollTop.current
+       if (Math.abs(delta) > 6) {
+-        setBarHidden(delta > 0 && top > 96)
++        const down = delta > 0
++        setBarHidden(down && top > 96)
++        // 首屏都看不见了、并且正在往上滑，才给回到顶部
++        setShowToTop(!down && top > 320)
+         lastScrollTop.current = top
+       }
+       if (!loading && cursor && el.scrollHeight - top - el.clientHeight < 900) void loadPage('append')
+@@ -316,12 +319,18 @@ export default function App(): JSX.Element {
+ 
+   /* ---------------------------------------------------------------- 交互 */
+ 
++  /**
++   * 筛选条件的唯一入口。规则只有两条，但必须双向成立：
++   *   1. 「待下载」与其它所有筛选项互斥 —— 选中它会清掉别的，选中别的也会把它清掉
++   *   2. 「已下载」只与「待下载」互斥（可以叠加收藏、横竖图、标签）
++   * 互斥单向做的话会出现「点 A 清了 B，再点 B 却清不掉 A」这种自相矛盾的状态。
++   */
+   const patchFilters = useCallback((patch: Partial<Filters>) => {
+     setFilters((prev) => {
+       const next = { ...prev, ...patch }
+       // 换分类时必须清掉二级分类，否则会留下跨分类的无效条件
+       if (patch.plate !== undefined) next.word = null
+-      // 「待下载」与其他筛选项全部互斥；「已下载」只与「待下载」互斥
++
+       if (patch.downloaded === 'never') {
+         next.favorite = false
+         next.orientation = 'any'
+@@ -329,13 +338,28 @@ export default function App(): JSX.Element {
+         next.plate = null
+         next.word = null
+         next.tags = []
+-      } else if (patch.downloaded === 'only' && prev.downloaded === 'never') {
+-        // 从「待下载」切到「已下载」：其它条件保持原样
++      } else {
++        const turnedOnOther =
++          patch.favorite === true ||
++          (patch.orientation !== undefined && patch.orientation !== 'any') ||
++          (patch.minWidth !== undefined && patch.minWidth > 0) ||
++          (patch.tags !== undefined && patch.tags.length > 0) ||
++          (patch.plate !== undefined && patch.plate !== null)
++        if (turnedOnOther && prev.downloaded === 'never') next.downloaded = 'any'
+       }
+       return next
+     })
+   }, [])
+ 
++  /** 「全部」的判定要把构图与尺寸条件也算进去，否则选了横图还显示「全部」高亮 */
++  const isAllScope =
++    filters.downloaded === 'any' &&
++    !filters.favorite &&
++    !filters.plate &&
++    filters.tags.length === 0 &&
++    filters.orientation === 'any' &&
++    filters.minWidth === 0
++
+   const quickFavorite = useCallback(async (item: ItemSummary) => {
+     const value = await api.library.favorite(item.id, !item.favorite)
+     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, favorite: value } : i)))
+@@ -349,7 +373,7 @@ export default function App(): JSX.Element {
+   }, [])
+ 
+   const onSettingsChange = useCallback(
+-    async (patch: Partial<AppSettings>) => {
++    async (patch: Partial<AppSettings>, opts?: { silent?: boolean }) => {
+       const next = await api.settings.set(patch)
+       setSettings(next)
+       if (patch.theme) applyTheme(next.theme)
+@@ -361,7 +385,7 @@ export default function App(): JSX.Element {
+         await refreshMeta()
+         await loadPage('reset')
+       }
+-      showToast('设置已保存', 1600, 'success')
++      if (!opts?.silent) showToast('设置已保存', 1600, 'success')
+     },
+     [refreshMeta, loadPage]
+   )
+@@ -392,7 +416,7 @@ export default function App(): JSX.Element {
+       document.removeEventListener('mousemove', onMove)
+       document.removeEventListener('mouseup', onUp)
+       document.body.classList.remove('resizing')
+-      void onSettingsChange({ sidebarWidth: latest })
++      void onSettingsChange({ sidebarWidth: latest }, { silent: true })
+     }
+     document.addEventListener('mousemove', onMove)
+     document.addEventListener('mouseup', onUp)
+@@ -468,7 +492,11 @@ export default function App(): JSX.Element {
+   return (
+     <div
+       className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
+-      style={{ ['--sidebar-w' as string]: sidebarWidth + 'px' }}
++      style={{
++        // 收起时交给 .sidebar-collapsed 的 64px。
++        // 之前无条件写内联值，内联优先级更高，侧栏就永远收不起来了。
++        ['--sidebar-w' as string]: (settings.sidebarCollapsed ? 64 : sidebarWidth) + 'px'
++      }}
+     >
+       <div className="brand" data-component="App/Brand">
+         {/* 品牌区同时是侧栏开关：鼠标移上去图标渐变为「展开/收起侧栏」 */}
+@@ -476,7 +504,7 @@ export default function App(): JSX.Element {
+           className="brand-mark"
+           onClick={() => {
+             triggerReflow()
+-            void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed })
++            void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed }, { silent: true })
+           }}
+           title={settings.sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
+         >
+@@ -515,7 +543,7 @@ export default function App(): JSX.Element {
+           />
+           {filters.text && (
+             <button className="search-clear" onClick={() => patchFilters({ text: '' })}>
+-              <IconClose width={12} height={12} />
++              <IconClose width={14} height={14} />
+             </button>
+           )}
+         </div>
+@@ -614,9 +642,17 @@ export default function App(): JSX.Element {
+               </div>
+ 
+               <button
+-                className={`pill${filters.downloaded === 'any' && !filters.favorite && !filters.plate && filters.tags.length === 0 ? ' active' : ''}`}
++                className={`pill${isAllScope ? ' active' : ''}`}
+                 onClick={() =>
+-                  patchFilters({ downloaded: 'any', favorite: false, plate: null, word: null, tags: [] })
++                  patchFilters({
++                    downloaded: 'any',
++                    favorite: false,
++                    plate: null,
++                    word: null,
++                    tags: [],
++                    orientation: 'any',
++                    minWidth: 0
++                  })
+                 }
+               >
+                 全部
+@@ -761,6 +797,7 @@ export default function App(): JSX.Element {
+         <Lightbox
+           id={openId}
+           items={items}
++          progress={progress}
+           onClose={() => setOpenId(null)}
+           onSelect={setOpenId}
+           onToggleTag={(tag) => {
+@@ -788,6 +825,17 @@ export default function App(): JSX.Element {
+         ) : null
+       )}
+ 
++      {view === 'gallery' && (
++        <button
++          className={'to-top' + (showToTop ? ' show' : '')}
++          onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
++          title="回到顶部"
++          aria-label="回到顶部"
++        >
++          <IconArrowUp width={17} height={17} />
++        </button>
++      )}
++
+       {contextMenu && (
+         <ContextMenu
+           x={contextMenu.x}
+@@ -808,8 +856,6 @@ export default function App(): JSX.Element {
+               <dd>收藏 / 复制 pid / 打开于（文件管理器、Pixiv）</dd>
+               <dt>灯箱</dt>
+               <dd>← → 翻页，Esc 关闭，滚轮缩放，左键拖动</dd>
+-              <dt>标注重叠</dt>
+-              <dd>左侧资料库与分类树可点击筛选</dd>
+             </dl>
+             <div className="sep" />
+             <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
+@@ -817,12 +863,10 @@ export default function App(): JSX.Element {
+               <dd className="mono">{info?.version ?? '—'}</dd>
+               <dt>图库目录</dt>
+               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
+-              <dt>已装载工具</dt>
+-              <dd>{loadedPlugins.length > 0 ? loadedPlugins.map((p) => p.manifest.name).join('、') : '无'}</dd>
+             </dl>
+             <div className="modal-actions">
+               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
+-                数据来源
++                访问网站
+               </button>
+               <button className="btn primary" onClick={() => setHelpOpen(false)}>
+                 知道了
+diff --git a/src/renderer/src/components/ContextMenu.tsx b/src/renderer/src/components/ContextMenu.tsx
+index 47f0554..9b51f7c 100644
+--- a/src/renderer/src/components/ContextMenu.tsx
++++ b/src/renderer/src/components/ContextMenu.tsx
+@@ -69,21 +69,30 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
+           <button
+             className={'ctx-item' + (entry.danger ? ' danger' : '') + (openKey === entry.key ? ' open' : '')}
+             disabled={entry.disabled}
++            onMouseEnter={() => setOpenKey((k) => (entry.children?.length ? entry.key : k))}
++            onMouseLeave={() => setOpenKey((k) => (k === entry.key && entry.children?.length ? null : k))}
+             onClick={() => {
+-              if (entry.children?.length) {
+-                setOpenKey((k) => (k === entry.key ? null : entry.key))
+-                return
+-              }
++              if (entry.children?.length) return
+               entry.onSelect?.()
+               onClose()
+             }}
+           >
+             {entry.icon}
+             <span>{entry.label}</span>
+-            {entry.children?.length ? <span className="ctx-caret">{openKey === entry.key ? '▾' : '▸'}</span> : null}
++            {entry.children?.length ? (
++              <span className="ctx-caret" aria-hidden>
++                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
++                  <path d="M9 5l7 7-7 7" />
++                </svg>
++              </span>
++            ) : null}
+           </button>
+           {entry.children?.length && openKey === entry.key ? (
+-            <div className="ctx-sub">
++            <div
++              className="ctx-sub"
++              onMouseEnter={() => setOpenKey(entry.key)}
++              onMouseLeave={() => setOpenKey((k) => (k === entry.key ? null : k))}
++            >
+               {entry.children.map((child) => (
+                 <button
+                   key={child.key}
+diff --git a/src/renderer/src/components/CrawlPanel.tsx b/src/renderer/src/components/CrawlPanel.tsx
+index f319177..b77c186 100644
+--- a/src/renderer/src/components/CrawlPanel.tsx
++++ b/src/renderer/src/components/CrawlPanel.tsx
+@@ -242,7 +242,7 @@ export default function CrawlPanel({
+               value={maxItems}
+               onChange={(e) => setMaxItems(e.target.value)}
+             />
+-            <span className="help">先跑 200 张试试水</span>
++            <span className="help">你要一次全榨干吗…</span>
+           </div>
+           <div className="field">
+             <label>只保留含这些标签</label>
+diff --git a/src/renderer/src/components/GalleryGrid.tsx b/src/renderer/src/components/GalleryGrid.tsx
+index 9e8f652..4cf4209 100644
+--- a/src/renderer/src/components/GalleryGrid.tsx
++++ b/src/renderer/src/components/GalleryGrid.tsx
+@@ -1,6 +1,6 @@
+ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import type { ItemSummary } from '@shared/types'
+-import { formatBytes, formatDate } from '../api'
++import { formatDate } from '../api'
+ import { IconHeart, IconImage } from './Icons'
+ 
+ /** 行高粒度：网格用 4px 的隐式行做像素级定位，卡片之间靠 GAP 撑开 */
+@@ -9,9 +9,12 @@ const ROW = 4
+ const GAP = 14
+ /** 卡片正文固定高度，瀑布流计算依赖它是个常数 */
+ const BODY_H = 50
+-/** 单栏最小宽度（标准 / 紧凑） */
+-const MIN_CARD_NORMAL = 198
+-const MIN_CARD_DENSE = 152
++/**
++ * 单栏最小宽度。这两个数是「反推」出来的：
++ * 常见的 1080~1300px 内容区里，250 刚好排出 4 栏，166 排出 6 栏。
++ */
++const MIN_CARD_NORMAL = 250
++const MIN_CARD_DENSE = 160
+ /** 宽高比超过这个值就占两栏 */
+ const SPAN2_RATIO = 1.5
+ 
+@@ -52,7 +55,14 @@ export default function GalleryGrid({
+ 
+   useLayoutEffect(() => {
+     if (!gridEl) return
+-    const update = (): void => setWidth(gridEl.clientWidth)
++    // 必须减掉左右内边距：clientWidth 含 padding，拿它当可用宽度的话，
++    // 算出来的列宽总和会比内容盒宽出 2×padding，页面就出现横向滚动条了
++    const update = (): void => {
++      const style = getComputedStyle(gridEl)
++      const usable =
++        gridEl.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0')
++      setWidth(Math.max(0, Math.floor(usable)))
++    }
+     update()
+     const observer = new ResizeObserver(update)
+     observer.observe(gridEl)
+@@ -260,8 +270,6 @@ function Card({
+           <div className="dim">
+             {item.width && item.height ? item.width + '×' + item.height : '尺寸未知'}
+             <span>·</span>
+-            {formatBytes(item.fileBytes ?? item.bytes)}
+-            <span>·</span>
+             {formatDate(item.publishedAt)}
+           </div>
+         </div>
+diff --git a/src/renderer/src/components/Icons.tsx b/src/renderer/src/components/Icons.tsx
+index b3322c6..5c04e44 100644
+--- a/src/renderer/src/components/Icons.tsx
++++ b/src/renderer/src/components/Icons.tsx
+@@ -89,6 +89,13 @@ export const IconClose = (p: P) => (
+   </svg>
+ )
+ 
++export const IconArrowUp = (p: P) => (
++  <svg {...base(p)}>
++    <path d="M12 19V5" />
++    <path d="m6 11 6-6 6 6" />
++  </svg>
++)
++
+ export const IconChevronLeft = (p: P) => (
+   <svg {...base(p)}>
+     <path d="m15 5-7 7 7 7" />
+diff --git a/src/renderer/src/components/Lightbox.tsx b/src/renderer/src/components/Lightbox.tsx
+index 3d67e65..e9500e7 100644
+--- a/src/renderer/src/components/Lightbox.tsx
++++ b/src/renderer/src/components/Lightbox.tsx
+@@ -8,7 +8,7 @@ import {
+   IconDownload,
+   IconExternal,
+   IconFolder,
+-  IconStar,
++  IconHeart,
+   IconTrash,
+   IconZoomIn,
+   IconZoomOut
+@@ -17,9 +17,14 @@ import {
+ const MIN_ZOOM = 0.25
+ const MAX_ZOOM = 6
+ 
++/** 沉浸模式跨次打开保持：放模块级，灯箱卸载也不会丢 */
++let immersivePreference = false
++
+ interface Props {
+   id: number
+   items: ItemSummary[]
++  /** 抓取进度：下载此图时用来同步进度条 */
++  progress: { phase: string; downloaded: number; downloadTotal: number | null; bytesDownloaded: number } | null
+   onClose: () => void
+   onSelect: (id: number) => void
+   onToggleTag: (tag: string) => void
+@@ -30,6 +35,7 @@ interface Props {
+ export default function Lightbox({
+   id,
+   items,
++  progress,
+   onClose,
+   onSelect,
+   onToggleTag,
+@@ -39,6 +45,9 @@ export default function Lightbox({
+   const [detail, setDetail] = useState<ItemDetail | null>(null)
+   const [zoom, setZoom] = useState(1)
+   const [offset, setOffset] = useState({ x: 0, y: 0 })
++  const [immersive, setImmersive] = useState(immersivePreference)
++  const [delState, setDelState] = useState<'idle' | 'confirm' | 'done'>('idle')
++  const [downloading, setDownloading] = useState(false)
+   const [dragState, setDragState] = useState<{ active: boolean }>({ active: false })
+   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
+   const stageRef = useRef<HTMLDivElement | null>(null)
+@@ -52,6 +61,9 @@ export default function Lightbox({
+     setDetail(null)
+     setZoom(1)
+     setOffset({ x: 0, y: 0 })
++    // 换一张图就把删除确认与下载态复位
++    setDelState('idle')
++    setDownloading(false)
+     void api.library.item(id).then((d) => {
+       if (alive) setDetail(d)
+     })
+@@ -60,6 +72,27 @@ export default function Lightbox({
+     }
+   }, [id])
+ 
++  useEffect(() => {
++    immersivePreference = immersive
++  }, [immersive])
++
++  // 下载启动后轮询直到文件就绪，解决「下载完预览界面不刷新」
++  useEffect(() => {
++    if (!downloading) return
++    let alive = true
++    const timer = setInterval(() => {
++      void api.library.item(id).then((d) => {
++        if (!alive || !d) return
++        setDetail((prevDetail) => (prevDetail ? { ...prevDetail, ...d } : d))
++        if (d.fileStatus === 'ready') setDownloading(false)
++      })
++    }, 900)
++    return () => {
++      alive = false
++      clearInterval(timer)
++    }
++  }, [downloading, id])
++
+   const step = useCallback(
+     (delta: number) => {
+       const target = delta < 0 ? prev : next
+@@ -173,8 +206,9 @@ export default function Lightbox({
+   })()
+ 
+   return (
+-    <div className="lightbox" data-component="Lightbox">
++    <div className={'lightbox' + (immersive ? ' immersive' : '')} data-component="Lightbox">
+       <div
++        ref={stageRef}
+         data-component="Lightbox/Stage"
+         className={'lightbox-stage' + (dragState.active ? ' dragging' : '')}
+         onMouseDown={(e) => {
+@@ -212,6 +246,17 @@ export default function Lightbox({
+       <div className="lightbox-side" data-component="Lightbox/SidePanel">
+         <div className="lb-head">
+           <h3>{detail?.title || summary?.title || `#${id}`}</h3>
++          <button
++            className={'lb-immersive' + (immersive ? ' on' : '')}
++            onClick={() => setImmersive((v) => !v)}
++            title={immersive ? '退出沉浸模式' : '沉浸模式：隐藏右侧信息栏'}
++            aria-pressed={immersive}
++          >
++            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
++              <rect x="3" y="4" width="18" height="16" rx="2" />
++              <path d="M15 4v16" />
++            </svg>
++          </button>
+           <button className="lb-close" onClick={onClose} title="关闭 (Esc)">
+             <IconClose width={14} height={14} />
+           </button>
+@@ -266,9 +311,10 @@ export default function Lightbox({
+ 
+         <div className="lb-actions" data-component="Lightbox/Actions">
+           <button className="btn sm" onClick={() => void toggleFavorite()}>
+-            <IconStar
++            <IconHeart
+               width={13}
+               height={13}
++              filled={detail?.favorite}
+               style={{ color: detail?.favorite ? 'var(--danger)' : undefined }}
+             />
+             {detail?.favorite ? '已收藏' : '收藏'}
+@@ -284,36 +330,49 @@ export default function Lightbox({
+             <IconFolder width={13} height={13} />
+             打开位置
+           </button>
+-          <button
+-            className="btn sm"
+-            disabled={detail?.fileStatus === 'ready'}
+-            onClick={async () => {
+-              try {
+-                await api.crawl.downloadItems([id])
+-                onToast('已加入下载队列')
+-              } catch (err) {
+-                onToast(err instanceof Error ? err.message : '启动下载失败')
+-              }
+-            }}
+-          >
+-            <IconDownload width={13} height={13} />
+-            下载此图
+-          </button>
++          {detail && detail.fileStatus !== 'ready' && (
++            <button
++              className={'btn sm dl-btn' + (downloading ? ' busy' : '')}
++              disabled={downloading}
++              onClick={async () => {
++                try {
++                  await api.crawl.downloadItems([id])
++                  setDownloading(true)
++                  onToast('已加入下载队列')
++                } catch (err) {
++                  onToast(err instanceof Error ? err.message : '启动下载失败')
++                }
++              }}
++            >
++              {downloading ? <span className="spinner" aria-hidden /> : <IconDownload width={13} height={13} />}
++              {downloading ? '下载中' : '下载此图'}
++            </button>
++          )}
+           <button className="btn sm" onClick={() => void api.openExternal(detail?.detailUrl ?? '')}>
+             <IconExternal width={13} height={13} />
+-            原始页面
++            ���问网站
+           </button>
+           <button
+-            className="btn sm danger"
++            className={'btn sm danger del-2step' + (delState !== 'idle' ? ' step-' + delState : '')}
++            disabled={delState === 'done' || detail?.fileStatus !== 'ready'}
+             onClick={async () => {
+-              await api.library.remove([id], true)
+-              onChanged(id, { fileStatus: 'none', thumbUrl: null, imageUrl: null })
+-              setDetail((d) => (d ? { ...d, fileStatus: 'none', imageUrl: null, thumbUrl: null, relPath: null } : d))
+-              onToast('已删除本地文件与索引')
++              if (delState === 'idle') {
++                setDelState('confirm')
++                return
++              }
++              if (delState === 'confirm') {
++                setDelState('done')
++                await api.library.remove([id], true)
++                onChanged(id, { fileStatus: 'none', thumbUrl: null, imageUrl: null })
++                setDetail((d) =>
++                  d ? { ...d, fileStatus: 'none', imageUrl: null, thumbUrl: null, relPath: null } : d
++                )
++              }
+             }}
++            title={delState === 'idle' ? '删除本地文件' : undefined}
+           >
+             <IconTrash width={13} height={13} />
+-            删除
++            {delState === 'idle' ? '删除' : delState === 'confirm' ? '你确定吗？' : '已删除'}
+           </button>
+         </div>
+ 
+@@ -395,6 +454,30 @@ export default function Lightbox({
+           </>
+         )}
+       </div>
++
++      {/* 下载进度：数据直接来自抓取引擎，与抓取页的进度是同一个来源 */}
++      {downloading && (
++        <div className="lb-progress" data-component="Lightbox/Progress" role="status">
++          <span className="k">下载中</span>
++          <div className={'bar' + (progress?.downloadTotal == null ? ' indeterminate' : '')}>
++            <i
++              style={{
++                width:
++                  progress?.downloadTotal && progress.downloadTotal > 0
++                    ? Math.min(100, (progress.downloaded / progress.downloadTotal) * 100) + '%'
++                    : '34%'
++              }}
++            />
++          </div>
++          <span className="n">
++            {progress?.downloadTotal
++              ? progress.downloaded + ' / ' + progress.downloadTotal
++              : progress?.phase === 'downloading'
++                ? '准备中'
++                : '排队中'}
++          </span>
++        </div>
++      )}
+     </div>
+   )
+ }
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index 3ada947..f6b7854 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -197,6 +197,7 @@ body.resizing * {
+   inset: 0;
+   display: grid;
+   place-items: center;
++  line-height: 0;
+   transition: opacity 0.16s var(--ease), transform 0.16s var(--ease);
+ }
+ .brand-logo img {
+@@ -452,7 +453,7 @@ body.resizing * {
+ }
+ .search-clear {
+   position: absolute;
+-  right: 6px;
++  right: 10px;
+   top: 50%;
+   transform: translateY(-50%);
+   width: 22px;
+@@ -646,6 +647,8 @@ body.resizing * {
+ .main {
+   grid-area: main;
+   overflow-y: auto;
++  /* 明确禁掉横向滚动：只允许上下滚动 */
++  overflow-x: hidden;
+   position: relative;
+ }
+ 
+@@ -1326,9 +1329,138 @@ body.resizing * {
+ 
+ /* --------------------------------------------------------------- 灯箱 */
+ 
++/* 沉浸模式：右栏滑走，图片区自然铺满 */
++.lightbox {
++  transition: grid-template-columns 0.4s var(--ease);
++}
++.lightbox.immersive {
++  grid-template-columns: minmax(0, 1fr) 0px;
++}
++.lightbox.immersive .lightbox-side {
++  transform: translateX(100%);
++  opacity: 0;
++  pointer-events: none;
++}
++
++.lb-immersive {
++  flex: none;
++  width: 30px;
++  height: 30px;
++  display: grid;
++  place-items: center;
++  border: 1px solid var(--border);
++  border-radius: 8px;
++  background: var(--surface);
++  color: var(--text-dim);
++  cursor: pointer;
++  transition: all 0.16s var(--ease);
++}
++.lb-immersive:hover {
++  color: var(--text);
++  border-color: var(--border-strong);
++}
++.lb-immersive.on {
++  background: var(--accent-soft);
++  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
++  color: var(--accent);
++}
++
++/* 下载中的转圈 */
++.spinner {
++  width: 13px;
++  height: 13px;
++  border-radius: 50%;
++  border: 1.6px solid currentColor;
++  border-top-color: transparent;
++  animation: spin 0.7s linear infinite;
++  display: inline-block;
++}
++@keyframes spin {
++  to {
++    transform: rotate(360deg);
++  }
++}
++
++/* 两步删除：两次变化各 0.2s */
++.del-2step {
++  transition: all 0.2s var(--ease);
++}
++.del-2step.step-confirm {
++  background: color-mix(in srgb, var(--danger) 26%, transparent);
++  border-color: var(--danger);
++  color: #fff;
++}
++.del-2step.step-done {
++  opacity: 0.5;
++}
++
++/* 灯箱左下角的下载进度 */
++.lb-progress {
++  position: fixed;
++  left: 18px;
++  bottom: 18px;
++  z-index: 60;
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  min-width: 260px;
++  padding: 9px 13px;
++  border-radius: 11px;
++  background: color-mix(in srgb, var(--surface-2) 94%, transparent);
++  border: 1px solid var(--border-strong);
++  box-shadow: var(--shadow-lg);
++  backdrop-filter: blur(12px);
++  animation: fade 0.16s var(--ease);
++}
++.lb-progress .k {
++  color: var(--text-dim);
++  white-space: nowrap;
++}
++.lb-progress .bar {
++  flex: 1;
++}
++.lb-progress .n {
++  color: var(--text-faint);
++  font-variant-numeric: tabular-nums;
++  white-space: nowrap;
++}
++
++/* 回到顶部：只在向上滚动时出现 */
++.to-top {
++  position: fixed;
++  right: 22px;
++  bottom: 74px;
++  z-index: 40;
++  width: 42px;
++  height: 42px;
++  display: grid;
++  place-items: center;
++  border-radius: 50%;
++  border: 1px solid var(--border-strong);
++  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
++  color: var(--text-dim);
++  cursor: pointer;
++  backdrop-filter: blur(12px);
++  box-shadow: var(--shadow);
++  opacity: 0;
++  transform: translateY(8px);
++  pointer-events: none;
++  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), color 0.14s var(--ease);
++}
++.to-top.show {
++  opacity: 1;
++  transform: translateY(0);
++  pointer-events: auto;
++}
++.to-top:hover {
++  color: var(--text);
++  border-color: var(--accent);
++}
++
+ .lightbox {
+   position: fixed;
+   inset: 0;
++  overflow: hidden;
+   z-index: 50;
+   background: rgba(5, 7, 11, 0.9);
+   backdrop-filter: blur(16px);
+@@ -1349,24 +1481,37 @@ body.resizing * {
+ }
+ 
+ .lightbox-stage {
++  --lb-pad: 24px;
+   position: relative;
+   display: grid;
+   place-items: center;
+   min-width: 0;
+   min-height: 0;
+   overflow: hidden;
+-  padding: 24px;
++  padding: var(--lb-pad);
+   cursor: grab;
+ }
+ .lightbox-stage.dragging {
+   cursor: grabbing;
+ }
++/*
++ * 图片用绝对定位 + margin:auto 来「按比例塞满可视区」。
++ *
++ * 为什么不用 max-height:100%：作为居中的网格项，百分比最大高度在这套结构里
++ * 根本解析不了（实测六种写法只有绝对定位那两种有效），竖图会一路撑到 1713px 溢出屏幕。
++ * 绝对定位的包含块是舞台的内边距盒，尺寸确定，百分比才靠得住。
++ * 再减去两倍内边距，保证四周留白。
++ */
+ .lightbox-stage img {
+-  max-width: 100%;
+-  max-height: 100%;
++  position: absolute;
++  inset: 0;
++  margin: auto;
+   width: auto;
+   height: auto;
++  max-width: calc(100% - var(--lb-pad) * 2);
++  max-height: calc(100% - var(--lb-pad) * 2);
+   object-fit: contain;
++  object-position: center;
+   border-radius: 6px;
+   box-shadow: var(--shadow-lg);
+   user-select: none;
+@@ -1794,8 +1939,9 @@ body.resizing * {
+ }
+ .ctx-caret {
+   margin-left: auto;
++  display: inline-grid;
++  place-items: center;
+   color: var(--text-faint);
+-  font-size: 10px;
+ }
+ .ctx-sub {
+   padding-left: 14px;
