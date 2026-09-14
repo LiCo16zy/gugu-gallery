@@ -1,0 +1,414 @@
+# 轮次 0008-20260914-2255 代码差异
+# 基线提交 82f697f -> 78b3bd3
+
+diff --git a/devlog/rounds/0008-20260914-2255/README.md b/devlog/rounds/0008-20260914-2255/README.md
+new file mode 100644
+index 0000000..ae00f67
+--- /dev/null
++++ b/devlog/rounds/0008-20260914-2255/README.md
+@@ -0,0 +1,27 @@
++# 轮次 0008-20260914-2255
++
++> 由页面标注工具自动生成，请在完成本轮改动后补全下面的小节。
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++细节动画调整，顶部边框在灯箱时不可拖动
++
++## 反馈标注
++
++共 2 条，详见 [`annotations.md`](annotations.md) 与 [`annotations.json`](annotations.json)。
++
++导出时视口 1348×716，界面 gallery，应用版本 0.5.0。
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
+diff --git a/devlog/rounds/0008-20260914-2255/annotations.json b/devlog/rounds/0008-20260914-2255/annotations.json
+new file mode 100644
+index 0000000..9edde6c
+--- /dev/null
++++ b/devlog/rounds/0008-20260914-2255/annotations.json
+@@ -0,0 +1,144 @@
++{
++  "roundId": "0008-20260914-2255",
++  "exportedAt": "2026-09-14T14:55:16.918Z",
++  "view": "gallery",
++  "note": "细节动画调整，顶部边框在灯箱时不可拖动",
++  "viewport": {
++    "width": 1348,
++    "height": 716
++  },
++  "devicePixelRatio": 1.4249999523162842,
++  "appVersion": "0.5.0",
++  "annotations": [
++    {
++      "id": "eqsz8q0d",
++      "index": 1,
++      "comment": "问题没有解决，这里的隐藏式边框依旧在灯箱模式下应用窗口可以被拖动，点击按钮位置倒是没有触发拖动，我希望在灯箱模式下不会触发拖动戳你港口",
++      "category": "style",
++      "severity": "should",
++      "kind": "region",
++      "createdAt": 1789397522365,
++      "rect": {
++        "x": 184,
++        "y": 0,
++        "width": 1162,
++        "height": 60
++      },
++      "pageRect": {
++        "x": 184,
++        "y": 0,
++        "width": 1162,
++        "height": 60
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "区域中心命中 → html > body > div > div.app > header.topbar",
++        "component": "App/TopBar",
++        "tag": "header",
++        "classes": "topbar",
++        "text": "[区域中心元素] ",
++        "parentChain": [
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "10px",
++          "grid-template-columns": "none",
++          "width": "1168.07px",
++          "height": "57.9934px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 10px 0px 14px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "color(srgb 0.0588235 0.0745098 0.105882 / 0.82)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "sdtog8kk",
++      "index": 2,
++      "comment": "左侧栏展开和折叠不应该触发重排动画，回退对重排动画的速度修改，现在重排动画太慢了，其他地方的重排动画速度倒是很合适。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789397544754,
++      "rect": {
++        "x": 180,
++        "y": 106.6885986328125,
++        "width": 1158.24560546875,
++        "height": 3991.392578125
++      },
++      "pageRect": {
++        "x": 180,
++        "y": 106.6885986328125,
++        "width": 1158.24560546875,
++        "height": 3991.392578125
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app > main.main > div.grid:nth-of-type(2)",
++        "component": "GalleryGrid",
++        "tag": "div",
++        "classes": "grid",
++        "text": "2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（明日方舟）pid 118816127 · 13 浏览3584×6368·2026-09-14白发 · 女仆pid 119512232 · 17 浏览2160×3456·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 14 浏览1600×2000·2026-09-14女孩子 · 插画pid 118770165 · 17 浏览4144×9000·2026-09-13碧蓝档案pid 114882512 · 13 浏览1856×1280·2026-09-13脚底 · 白裤袜pid 117507782 · 18 浏览1158×1637·20",
++        "parentChain": [
++          "main.main",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "start",
++          "gap": "0px 14px",
++          "grid-template-columns": "175.329px 175.329px 175.329px 175.329px 175.329px 175.329px",
++          "width": "1158.25px",
++          "height": "3991.39px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "16px 18px 60px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/devlog/rounds/0008-20260914-2255/annotations.md b/devlog/rounds/0008-20260914-2255/annotations.md
+new file mode 100644
+index 0000000..8154f12
+--- /dev/null
++++ b/devlog/rounds/0008-20260914-2255/annotations.md
+@@ -0,0 +1,37 @@
++# 界面标注 · 轮次 0008-20260914-2255
++
++- 导出时间：2026-09-14T14:55:16.918Z
++- 所在界面：gallery
++- 视口：1348×716（DPR 1.4249999523162842）
++- 应用版本：0.5.0
++- 标注条数：2
++
++## 总体说明
++
++细节动画调整，顶部边框在灯箱时不可拖动
++
++## 逐条标注
++
++### 1. 问题没有解决，这里的隐藏式边框依旧在灯箱模式下应用窗口可以被拖动，点击按钮位置倒是没有触发拖动，我希望在灯箱模式下不会触
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：框选区域
++- **组件**：`App/TopBar`
++- **选择器**：`区域中心命中 → html > body > div > div.app > header.topbar`
++- **父级链**：`div.app` ← `div` ← `body`
++- **元素文本**：[区域中心元素] 
++- **位置尺寸**：x=184 y=0 1162×60
++- **关键样式**：display: flex; flex-direction: row; justify-content: normal; align-items: center; gap: 10px; grid-template-columns: none; width: 1168.07px; height: 57.9934px; min-width: auto; max-width: none; padding: 0px 10px 0px 14px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: color(srgb 0.0588235 0.0745098 0.105882 / 0.82); border-radius: 0px; white-space: normal; transition: all
++
++> 问题没有解决，这里的隐藏式边框依旧在灯箱模式下应用窗口可以被拖动，点击按钮位置倒是没有触发拖动，我希望在灯箱模式下不会触发拖动戳你港口
++
++### 2. 左侧栏展开和折叠不应该触发重排动画，回退对重排动画的速度修改，现在重排动画太慢了，其他地方的重排动画速度倒是很合适。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid`
++- **选择器**：`body > div > div.app > main.main > div.grid:nth-of-type(2)`
++- **父级链**：`main.main` ← `div.app` ← `div` ← `body`
++- **元素文本**：2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（…
++- **位置尺寸**：x=180 y=107 1158×3991
++- **关键样式**：display: grid; flex-direction: row; justify-content: normal; align-items: start; gap: 0px 14px; grid-template-columns: 175.329px 175.329px 175.329px 175.329px 175.329px 175.329px; width: 1158.25px; height: 3991.39px; min-width: 0px; max-width: none; padding: 16px 18px 60px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 左侧栏展开和折叠不应该触发重排动画，回退对重排动画的速度修改，现在重排动画太慢了，其他地方的重排动画速度倒是很合适。
+diff --git a/devlog/rounds/0008-20260914-2255/screenshots/00-full.png b/devlog/rounds/0008-20260914-2255/screenshots/00-full.png
+new file mode 100644
+index 0000000..ad26531
+Binary files /dev/null and b/devlog/rounds/0008-20260914-2255/screenshots/00-full.png differ
+diff --git "a/devlog/rounds/0008-20260914-2255/screenshots/001-\351\227\256\351\242\230\346\262\241\346\234\211\350\247\243\345\206\263\350\277\231\351\207\214\347\232\204\351\232\220\350\227\217\345\274\217\350\276\271\346\241\206\344\276\235\346\227\247\345\234\250\347\201\257\347\256\261\346\250\241\345\274\217\344\270\213\345\272\224\347\224\250\347\252\227\345\217\243\345\217\257\344\273\245.png" "b/devlog/rounds/0008-20260914-2255/screenshots/001-\351\227\256\351\242\230\346\262\241\346\234\211\350\247\243\345\206\263\350\277\231\351\207\214\347\232\204\351\232\220\350\227\217\345\274\217\350\276\271\346\241\206\344\276\235\346\227\247\345\234\250\347\201\257\347\256\261\346\250\241\345\274\217\344\270\213\345\272\224\347\224\250\347\252\227\345\217\243\345\217\257\344\273\245.png"
+new file mode 100644
+index 0000000..00d3cbc
+Binary files /dev/null and "b/devlog/rounds/0008-20260914-2255/screenshots/001-\351\227\256\351\242\230\346\262\241\346\234\211\350\247\243\345\206\263\350\277\231\351\207\214\347\232\204\351\232\220\350\227\217\345\274\217\350\276\271\346\241\206\344\276\235\346\227\247\345\234\250\347\201\257\347\256\261\346\250\241\345\274\217\344\270\213\345\272\224\347\224\250\347\252\227\345\217\243\345\217\257\344\273\245.png" differ
+diff --git "a/devlog/rounds/0008-20260914-2255/screenshots/002-\345\267\246\344\276\247\346\240\217\345\261\225\345\274\200\345\222\214\346\212\230\345\217\240\344\270\215\345\272\224\350\257\245\350\247\246\345\217\221\351\207\215\346\216\222\345\212\250\347\224\273\345\233\236\351\200\200\345\257\271\351\207\215\346\216\222\345\212\250\347\224\273\347\232\204\351\200\237\345\272\246\344\277\256.png" "b/devlog/rounds/0008-20260914-2255/screenshots/002-\345\267\246\344\276\247\346\240\217\345\261\225\345\274\200\345\222\214\346\212\230\345\217\240\344\270\215\345\272\224\350\257\245\350\247\246\345\217\221\351\207\215\346\216\222\345\212\250\347\224\273\345\233\236\351\200\200\345\257\271\351\207\215\346\216\222\345\212\250\347\224\273\347\232\204\351\200\237\345\272\246\344\277\256.png"
+new file mode 100644
+index 0000000..c33d12f
+Binary files /dev/null and "b/devlog/rounds/0008-20260914-2255/screenshots/002-\345\267\246\344\276\247\346\240\217\345\261\225\345\274\200\345\222\214\346\212\230\345\217\240\344\270\215\345\272\224\350\257\245\350\247\246\345\217\221\351\207\215\346\216\222\345\212\250\347\224\273\345\233\236\351\200\200\345\257\271\351\207\215\346\216\222\345\212\250\347\224\273\347\232\204\351\200\237\345\272\246\344\277\256.png" differ
+diff --git a/package.json b/package.json
+index bdde760..f30eba0 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "gugu-gallery",
+-  "version": "0.5.0",
++  "version": "0.5.1",
+   "private": true,
+   "description": "咕咕小站图片爬虫 + 本地图库浏览器（Electron 桌面应用）",
+   "author": "gugu-gallery",
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index fbe9a41..e5a5403 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -254,8 +254,11 @@ const SCRIPT = `(async () => {
+       const cap = document.querySelector('.lb-caption')
+       out.captionShown = Boolean(cap)
+       out.captionText = cap ? (cap.textContent || '').trim() : null
+-      // 2.6s 后应当自行滑出（先 out 再 hidden）
+-      await sleep(3400)
++      // 2s 保持 + 0.6s 滑出，留足余量地轮询等待它自己消失
++      for (let i = 0; i < 20; i += 1) {
++        if (!document.querySelector('.lb-caption')) break
++        await sleep(300)
++      }
+       out.captionGoneLater = !document.querySelector('.lb-caption')
+     }
+     out.immersiveOpacityBefore = before
+@@ -282,6 +285,36 @@ const SCRIPT = `(async () => {
+     await sleep(900)
+   }
+ 
++  // 7.9) 灯箱打开时禁用窗口拖动；侧栏开合不触发重排动画
++  {
++    const card = document.querySelector('.card')
++    card?.click()
++    await sleep(1000)
++    const appEl = document.querySelector('.app')
++    out.lightboxOpenClass = appEl?.classList.contains('lightbox-open') === true
++    const topbarEl = document.querySelector('.topbar')
++    out.topbarRegionInLightbox = topbarEl ? getComputedStyle(topbarEl).webkitAppRegion : null
++    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
++    await sleep(700)
++    out.topbarRegionNormal = getComputedStyle(document.querySelector('.topbar')).webkitAppRegion
++
++    // 侧栏开合：不应出现 reflowing
++    document.querySelector('.brand-mark')?.click()
++    await sleep(70)
++    out.reflowOnSidebar = document.querySelector('.main')?.classList.contains('reflowing') === true
++    await sleep(500)
++    document.querySelector('.brand-mark')?.click()
++    await sleep(500)
++
++    // 视图密度切换：应当出现 reflowing
++    document.querySelector('.view-toggle')?.click()
++    await sleep(70)
++    out.reflowOnDensity = document.querySelector('.main')?.classList.contains('reflowing') === true
++    await sleep(400)
++    document.querySelector('.view-toggle')?.click()
++    await sleep(400)
++  }
++
+   // 8) 视图密度：合并成了一个按钮
+   const denseBtn = document.querySelector('.view-toggle')
+   out.viewToggleCount = qa('.view-toggle').length
+@@ -377,6 +410,11 @@ const checks = [
+   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
+   ['切换排序生效', result.sortValue === 'views'],
+   ['内容页无横向溢出', result.mainOverflowX === 0],
++  ['灯箱打开时根节点有 lightbox-open', result.lightboxOpenClass === true],
++  ['灯箱打开时顶栏不可拖动窗口', result.topbarRegionInLightbox === 'no-drag'],
++  ['关闭灯箱后顶栏恢复可拖动', result.topbarRegionNormal === 'drag'],
++  ['侧栏开合不触发重排动画', result.reflowOnSidebar === false],
++  ['视图密度切换才触发重排动画', result.reflowOnDensity === true],
+   ['灯箱有沉浸模式开关', result.immersiveToggle === true],
+   ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
+   ['沉浸模式下仍可退出（舞台内有出口）', result.immersiveExitHittable === true],
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index 17d0cd1..1e4a965 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -399,7 +399,7 @@ export default function App(): JSX.Element {
+     requestAnimationFrame(() => {
+       setReflowing(true)
+       if (reflowTimer.current) clearTimeout(reflowTimer.current)
+-      reflowTimer.current = setTimeout(() => setReflowing(false), 1250)
++      reflowTimer.current = setTimeout(() => setReflowing(false), 180)
+     })
+   }, [])
+ 
+@@ -494,7 +494,9 @@ export default function App(): JSX.Element {
+ 
+   return (
+     <div
+-      className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
++      className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}${
++        openId != null ? ' lightbox-open' : ''
++      }`}
+       style={{
+         // 收起时交给 .sidebar-collapsed 的 64px。
+         // 之前无条件写内联值，内联优先级更高，侧栏就永远收不起来了。
+@@ -506,7 +508,8 @@ export default function App(): JSX.Element {
+         <button
+           className="brand-mark"
+           onClick={() => {
+-            triggerReflow()
++            // 刻意不触发重排变暗动画：侧栏自己有 grid-template-columns 的宽度过渡，
++            // 再叠一层压暗会显得拖沓
+             void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed }, { silent: true })
+           }}
+           title={settings.sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index 93a2b53..f9a7ce7 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -330,6 +330,16 @@ body.resizing * {
+ .topbar {
+   -webkit-app-region: drag;
+ }
++
++/*
++ * 灯箱是全屏覆盖层，顶栏虽然被盖住了，但拖动区是按元素算的 ——
++ * 不做处理的话，抓屏幕顶部依然能拖动整个窗口。
++ * 灯箱打开时把这两个区域的拖动整个关掉。
++ */
++.app.lightbox-open .brand,
++.app.lightbox-open .topbar {
++  -webkit-app-region: no-drag;
++}
+ .topbar button,
+ .topbar input,
+ .topbar .search,
+@@ -1936,23 +1946,33 @@ body.resizing * {
+  * 总时长 0.16s，其中透明度低于 30% 的区间控制在 40ms 左右（要求不超过 60ms）。
+  */
+ /*
+- * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
+- * 变暗 0.6s + 变亮 0.6s，全程线性，透明度低于 30% 的区间合计约 0.36s（要求 ≤ 0.6s）。
++ * 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
++ * 总时长 0.16s，其中透明度低于 30% 的区间约 40ms。
++ *
++ * 0.6s + 0.6s 那版太慢了（试过，手感发滞），已回退到 0.16s。
++ * 另外侧栏开合**不再**触发这个动画 —— 那条有 grid-template-columns 的
++ * 宽度过渡就够了，再叠一层压暗反而显得拖沓。
+  */
+ @keyframes contentReflow {
+   0% {
+     opacity: 1;
+   }
+-  50% {
++  12.5% {
++    opacity: 0.3;
++  }
++  25% {
+     opacity: 0;
+   }
++  37.5% {
++    opacity: 0.3;
++  }
+   100% {
+     opacity: 1;
+   }
+ }
+ 
+ .main.reflowing {
+-  animation: contentReflow 1.2s linear both;
++  animation: contentReflow 0.16s linear both;
+ }
+ 
+ /* ------------------------------------------------------------ 右键菜单 */

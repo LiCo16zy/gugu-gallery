@@ -92,6 +92,19 @@
       "summary": "标注工具栏改为可拖动并支持简易/标准两种形态；处理 4 条动效与沉浸模式标注；版本升至 0.5.0 并产出不含插件的预览发布包。",
       "hasAnnotations": true,
       "finishedAt": "2026-09-14 23:05"
+    },
+    {
+      "id": "0008-20260914-2255",
+      "slug": "revert-motion-and-drag-lock",
+      "title": "回退重排动画速度 + 灯箱下锁定窗口拖动",
+      "createdAt": "2026-09-14 22:55",
+      "baseCommit": "82f697f",
+      "endCommit": "78b3bd3",
+      "branch": "master",
+      "status": "closed",
+      "summary": "把重排变暗动画回退到 0.16s 并只在视图密度切换时触发；灯箱打开时禁用窗口拖动；版本升到 0.5.1（暂不打包）。",
+      "hasAnnotations": true,
+      "finishedAt": "2026-09-14 23:30"
     }
   ]
 }
