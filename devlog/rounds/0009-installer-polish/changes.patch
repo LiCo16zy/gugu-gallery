@@ -1,0 +1,692 @@
+# 轮次 0009-installer-polish 代码差异
+# 基线提交 2bddfc5 -> 31e1a73
+
+diff --git a/.gitignore b/.gitignore
+index cec7b0e..0125d4f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -16,3 +16,6 @@ _research/
+ !/devlog/**/screenshots/
+ *.db
+ *.db-journal
++
++# 图标生成的中间产物
++build/.make-icon.*
+diff --git a/build/icon.png b/build/icon.png
+new file mode 100644
+index 0000000..021b0bb
+Binary files /dev/null and b/build/icon.png differ
+diff --git a/package.json b/package.json
+index f30eba0..fcade50 100644
+--- a/package.json
++++ b/package.json
+@@ -51,7 +51,8 @@
+     "appId": "com.gugu.gallery",
+     "productName": "GuguGallery",
+     "directories": {
+-      "output": "release"
++      "output": "release",
++      "buildResources": "build"
+     },
+     "files": [
+       "out/**/*",
+@@ -59,8 +60,25 @@
+     ],
+     "win": {
+       "target": [
+-        "nsis"
+-      ]
++        {
++          "target": "nsis",
++          "arch": [
++            "x64"
++          ]
++        }
++      ],
++      "icon": "build/icon.png"
++    },
++    "nsis": {
++      "oneClick": false,
++      "perMachine": false,
++      "allowElevation": true,
++      "allowToChangeInstallationDirectory": true,
++      "createDesktopShortcut": true,
++      "createStartMenuShortcut": true,
++      "shortcutName": "咕咕图库",
++      "artifactName": "GuguGallery-Setup-${version}.${ext}",
++      "deleteAppDataOnUninstall": false
+     }
+   }
+ }
+diff --git a/scripts/make-icon.mjs b/scripts/make-icon.mjs
+new file mode 100644
+index 0000000..3738ce1
+--- /dev/null
++++ b/scripts/make-icon.mjs
+@@ -0,0 +1,102 @@
++/**
++ * 生成应用图标 build/icon.png（512×512）。
++ *
++ * 为什么用 Electron 来画：本机没有 sharp / ImageMagick 这类图形库，
++ * 而 Electron 自带 Chromium，直接渲染一段 SVG 再截图就是最稳的栅格化方案，
++ * 零额外依赖，矢量源也能跟着仓库一起版本化。
++ *
++ *   node scripts/make-icon.mjs
++ *
++ * 产物会被 electron-builder 自动转成 Windows 的 .ico
++ * （应用图标与安装程序图标都用它）。
++ * 想换成自己的图标：直接把 512×512 以上的 PNG 覆盖到 build/icon.png 即可。
++ */
++import { spawn } from 'node:child_process'
++import { mkdir, writeFile } from 'node:fs/promises'
++import { dirname, join, resolve } from 'node:path'
++import { fileURLToPath } from 'node:url'
++
++const here = dirname(fileURLToPath(import.meta.url))
++const root = resolve(here, '..')
++const outDir = join(root, 'build')
++
++/** 图标矢量源：渐变圆角方块 + 品牌字「咕」 */
++export const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
++  <defs>
++    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
++      <stop offset="0%" stop-color="#8aa4ff"/>
++      <stop offset="52%" stop-color="#7c9cff"/>
++      <stop offset="100%" stop-color="#b98cff"/>
++    </linearGradient>
++    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
++      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
++      <stop offset="46%" stop-color="#ffffff" stop-opacity="0.04"/>
++      <stop offset="100%" stop-color="#000000" stop-opacity="0.10"/>
++    </linearGradient>
++    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
++      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1b2440" flood-opacity="0.45"/>
++    </filter>
++  </defs>
++
++  <g filter="url(#soft)">
++    <rect x="26" y="22" width="460" height="460" rx="112" fill="url(#bg)"/>
++  </g>
++  <rect x="26" y="22" width="460" height="460" rx="112" fill="url(#gloss)"/>
++  <rect x="26" y="22" width="460" height="460" rx="112" fill="none"
++        stroke="#ffffff" stroke-opacity="0.34" stroke-width="3"/>
++
++  <text x="256" y="256" text-anchor="middle" dominant-baseline="central"
++        font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif"
++        font-size="236" font-weight="700" fill="#ffffff" fill-opacity="0.97"
++        style="letter-spacing:-6px">咕</text>
++</svg>`
++
++const html = `<!doctype html><html><head><meta charset="utf-8"><style>
++  html,body{margin:0;padding:0;width:512px;height:512px;background:transparent;overflow:hidden}
++  svg{display:block}
++</style></head><body>${ICON_SVG}</body></html>`
++
++await mkdir(outDir, { recursive: true })
++
++const electronBinary = join(
++  root,
++  'node_modules',
++  'electron',
++  'dist',
++  process.platform === 'win32' ? 'electron.exe' : 'electron'
++)
++
++const runner = join(outDir, '.make-icon.cjs')
++await writeFile(
++  runner,
++  `const { app, BrowserWindow } = require('electron')
++const fs = require('fs')
++const html = fs.readFileSync(process.argv[2], 'utf8')
++app.disableHardwareAcceleration()
++app.whenReady().then(async () => {
++  const win = new BrowserWindow({
++    width: 512, height: 512, show: false, frame: false,
++    transparent: true, backgroundColor: '#00000000',
++    webPreferences: { offscreen: false }
++  })
++  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
++  await new Promise((r) => setTimeout(r, 900))
++  const image = await win.webContents.capturePage()
++  fs.writeFileSync(process.argv[3], image.toPNG())
++  console.log('ICON_BYTES', fs.statSync(process.argv[3]).size, JSON.stringify(image.getSize()))
++  app.quit()
++})
++`,
++  'utf8'
++)
++
++const htmlPath = join(outDir, '.make-icon.html')
++await writeFile(htmlPath, html, 'utf8')
++
++const outPath = join(outDir, 'icon.png')
++await new Promise((resolvePromise, reject) => {
++  const child = spawn(electronBinary, [runner, htmlPath, outPath], { cwd: root, stdio: 'inherit' })
++  child.on('exit', (code) => (code === 0 ? resolvePromise() : reject(new Error('生成图标失败'))))
++})
++
++console.log(`图标已生成：${outPath}`)
+diff --git a/src/main/config.ts b/src/main/config.ts
+index 254446c..20bfca6 100644
+--- a/src/main/config.ts
++++ b/src/main/config.ts
+@@ -15,10 +15,13 @@ export class SettingsStore {
+   constructor() {
+     // GUGU_SETTINGS_FILE 用于隔离测试实例，避免自动化跑测试污染真实配置
+     this.file = process.env.GUGU_SETTINGS_FILE ?? join(app.getPath('userData'), 'settings.json')
+-    this.cache = { ...DEFAULT_SETTINGS, libraryRoot: defaultLibraryRoot() }
++    this.cache = { ...DEFAULT_SETTINGS, libraryRoot: suggestedLibraryRoot() }
+     // 允许用环境变量覆盖图库目录，便于自动化测试与多实例并行
+     const override = process.env.GUGU_LIBRARY_ROOT
+-    if (override) this.cache.libraryRoot = override
++    if (override) {
++      this.cache.libraryRoot = override
++      this.cache.setupCompleted = true
++    }
+   }
+ 
+   async load(): Promise<AppSettings> {
+@@ -27,7 +30,10 @@ export class SettingsStore {
+         const raw = await readFile(this.file, 'utf8')
+         const parsed = JSON.parse(raw) as Partial<AppSettings>
+         this.cache = { ...DEFAULT_SETTINGS, ...parsed }
+-        if (!this.cache.libraryRoot) this.cache.libraryRoot = defaultLibraryRoot()
++        // 老版本的配置文件里没有 setupCompleted：说明用户早就配好了，
++        // 不要再弹一次首次启动向导
++        if (parsed.setupCompleted === undefined) this.cache.setupCompleted = true
++        if (!this.cache.libraryRoot) this.cache.libraryRoot = suggestedLibraryRoot()
+         const override = process.env.GUGU_LIBRARY_ROOT
+         if (override) this.cache.libraryRoot = override
+       }
+@@ -54,6 +60,22 @@ export class SettingsStore {
+   }
+ }
+ 
++/**
++ * 建议的图库位置。
++ * 安装版放在**安装目录下的子文件夹**（per-user 安装，目录本身可写）；
++ * 开发态没有这个概念，退回系统图片目录。
++ */
++export function suggestedLibraryRoot(): string {
++  if (app.isPackaged) {
++    try {
++      return join(dirname(app.getPath('exe')), 'GuguGallery')
++    } catch {
++      /* 取不到就退回默认 */
++    }
++  }
++  return defaultLibraryRoot()
++}
++
+ export function defaultLibraryRoot(): string {
+   try {
+     return join(app.getPath('pictures'), 'GuguGallery')
+diff --git a/src/main/index.ts b/src/main/index.ts
+index bf13048..75141cf 100644
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -90,6 +90,8 @@ function createWindow(): BrowserWindow {
+     backgroundColor: '#0d1017',
+     autoHideMenuBar: true,
+     title: '咕咕��库',
++    // 打包后任务栏图标来自 exe 自身，这里主要是让开发态也有正常图标
++    icon: app.isPackaged ? undefined : join(app.getAppPath(), 'build', 'icon.png'),
+     // 自绘标题栏：去掉系统边框，右上角用应用自己的按钮，
+     // 换掉 Windows 默认那条与整体风格不一致的标题栏
+     frame: false,
+diff --git a/src/main/ipc.ts b/src/main/ipc.ts
+index 1b887e1..381c7f3 100644
+--- a/src/main/ipc.ts
++++ b/src/main/ipc.ts
+@@ -2,7 +2,7 @@
+  * 渲染进程 <-> 主进程的 IPC 契约实现。
+  * 所有能力都通过 contextBridge 暴露，渲染进程不直接碰 Node / fs。
+  */
+-import { clipboard, ipcMain, shell, dialog, BrowserWindow } from 'electron'
++import { app, clipboard, ipcMain, shell, dialog, BrowserWindow } from 'electron'
+ import { existsSync } from 'node:fs'
+ import type {
+   AppInfo,
+@@ -16,7 +16,8 @@ import type {
+   TargetInput
+ } from '@shared/types'
+ import type { AppContext } from './context'
+-import { defaultLibraryRoot } from './config'
++import { defaultLibraryRoot, suggestedLibraryRoot } from './config'
++import { mkdir } from 'node:fs/promises'
+ 
+ export const IPC = {
+   appInfo: 'app:info',
+@@ -31,6 +32,9 @@ export const IPC = {
+   libraryDelete: 'library:delete',
+   libraryReveal: 'library:reveal',
+   libraryPickRoot: 'library:pickRoot',
++  libraryChooseDir: 'library:chooseDir',
++  librarySetRoot: 'library:setRoot',
++  suggestedLibraryRoot: 'app:suggestedLibraryRoot',
+   openExternal: 'app:openExternal',
+   copyText: 'app:copyText',
+   windowMinimize: 'window:minimize',
+@@ -65,6 +69,7 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
+       node: process.versions.node,
+       chrome: process.versions.chrome,
+       platform: process.platform,
++      packaged: app.isPackaged,
+       libraryRoot: s.libraryRoot,
+       dbPath: ctx.library.dbPath
+     }
+@@ -121,6 +126,29 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
+     return result.filePaths[0]
+   })
+ 
++  handle(IPC.suggestedLibraryRoot, (): string => suggestedLibraryRoot())
++
++  // 只弹目录选择框、只返回路径，不做切换 —— 首次启动向导里用
++  handle(IPC.libraryChooseDir, async (defaultPath?: string): Promise<string | null> => {
++    const win = getWindow()
++    const options: Electron.OpenDialogOptions = {
++      title: '选择图库目录',
++      defaultPath: defaultPath || suggestedLibraryRoot(),
++      properties: ['openDirectory', 'createDirectory']
++    }
++    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
++    if (result.canceled || result.filePaths.length === 0) return null
++    return result.filePaths[0]
++  })
++
++  handle(IPC.librarySetRoot, async (dir: string): Promise<string> => {
++    const target = dir?.trim()
++    if (!target) throw new Error('图库目录不能为空')
++    await mkdir(target, { recursive: true })
++    await ctx.switchLibrary(target)
++    return target
++  })
++
+   handle(IPC.openExternal, async (url: string): Promise<void> => {
+     if (/^https?:\/\//i.test(url)) await shell.openExternal(url)
+   })
+diff --git a/src/preload/index.ts b/src/preload/index.ts
+index c00e7be..b370bb8 100644
+--- a/src/preload/index.ts
++++ b/src/preload/index.ts
+@@ -20,6 +20,9 @@ const IPC = {
+   libraryDelete: 'library:delete',
+   libraryReveal: 'library:reveal',
+   libraryPickRoot: 'library:pickRoot',
++  libraryChooseDir: 'library:chooseDir',
++  librarySetRoot: 'library:setRoot',
++  suggestedLibraryRoot: 'app:suggestedLibraryRoot',
+   openExternal: 'app:openExternal',
+   copyText: 'app:copyText',
+   windowMinimize: 'window:minimize',
+@@ -61,8 +64,11 @@ const api = {
+     rating: (id: number, value: number) => ipcRenderer.invoke(IPC.libraryRating, id, value),
+     remove: (ids: number[], deleteFiles: boolean) => ipcRenderer.invoke(IPC.libraryDelete, ids, deleteFiles),
+     reveal: (id: number) => ipcRenderer.invoke(IPC.libraryReveal, id),
+-    pickRoot: () => ipcRenderer.invoke(IPC.libraryPickRoot)
++    pickRoot: () => ipcRenderer.invoke(IPC.libraryPickRoot),
++    setRoot: (dir: string) => ipcRenderer.invoke(IPC.librarySetRoot, dir),
++    chooseDir: (defaultPath?: string) => ipcRenderer.invoke(IPC.libraryChooseDir, defaultPath)
+   },
++  suggestedLibraryRoot: () => ipcRenderer.invoke(IPC.suggestedLibraryRoot),
+   crawl: {
+     siteInfo: () => ipcRenderer.invoke(IPC.siteInfo),
+     targetInfo: (target: unknown) => ipcRenderer.invoke(IPC.crawlTargetInfo, target),
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index 1e4a965..576511f 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -21,6 +21,7 @@ import CrawlPanel from './components/CrawlPanel'
+ import SettingsPanel from './components/SettingsPanel'
+ import ContextMenu, { type MenuEntry } from './components/ContextMenu'
+ import Toast, { type ToastPayload } from './components/Toast'
++import SetupWizard from './components/SetupWizard'
+ import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
+ import { loadedPlugins } from './plugins'
+ import {
+@@ -143,6 +144,9 @@ export default function App(): JSX.Element {
+   const [appIconOk, setAppIconOk] = useState(true)
+   /** 侧栏宽度：拖动时走本地状态，松手才落盘 */
+   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SETTINGS.sidebarWidth)
++  /** 首次启动向导：建议的图库位置 */
++  const [suggestedRoot, setSuggestedRoot] = useState('')
++  const [bootstrapped, setBootstrapped] = useState(false)
+   /** 向下滚动时把过滤栏藏起来 */
+   const [barHidden, setBarHidden] = useState(false)
+   /** 向上滚动且已经离开首屏时，右下角出现回到顶部 */
+@@ -166,6 +170,10 @@ export default function App(): JSX.Element {
+       setInfo(i)
+       applyTheme(s.theme)
+       document.documentElement.style.setProperty('--accent', s.accent)
++      if (!s.setupCompleted) {
++        setSuggestedRoot(await api.suggestedLibraryRoot())
++      }
++      setBootstrapped(true)
+     })()
+   }, [])
+ 
+@@ -883,6 +891,24 @@ export default function App(): JSX.Element {
+         </div>
+       )}
+ 
++      {bootstrapped && !settings.setupCompleted && (
++        <SetupWizard
++          suggested={suggestedRoot}
++          appVersion={info?.version ?? ''}
++          packaged={info?.packaged === true}
++          onConfirm={async (dir) => {
++            const applied = await api.library.setRoot(dir)
++            await onSettingsChange({ libraryRoot: applied, setupCompleted: true }, { silent: true })
++            setFilters(INITIAL_FILTERS)
++            setItems([])
++            setCursor(null)
++            setListEpoch((e) => e + 1)
++            await refreshMeta()
++            await loadPage('reset')
++          }}
++        />
++      )}
++
+       <Toast toast={toast} onDismiss={() => setToast(null)} />
+     </div>
+   )
+diff --git a/src/renderer/src/components/SetupWizard.tsx b/src/renderer/src/components/SetupWizard.tsx
+new file mode 100644
+index 0000000..305028d
+--- /dev/null
++++ b/src/renderer/src/components/SetupWizard.tsx
+@@ -0,0 +1,110 @@
++import { useEffect, useState } from 'react'
++import { api } from '../api'
++import { IconFolder } from './Icons'
++
++interface Props {
++  /** 建议位置：安装版是安装目录下的子文件夹 */
++  suggested: string
++  appVersion: string
++  /** 是否安装版：决定要不要提示「卸载会删掉图库」 */
++  packaged: boolean
++  onConfirm: (dir: string) => Promise<void>
++}
++
++/**
++ * 首次启动向导：让用户在图库落地之前先决定它放在哪。
++ *
++ * 之所以放在应用里而不是安装程序里 —— 安装程序跑在管理员上下文，
++ * 而且那时用户还没见过软件长什么样；放在首次启动更自然，也能顺便解释目录用途。
++ */
++export default function SetupWizard({ suggested, appVersion, packaged, onConfirm }: Props): JSX.Element {
++  const [dir, setDir] = useState(suggested)
++  const [busy, setBusy] = useState(false)
++  const [error, setError] = useState<string | null>(null)
++
++  useEffect(() => {
++    setDir(suggested)
++  }, [suggested])
++
++  const inInstallDir = packaged && suggested !== '' && dir.trim() === suggested
++
++  const confirm = async (): Promise<void> => {
++    const target = dir.trim()
++    if (!target) {
++      setError('请先选择图库目录')
++      return
++    }
++    setBusy(true)
++    setError(null)
++    try {
++      await onConfirm(target)
++    } catch (err) {
++      setError(err instanceof Error ? err.message : '设置失败')
++    } finally {
++      setBusy(false)
++    }
++  }
++
++  return (
++    <div className="setup-mask" data-component="App/SetupWizard">
++      <div className="setup-card">
++        <div className="setup-brand">
++          <div className="brand-mark static">咕</div>
++          <div>
++            <h2>欢迎使用咕咕图库</h2>
++            <p className="muted">首次启动，先决定图片存在哪里</p>
++          </div>
++        </div>
++
++        <div className="setup-body">
++          <p>
++            图库里会保存<strong>抓取到的原图</strong>、<strong>缩略图</strong>和<strong>索引数据库</strong>。
++            整个目录是自包含的，随时可以拷走备份，脱离本应用也能直接翻图。
++          </p>
++
++          <label className="setup-label">图库目录</label>
++          <div className="setup-path">
++            <input
++              type="text"
++              value={dir}
++              spellCheck={false}
++              onChange={(e) => setDir(e.target.value)}
++              placeholder="选择一个存图片的文件夹"
++            />
++            <button
++              className="btn"
++              disabled={busy}
++              onClick={async () => {
++                const picked = await api.library.chooseDir(dir || suggested)
++                if (picked) setDir(picked)
++              }}
++            >
++              <IconFolder width={14} height={14} />
++              浏览
++            </button>
++          </div>
++
++          {inInstallDir ? (
++            <p className="setup-warn">
++              默认放在安装目录下。注意：<strong>卸载本应用时这个目录会被一起删除</strong>，
++              重要图片建议改到「图片」目录。
++            </p>
++          ) : (
++            <p className="setup-hint">
++              已改到安装目录之外，卸载应用不会影响这里的图片。
++            </p>
++          )}
++
++          {error && <p className="setup-error">{error}</p>}
++        </div>
++
++        <div className="setup-foot">
++          <span className="muted">版本 {appVersion}</span>
++          <button className="btn primary" disabled={busy} onClick={() => void confirm()}>
++            {busy ? '正在准备…' : '开始使用'}
++          </button>
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index f9a7ce7..afbb888 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -397,6 +397,131 @@ body.resizing * {
+   color: #fff;
+ }
+ 
++/* --------------------------------------------------------- 首次启动向导 */
++
++.setup-mask {
++  position: fixed;
++  inset: 0;
++  z-index: 120;
++  display: grid;
++  place-items: center;
++  background:
++    radial-gradient(900px 500px at 70% 0%, rgba(124, 156, 255, 0.16), transparent 60%),
++    rgba(6, 9, 14, 0.94);
++  backdrop-filter: blur(6px);
++  animation: fade 0.2s var(--ease);
++}
++
++.setup-card {
++  width: min(620px, calc(100vw - 64px));
++  border-radius: var(--radius-xl);
++  background: var(--surface);
++  border: 1px solid var(--border-strong);
++  box-shadow: var(--shadow-lg);
++  overflow: hidden;
++}
++
++.setup-brand {
++  display: flex;
++  align-items: center;
++  gap: 14px;
++  padding: 22px 24px 18px;
++  border-bottom: 1px solid var(--border);
++}
++.setup-brand h2 {
++  font-size: 18px;
++  font-weight: 650;
++  letter-spacing: -0.2px;
++}
++.setup-brand p {
++  font-size: 12.5px;
++  margin-top: 2px;
++}
++.brand-mark.static {
++  width: 44px;
++  height: 44px;
++  font-size: 20px;
++  border-radius: 13px;
++  cursor: default;
++}
++
++.setup-body {
++  padding: 20px 24px 22px;
++}
++.setup-body > p {
++  color: var(--text-dim);
++  line-height: 1.75;
++}
++.setup-body strong {
++  color: var(--text);
++  font-weight: 600;
++}
++
++.setup-label {
++  display: block;
++  margin: 18px 0 7px;
++  font-size: 12px;
++  color: var(--text-dim);
++}
++
++.setup-path {
++  display: flex;
++  gap: 8px;
++}
++.setup-path input {
++  flex: 1;
++  height: 36px;
++  padding: 0 12px;
++  border-radius: 9px;
++  border: 1px solid var(--border);
++  background: var(--bg-soft);
++  color: var(--text);
++  outline: none;
++  font-family: var(--mono);
++  font-size: 12.5px;
++  user-select: text;
++}
++.setup-path input:focus {
++  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
++}
++
++.setup-warn,
++.setup-hint,
++.setup-error {
++  margin-top: 12px;
++  padding: 10px 13px;
++  border-radius: 10px;
++  font-size: 12.5px;
++  line-height: 1.7;
++}
++.setup-warn {
++  background: color-mix(in srgb, var(--warn) 12%, transparent);
++  border: 1px solid color-mix(in srgb, var(--warn) 34%, transparent);
++  color: color-mix(in srgb, var(--warn) 78%, var(--text));
++}
++.setup-warn strong {
++  color: var(--warn);
++}
++.setup-hint {
++  background: color-mix(in srgb, var(--success) 10%, transparent);
++  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
++  color: color-mix(in srgb, var(--success) 72%, var(--text));
++}
++.setup-error {
++  background: color-mix(in srgb, var(--danger) 12%, transparent);
++  border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
++  color: var(--danger);
++}
++
++.setup-foot {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  padding: 14px 24px 18px;
++  border-top: 1px solid var(--border);
++  background: var(--bg-soft);
++}
++
+ /* ------------------------------------------------------------ 通用弹窗 */
+ 
+ .modal-mask {
+diff --git a/src/shared/bridge.ts b/src/shared/bridge.ts
+index 0eb9321..2f15beb 100644
+--- a/src/shared/bridge.ts
++++ b/src/shared/bridge.ts
+@@ -44,7 +44,13 @@ export interface GuguBridge {
+     remove(ids: number[], deleteFiles: boolean): Promise<number>
+     reveal(id: number): Promise<boolean>
+     pickRoot(): Promise<string | null>
++    /** 只选目录不切换（首次启动向导用） */
++    chooseDir(defaultPath?: string): Promise<string | null>
++    /** 直接切到指定目录（首次启动向导用），返回最终路径 */
++    setRoot(dir: string): Promise<string>
+   }
++  /** 建议的图库位置：安装版是安装目录下的子文件夹 */
++  suggestedLibraryRoot(): Promise<string>
+   crawl: {
+     siteInfo(): Promise<CrawlSiteInfo>
+     /** 某个目标的总页数 / 总条数，用于在界面上给个规模预期 */
+diff --git a/src/shared/types.ts b/src/shared/types.ts
+index 5faf51a..0723353 100644
+--- a/src/shared/types.ts
++++ b/src/shared/types.ts
+@@ -236,6 +236,8 @@ export interface AppSettings {
+   sidebarCollapsed: boolean
+   /** 侧栏宽度（像素），可拖动调整，上限为窗口宽度的 40% */
+   sidebarWidth: number
++  /** 是否走完首次启动向导（选择图库目录）。已有配置的老用户会被自动置为 true */
++  setupCompleted: boolean
+   pageSize: number
+ }
+ 
+@@ -253,6 +255,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
+   proxy: '',
+   sidebarCollapsed: false,
+   sidebarWidth: 248,
++  setupCompleted: false,
+   pageSize: 60
+ }
+ 
+@@ -269,6 +272,8 @@ export interface AppInfo {
+   node: string
+   chrome: string
+   platform: string
++  /** 是否跑在打包后的安装版里（决定图库默认落在安装目录还是图片目录） */
++  packaged: boolean
+   libraryRoot: string
+   dbPath: string
+ }

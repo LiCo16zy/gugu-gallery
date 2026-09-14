@@ -105,6 +105,19 @@
       "summary": "把重排变暗动画回退到 0.16s 并只在视图密度切换时触发；灯箱打开时禁用窗口拖动；版本升到 0.5.1（暂不打包）。",
       "hasAnnotations": true,
       "finishedAt": "2026-09-14 23:30"
+    },
+    {
+      "id": "0009-installer-polish",
+      "slug": "installer-polish",
+      "title": "应用图标、可选安装位置、首次启动选择图库目录",
+      "createdAt": "2026-09-14 23:35",
+      "baseCommit": "2bddfc5",
+      "endCommit": "31e1a73",
+      "branch": "master",
+      "status": "closed",
+      "summary": "补齐安装包体验：自绘应用与安装程序图标、安装时可选位置、首次启动向导选择图库目录（默认安装目录下）。",
+      "hasAnnotations": false,
+      "finishedAt": "2026-09-14 23:50"
     }
   ]
 }
