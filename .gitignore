@@ -1,0 +1,17 @@
+node_modules/
+out/
+dist/
+release/
+.vite/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# 本地运行产物
+data/
+library/
+_research/
+screenshots/
+*.db
+*.db-journal

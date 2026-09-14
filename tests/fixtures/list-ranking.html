@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" /> <!--响应式，兼容移动端-->
+    <link rel="stylesheet" href="/static/home/css/public_css.css"> <!--引入公共css-->
+    <script src="/static/home/js/jquery-3.6.0.min.js"></script> <!--引入jquery库-->
+    <meta name="keywords" content="ACG图片-月排行">
+    <meta name="description" content="ACG图片：Pixiv萌图、绘画交流、问答交流、原创发布、游戏图片、COS图片">
+    <title>ACG图片-月排行</title>
+</head>
+<body>
+<!--公共-header-->
+<div class="only_spare_bed" style="display:none;">https://guguxz.com</div>
+<div class="open_up">
+    <img src="/static/home/image/open.jpg" class="open" id="open" />
+</div>
+<div class="header_cover"></div>
+<header class="public_header">
+    <div class="getheadimg">
+                <a href="https://www.guguxz.com"><img src="/static/home/image/getheadimg.jpg" class="getheadimg_image" /></a>
+        咕 咕 小 站
+            </div>
+
+    <!--导航-->
+    <nav>
+        <!--
+        要与数据库中的一 二级分类名对应一致，格式如下：
+        <a class="nav_one"><p><span><img src="/static/home/image/图标.png" /></span>一级分类名</p></a>
+        <section class="nav_two">
+            <a href="https://www.guguxz.com/search/index/plate/一级分类名/wd/二级分类名1.html"><p>二级分类名1</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/一级分类名/wd/二级分类名2.html"><p>二级分类名2</p></a>
+        </section>
+        -->
+        <a href="https://www.guguxz.com"><p><span><img src="/static/home/image/index.png" /></span>首页</p></a>
+        <a class="nav_one"><p><span><img src="/static/home/image/moe.png" /></span>ACG图片</p></a>
+        <section class="nav_two">
+            <a href="https://www.guguxz.com/ranking/image/plate/ACG图片/wd/排行/nav/month.html"><p>排行</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/ACG图片/wd/Pixiv萌图.html"><p>Pixiv萌图</p></a>
+            <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/随机图片/rand/yes.html"><p>随机图片</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/ACG图片/wd/电脑壁纸.html"><p>电脑壁纸</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/ACG图片/wd/手机壁纸.html"><p>手机壁纸</p></a>
+        </section>
+        <!--
+        <a class="nav_one"><p><span><img src="/static/home/image/funny.png" /></span>搞笑图片</p></a>
+        <section class="nav_two">
+            <a href="https://www.guguxz.com/ranking/image/plate/搞笑图片/wd/排行/nav/month.html"><p>排行</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/搞笑图片/wd/搞笑图.html"><p>搞笑图</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/搞笑图片/wd/搞笑GIF.html"><p>搞笑GIF</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/搞笑图片/wd/神回复.html"><p>神回复</p></a>
+        </section>
+        -->
+        <a href="https://www.guguxz.com/search/index/wd/分享.html"><p><span><img src="/static/home/image/funnyGif.gif" style="position:relative;top:1px;" /></span>分享互助</p></a>
+                <a href="https://www.guguxz.com/pixiv.html"><p><span><img src="/static/home/image/stacc.ico" style="position:relative;top:1px;" /></span>Pixiv原图提取工具</p></a>
+        <a href="https://www.guguxz.com/bilibili.html"><p><span><img src="/static/home/image/bili.png" style="position:relative;top:1px;" /></span>bili封面提取工具</p></a>
+        <a href="https://www.guguxz.com/ai/upscale.html"><p><span>🐘</span>Ai图片放大工具</p></a>
+        <a href="https://www.guguxz.com/ai/removebg.html"><p><span>🧩</span>Ai图片抠图工具</p></a>
+        <div></div>
+        <!--
+        <a href="https://www.guguxz.com/index/app_dw" target="_blank"><p><span><img src="/static/home/image/open.png" style="position:relative;top:1px;" /></span>下载APP</p></a>
+        -->
+        <a href="https://www.guguxz.com/insert/indexs.html"><p><span><img src="/static/home/image/note.jpg" style="position:relative;top:3px;" /></span>前往投稿</p></a>
+                <a href="https://www.guguxz.com/login.html"><p><span><img src="/static/home/image/collect.png" style="position:relative;top:3px;" /></span>我的收藏</p></a>
+        <a href="https://www.guguxz.com/login.html"><p><span><img src="/static/home/image/user.png" style="position:relative;top:3px;" /></span>登录 / 注册</p></a>
+                <div id="nav_plate" style="display:none;">ACG图片</div>
+        <div id="nav_wd" style="display:none;">排行</div>
+        <div></div>
+        <section style="clear:both;"></section>
+    </nav>
+</header>
+<!--搜索-->
+<div class="search-box">
+    <input class="search-txt" id="https://www.guguxz.com" type="text" name="" placeholder="搜索文章" />
+    <a class="serach-btn">
+        <img src="/static/home/image/sou.png" class="fa fa-search" aria-hidden="true" style="widht:26px; height:26px; border-radius:26px;" />
+    </a>
+</div>
+<script>
+    //app内打开，单独处理
+    if(navigator.userAgent.toLowerCase().indexOf("appwebview") != -1){
+        $("#open").remove();
+        $(".search-box").remove();
+    }
+</script>
+
+
+
+<!--内容区-layout-->
+<link rel="stylesheet" href="/static/home/css/index.css"> <!--index主页通用css-->
+<link rel="stylesheet" href="/static/home/css/ranking_image.css"> <!--index主页css-->
+<!--让其居中-->
+<div class="AutoCss">
+    <!--左边-主板块：内容从后台读取-->
+    <article>
+        <!--公告-->
+        <div class="Notice">
+            <a href="https://www.guguxz.com/ranking/image/plate/ACG图片/wd/排行.html">历史热门</a> <!--一周内点赞数排序-->
+            <a href="https://www.guguxz.com/ranking/image/plate/ACG图片/wd/排行/nav/month.html">本月热门</a> <!--一月内点赞数排序-->
+            <a href="https://www.guguxz.com/ranking/image/plate/ACG图片/wd/排行/nav/new.html">最新发布</a> <!--最新排序-->
+        </div>
+        <div style="clear:both;"></div>
+
+        <!--内容区-->
+        <div class="Section" id="Section">
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19435.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvYzRiNDI0L2l0ZW0vODk0Yzc2ZThiNTI1NTg5YjFjY2U5ODYxY2QwYjRmMTcucG5n" style="min-height:100%; margin-top:-10%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>3952x4545 16.69M [匿名-分享]</h2>
+                        <p>[白裤袜] [着袜足底] [脚底] [碧蓝档案] [丝袜足底] </p>
+                        <span>2026-09-04 12:00</span>
+                        <em>ACG图片 Pixiv萌图 77浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19351.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvZjA3OTRjL2l0ZW0vY2UwNTc3NzcwYTQ5MDllMTEwYjUxNjI1YTY0N2VmYWMuanBn" style="min-height:100%; margin-top:-20%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>2480x3508 2.68M [匿名-分享]</h2>
+                        <p>[知更鸟（星穹铁道）] [崩坏：星穹铁道] </p>
+                        <span>2026-08-25 20:00</span>
+                        <em>ACG图片 Pixiv萌图 91浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19483.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvYTgwNDk1L2l0ZW0vYWJlMGYyODNlYmU4MjI5NTIyODQ3MTY5ODAzYzAyNGQuanBn" style="min-height:100%; margin-top:0%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>5760x2916 2.38M [匿名-分享]</h2>
+                        <p>[尘白禁区] [壁纸] [女孩子] </p>
+                        <span>2026-09-10 08:00</span>
+                        <em>ACG图片 Pixiv萌图 35浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19431.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvZjM2YWNlL2l0ZW0vZjM0NDE0NDEyY2JmN2RjYzc1ZjNlNGZjYWQ5ZDNjNDIuanBn" style="min-height:100%; margin-top:0%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>3508x2480 3.6M [匿名-分享]</h2>
+                        <p>[初音未来] </p>
+                        <span>2026-09-03 22:00</span>
+                        <em>ACG图片 Pixiv萌图 55浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19347.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvMjEzZjAzL2l0ZW0vNzVkNjg1N2I5YzdhMTdmNDZkMTNkNGUxMGE4ZDFjMTEuanBn" style="min-height:100%; margin-top:-20%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>4484x6023 2.57M [匿名-分享]</h2>
+                        <p>[碧蓝档案] [白洲梓（泳装）] [黑裤袜] [赤脚] [脚指] </p>
+                        <span>2026-08-25 12:00</span>
+                        <em>ACG图片 Pixiv萌图 66浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19346.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvOGM5ZjNkL2l0ZW0vMGZmYWQzNzU1Y2UxZjBmZGJjYjY0YjZlYTY3ZTg5MWIuanBn" style="min-height:100%; margin-top:-10%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>6364x4260 8.82M [匿名-分享]</h2>
+                        <p>[花火（星穹铁道）] [脚底] [赤脚] [脚指] [焰火] </p>
+                        <span>2026-08-25 10:00</span>
+                        <em>ACG图片 Pixiv萌图 57浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19296.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvNzBiNzFlL2l0ZW0vYTUyMTQ2ZTQ3ZmJjNDdiY2I3Yzc2MWE1NDAxNjFhNzIuanBn" style="min-height:100%; margin-top:-30%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>1954x3278 1.82M [匿名-分享]</h2>
+                        <p>[东方] [女孩子] [博丽灵梦] [雾雨魔理沙] </p>
+                        <span>2026-08-19 22:00</span>
+                        <em>ACG图片 Pixiv萌图 63浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19286.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvOTYwNTY1L2l0ZW0vNzcwMzMxMGNkMDI4OGFhMGRlNDBiODZhMDM5YTlhZDguanBn" style="min-height:100%; margin-top:-40%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>1200x2133 1.76M [匿名-分享]</h2>
+                        <p>[可莉（原神）] [琪花星烛] </p>
+                        <span>2026-08-18 20:00</span>
+                        <em>ACG图片 Pixiv萌图 83浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19521.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvYWNiYWI4L2l0ZW0vMGI3MGJiMzMxYzYyMGQwNjYzODA1NjRjMDc3ZWQ0ZjUucG5n" style="min-height:100%; margin-top:0%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>2160x1080 1.65M [匿名-分享]</h2>
+                        <p>[明日方舟] [空弦（明日方舟）] </p>
+                        <span>2026-09-14 10:00</span>
+                        <em>ACG图片 Pixiv萌图 3浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/排行/wd/Pixiv萌图/id/19520.html" target="_blank">
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvMmYwNDJlL2l0ZW0vMWUxNGMzNGNhMjY1YzIxNjA4YTA4Y2RhZGViNjAzYzUucG5n" style="min-height:100%; margin-top:-40%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>3584x6368 8.76M [匿名-分享]</h2>
+                        <p>[白发] [女仆] [女孩子] [女仆装] [碧蓝档案] </p>
+                        <span>2026-09-14 08:00</span>
+                        <em>ACG图片 Pixiv萌图 8浏览</em>
+                    </div>
+                </a>
+            </section>
+                    </div>
+        <div style="clear:both;"></div>
+
+                <!--view-翻页-->
+        <div class="Page">
+            <div class="pagination"><p>首页</p> <p>上一页</p> <a href="" class="cur">1</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=2" title="第"2"页" >2</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=3" title="第"3"页" >3</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=4" title="第"4"页" >4</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=5" title="第"5"页" >5</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=6" title="第"6"页" >6</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=7" title="第"7"页" >7</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=8" title="第"8"页" >8</a><p class="pageEllipsis">...</p><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=23" title="第"23"页" >23</a><a href="/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=24" title="第"24"页" >24</a> <div><a href='/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=24' title='尾页'>尾页</a></div> <a href='/ranking/image/plate/ACG%E5%9B%BE%E7%89%87/wd/%E6%8E%92%E8%A1%8C/nav/month.html?page=2' class='next_page' style='margin:6px;' title='下一页'>下一页</a> <div><p class='pageRemark' style='margin-top:8px;'>共<b>24</b>页<b>239</b>条数据</p></div></div>        </div>
+            </article>
+</div>
+<script src="/static/home/js/index.js"></script> <!--index主页js-->
+<script src="/static/home/js/ranking_image.js"></script> <!--image页面js-->
+<script>
+    //app内打开，单独处理
+    if(navigator.userAgent.toLowerCase().indexOf("appwebview") != -1){
+        $(".Notice").css("margin-top","-22px");
+    }
+</script>
+
+
+
+<!--公共-footer-->
+<div class="div_footer"></div>
+<footer>
+    <img src="/static/home/image/return-top.png" id="scroll_btn" title="回到顶部" />
+    <p><a>www.guguxz.com</a></p>
+    <p><a>© 2026 咕咕</a></p>
+</footer>
+<script src="/static/home/js/public.js?u=1.026"></script> <!--公共js-->
+<script>
+    //app内打开，单独处理
+    if(navigator.userAgent.toLowerCase().indexOf("appwebview") != -1){
+        $("aside").remove();
+        $(".div_footer").remove();
+        $("footer").remove();
+    }
+</script>
+</body>
+</html>

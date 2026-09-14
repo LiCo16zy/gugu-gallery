@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" /> <!--响应式，兼容移动端-->
+    <link rel="stylesheet" href="/static/home/css/public_css.css"> <!--引入公共css-->
+    <script src="/static/home/js/jquery-3.6.0.min.js"></script> <!--引入jquery库-->
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <title>ACG图片：电脑壁纸</title>
+</head>
+<body>
+<!--公共-header-->
+<div class="only_spare_bed" style="display:none;">https://guguxz.com</div>
+<div class="open_up">
+    <img src="/static/home/image/open.jpg" class="open" id="open" />
+</div>
+<div class="header_cover"></div>
+<header class="public_header">
+    <div class="getheadimg">
+                <a href="https://www.guguxz.com"><img src="/static/home/image/getheadimg.jpg" class="getheadimg_image" /></a>
+        咕 咕 小 站
+            </div>
+
+    <!--导航-->
+    <nav>
+        <!--
+        要与数据库中的一 二级分类名对应一致，格式如下：
+        <a class="nav_one"><p><span><img src="/static/home/image/图标.png" /></span>一级分类名</p></a>
+        <section class="nav_two">
+            <a href="https://www.guguxz.com/search/index/plate/一级分类名/wd/二级分类名1.html"><p>二级分类名1</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/一级分类名/wd/二级分类名2.html"><p>二级分类名2</p></a>
+        </section>
+        -->
+        <a href="https://www.guguxz.com"><p><span><img src="/static/home/image/index.png" /></span>首页</p></a>
+        <a class="nav_one"><p><span><img src="/static/home/image/moe.png" /></span>ACG图片</p></a>
+        <section class="nav_two">
+            <a href="https://www.guguxz.com/ranking/image/plate/ACG图片/wd/排行/nav/month.html"><p>排行</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/ACG图片/wd/Pixiv萌图.html"><p>Pixiv萌图</p></a>
+            <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/随机图片/rand/yes.html"><p>随机图片</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/ACG图片/wd/电脑壁纸.html"><p>电脑壁纸</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/ACG图片/wd/手机壁纸.html"><p>手机壁纸</p></a>
+        </section>
+        <!--
+        <a class="nav_one"><p><span><img src="/static/home/image/funny.png" /></span>搞笑图片</p></a>
+        <section class="nav_two">
+            <a href="https://www.guguxz.com/ranking/image/plate/搞笑图片/wd/排行/nav/month.html"><p>排行</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/搞笑图片/wd/搞笑图.html"><p>搞笑图</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/搞笑图片/wd/搞笑GIF.html"><p>搞笑GIF</p></a>
+            <a href="https://www.guguxz.com/search/index/plate/搞笑图片/wd/神回复.html"><p>神回复</p></a>
+        </section>
+        -->
+        <a href="https://www.guguxz.com/search/index/wd/分享.html"><p><span><img src="/static/home/image/funnyGif.gif" style="position:relative;top:1px;" /></span>分享互助</p></a>
+                <a href="https://www.guguxz.com/pixiv.html"><p><span><img src="/static/home/image/stacc.ico" style="position:relative;top:1px;" /></span>Pixiv原图提取工具</p></a>
+        <a href="https://www.guguxz.com/bilibili.html"><p><span><img src="/static/home/image/bili.png" style="position:relative;top:1px;" /></span>bili封面提取工具</p></a>
+        <a href="https://www.guguxz.com/ai/upscale.html"><p><span>🐘</span>Ai图片放大工具</p></a>
+        <a href="https://www.guguxz.com/ai/removebg.html"><p><span>🧩</span>Ai图片抠图工具</p></a>
+        <div></div>
+        <!--
+        <a href="https://www.guguxz.com/index/app_dw" target="_blank"><p><span><img src="/static/home/image/open.png" style="position:relative;top:1px;" /></span>下载APP</p></a>
+        -->
+        <a href="https://www.guguxz.com/insert/indexs.html"><p><span><img src="/static/home/image/note.jpg" style="position:relative;top:3px;" /></span>前往投稿</p></a>
+                <a href="https://www.guguxz.com/login.html"><p><span><img src="/static/home/image/collect.png" style="position:relative;top:3px;" /></span>我的收藏</p></a>
+        <a href="https://www.guguxz.com/login.html"><p><span><img src="/static/home/image/user.png" style="position:relative;top:3px;" /></span>登录 / 注册</p></a>
+                <div id="nav_plate" style="display:none;">ACG图片</div>
+        <div id="nav_wd" style="display:none;">电脑壁纸</div>
+        <div></div>
+        <section style="clear:both;"></section>
+    </nav>
+</header>
+<!--搜索-->
+<div class="search-box">
+    <input class="search-txt" id="https://www.guguxz.com" type="text" name="" placeholder="搜索文章" />
+    <a class="serach-btn">
+        <img src="/static/home/image/sou.png" class="fa fa-search" aria-hidden="true" style="widht:26px; height:26px; border-radius:26px;" />
+    </a>
+</div>
+<script>
+    //app内打开，单独处理
+    if(navigator.userAgent.toLowerCase().indexOf("appwebview") != -1){
+        $("#open").remove();
+        $(".search-box").remove();
+    }
+</script>
+
+
+
+<!--内容区-layout-->
+<link rel="stylesheet" href="/static/home/css/index.css"> <!--index主页通用css-->
+<link rel="stylesheet" href="/static/home/css/ranking_image.css"> <!--index主页css-->
+
+<!--
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+-->
+
+<!--
+<div id="divSetUp" style="width:66%; height:100%; margin:0 auto; background-color:#D3D6DA; display:none; padding:30px;">
+    过滤设置：<input type="radio" name="setUp" value="1" checked="checked" id="setUp1">[默认]开启过滤
+    <input type="radio" name="setUp" value="2"  style="margin-left:10px;" id="setUp2">[关闭过滤]
+    <br /><br />
+    <p>关闭过滤会显示不适合在工作场所浏览的图片</p>
+    <p>问：什么是不适合在工作场所浏览的图片？</p>
+    <p>答：投稿虽通过鉴黄系统审核，但被管理员标记为不适合在工作场所浏览的图片，例：泳装类图片</p>
+    <p>这些图片通常不适合在工作场所被浏览，如果您确定非工作场所，可以设置关闭过滤</p>
+</div>
+-->
+
+<!--让其居中-->
+<div class="AutoCss">
+    <!--左边-主板块：内容从后台读取-->
+    <article>
+        <!--公告-->
+        <div class="Notice">
+            <a style="width:100%;">
+                <!--
+                ACG图片：电脑壁纸                -->
+                ACG图片：电脑壁纸            </a>
+        </div>
+        <div style="clear:both;"></div>
+        <script>
+            $("#setUp").click(function (){
+                $(".AutoCss").css("display", "none");
+                $("#divSetUp").css("display", "block");
+
+                $("#setUp1").click(function (){
+                    $.get("https://www.guguxz.com/search/shareSet/state/false", function(result){
+                        if(result){
+                            location.reload();
+                        }
+                    });
+                    location.reload();
+                });
+                $("#setUp2").click(function (){
+                    $.get("https://www.guguxz.com/search/shareSet/state/true", function(result){
+                        if(result){
+                            location.reload();
+                        }
+                    });
+                });
+            });
+        </script>
+
+        <!--内容区-->
+        <div class="Section" id="Section">
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/1081.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/36bf30/item/635e04f9d01bd689e6429155aeb919e0.png-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvMzZiZjMwL2l0ZW0vNjM1ZTA0ZjlkMDFiZDY4OWU2NDI5MTU1YWViOTE5ZTAucG5n" style="min-height:100%; margin-top:0%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>1920x1080 1.87M [匿名-分享]</h2>                        <p>[碧蓝航线] [独角兽碧蓝航线] [柴郡（碧蓝航线）] [脚指] [脚底] [泳装] [赤脚] </p>
+                        <span>2025-05-25 16:00</span>
+                        <em>ACG图片 电脑壁纸 756浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/935.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/b6d253/item/43ff55e8f9f6e3fdaec60cac7a23bf73.jpg-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvYjZkMjUzL2l0ZW0vNDNmZjU1ZThmOWY2ZTNmZGFlYzYwY2FjN2EyM2JmNzMuanBn" style="min-height:100%; margin-top:0%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>1752x950 1.00M [离别34-分享]</h2>                        <p>[东方] [博丽灵梦] [蝴蝶结] [巫女服] [海洋] [水中] </p>
+                        <span>2024-11-15 20:53</span>
+                        <em>ACG图片 电脑壁纸 661浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/912.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/74891c/item/e246548ce53345eb355386bd2cc04bb5.webp-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvNzQ4OTFjL2l0ZW0vZTI0NjU0OGNlNTMzNDVlYjM1NTM4NmJkMmNjMDRiYjUud2VicA==" style="min-height:100%; margin-top:-7%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>8800x5028 8.57M [匿名-分享]</h2>                        <p>[湊阿库娅] [泳装] [海边] [紫发] </p>
+                        <span>2023-04-18 12:12</span>
+                        <em>ACG图片 电脑壁纸 521浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/892.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/9426df/item/f4112fbf1f46736bdb8bbacbcc489e71.webp-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvOTQyNmRmL2l0ZW0vZjQxMTJmYmYxZjQ2NzM2YmRiOGJiYWNiY2M0ODllNzEud2VicA==" style="min-height:100%; margin-top:-5%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>4000x2251 14.42M [匿名-分享]</h2>                        <p>[游戏王] </p>
+                        <span>2023-04-14 11:27</span>
+                        <em>ACG图片 电脑壁纸 565浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/880.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/2daeab/item/b60287b90eacdc3941b66be74fe30e00.webp-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvMmRhZWFiL2l0ZW0vYjYwMjg3YjkwZWFjZGMzOTQxYjY2YmU3NGZlMzBlMDAud2VicA==" style="min-height:100%; margin-top:-4%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>4776x2943 8.66M [匿名-分享]</h2>                        <p>[赤城] [碧蓝航线] </p>
+                        <span>2023-04-12 11:52</span>
+                        <em>ACG图片 电脑壁纸 559浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/844.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/7607ec/item/334505457f829e222500f6290b5aeae4.webp-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvNzYwN2VjL2l0ZW0vMzM0NTA1NDU3ZjgyOWUyMjI1MDBmNjI5MGI1YWVhZTQud2VicA==" style="min-height:100%; margin-top:0%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>3903x1940 5.27M [匿名-分享]</h2>                        <p>[战双帕弥什] </p>
+                        <span>2023-04-04 11:39</span>
+                        <em>ACG图片 电脑壁纸 749浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/754.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/61bfef/item/7cab87306576f6e337e557b7e844be21.jpg-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvNjFiZmVmL2l0ZW0vN2NhYjg3MzA2NTc2ZjZlMzM3ZTU1N2I3ZTg0NGJlMjEuanBn" style="min-height:100%; margin-top:-6%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>4410x2520 0.99M [匿名-分享]</h2>                        <p>[白洲梓] [泳装] [碧蓝档案] [白发] [呆毛] [羽翼] </p>
+                        <span>2023-03-09 10:50</span>
+                        <em>ACG图片 电脑壁纸 1084浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/681.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/063a8f/item/9de9350198a95bef3c8f1369229cb850.webp-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvMDYzYThmL2l0ZW0vOWRlOTM1MDE5OGE5NWJlZjNjOGYxMzY5MjI5Y2I4NTAud2VicA==" style="min-height:100%; margin-top:-16%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>6000x4400 13.42M [匿名-分享]</h2>                        <p>[帕秋莉·诺蕾姬] [东方] [紫发] [蝴蝶结] </p>
+                        <span>2023-02-19 09:45</span>
+                        <em>ACG图片 电脑壁纸 756浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/627.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/fae768/item/169dc5fcc04040086ef730572c6f5c54.jpg-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvZmFlNzY4L2l0ZW0vMTY5ZGM1ZmNjMDQwNDAwODZlZjczMDU3MmM2ZjVjNTQuanBn" style="min-height:100%; margin-top:-8%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>4724x3150 3.95M [匿名-分享]</h2>                        <p>[镜华] [公主连结] [双马尾] [白裤袜] [蝴蝶结] </p>
+                        <span>2023-02-08 11:07</span>
+                        <em>ACG图片 电脑壁纸 553浏览</em>
+                    </div>
+                </a>
+            </section>
+                        <section>
+                <a href="https://www.guguxz.com/archives/image/plate/ACG图片/wd/电脑壁纸/id/575.html" target="_blank">
+                    <!--https://files.guguxz.com/tc/?item=d/y/orig/37923c/item/ab9a93054ba7f94b50cc9b50caa155e4.png-->
+                    <img src="https://www.guguxz.com/index/imageBed?item=ZC95L29yaWcvMzc5MjNjL2l0ZW0vYWI5YTkzMDU0YmE3Zjk0YjUwY2M5YjUwY2FhMTU1ZTQucG5n" style="min-height:100%; margin-top:-6%" class="article_cover_list imageSpareSrc" />
+                    <img src="/static/home/image/loading.gif" alt='图片加载GIF' class="article_cover_load" />
+                    <div class="content">
+                        <h2>3508x2480 6.20M [匿名-分享]</h2>                        <p>[胡桃] [原神] [可爱双马尾] [黑裤袜] [星星眼] </p>
+                        <span>2023-01-30 11:04</span>
+                        <em>ACG图片 电脑壁纸 735浏览</em>
+                    </div>
+                </a>
+            </section>
+                    </div>
+        <div style="clear:both;"></div>
+        
+                <!--view-翻页-->
+        <div class="Page">
+            <div class="pagination"><p>首页</p> <p>上一页</p> <a href="" class="cur">1</a><a href="/search/index/plate/ACG%E5%9B%BE%E7%89%87/wd/%E7%94%B5%E8%84%91%E5%A3%81%E7%BA%B8.html?page=2" title="第"2"页" >2</a> <div><a href='/search/index/plate/ACG%E5%9B%BE%E7%89%87/wd/%E7%94%B5%E8%84%91%E5%A3%81%E7%BA%B8.html?page=2' title='尾页'>尾页</a></div> <a href='/search/index/plate/ACG%E5%9B%BE%E7%89%87/wd/%E7%94%B5%E8%84%91%E5%A3%81%E7%BA%B8.html?page=2' class='next_page' style='margin:6px;' title='下一页'>下一页</a> <div><p class='pageRemark' style='margin-top:8px;'>共<b>2</b>页<b>16</b>条数据</p></div></div>        </div>
+            </article>
+</div>
+<script src="/static/home/js/index.js"></script> <!--index主页js-->
+<script src="/static/home/js/ranking_image.js"></script> <!--image页面js-->
+<script>
+    //app内打开，单独处理
+    if(navigator.userAgent.toLowerCase().indexOf("appwebview") != -1){
+        $(".Notice").css("margin-top","-20px");
+    }
+</script>
+
+
+
+<!--公共-footer-->
+<div class="div_footer"></div>
+<footer>
+    <img src="/static/home/image/return-top.png" id="scroll_btn" title="回到顶部" />
+    <p><a>www.guguxz.com</a></p>
+    <p><a>© 2026 咕咕</a></p>
+</footer>
+<script src="/static/home/js/public.js?u=1.026"></script> <!--公共js-->
+<script>
+    //app内打开，单独处理
+    if(navigator.userAgent.toLowerCase().indexOf("appwebview") != -1){
+        $("aside").remove();
+        $(".div_footer").remove();
+        $("footer").remove();
+    }
+</script>
+</body>
+</html>
