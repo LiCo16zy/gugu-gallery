@@ -19,8 +19,8 @@ import GalleryGrid from './components/GalleryGrid'
 import Lightbox from './components/Lightbox'
 import CrawlPanel from './components/CrawlPanel'
 import SettingsPanel from './components/SettingsPanel'
-import Annotator from './devtools/Annotator'
-import { IconGrid, IconMarker, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
+import { loadedPlugins } from './plugins'
+import { IconGrid, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
 
 export type View = 'gallery' | 'crawl' | 'settings'
 
@@ -68,7 +68,8 @@ export default function App(): JSX.Element {
   const [view, setView] = useState<View>('gallery')
   const [openId, setOpenId] = useState<number | null>(null)
 
-  const [annotateOn, setAnnotateOn] = useState(false)
+  /** 当前展开的工具插件 id；插件全部关闭时这里恒为 null */
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [progress, setProgress] = useState<CrawlProgress | null>(null)
   const [logs, setLogs] = useState<CrawlLogLine[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -313,13 +314,15 @@ export default function App(): JSX.Element {
           </button>
         </div>
 
-        <button
-          className={`btn icon ghost${annotateOn ? ' annotate-on' : ''}`}
-          title="页面标注工具（Ctrl+Shift+A）"
-          onClick={() => setAnnotateOn((v) => !v)}
-        >
-          <IconMarker />
-        </button>
+        {loadedPlugins.map((plugin) =>
+          plugin.TopBarAction ? (
+            <plugin.TopBarAction
+              key={plugin.manifest.id}
+              active={activeTool === plugin.manifest.id}
+              toggle={() => setActiveTool((current) => (current === plugin.manifest.id ? null : plugin.manifest.id))}
+            />
+          ) : null
+        )}
 
         <div className="seg">
           <button className={view === 'gallery' ? 'active' : ''} onClick={() => setView('gallery')}>
@@ -518,13 +521,18 @@ export default function App(): JSX.Element {
         />
       )}
 
-      <Annotator
-        enabled={annotateOn}
-        onToggle={setAnnotateOn}
-        view={openId != null ? 'lightbox' : view}
-        appVersion={info?.version ?? ''}
-        onToast={setToast}
-      />
+      {loadedPlugins.map((plugin) =>
+        plugin.Overlay ? (
+          <plugin.Overlay
+            key={plugin.manifest.id}
+            active={activeTool === plugin.manifest.id}
+            onActiveChange={(active) => setActiveTool(active ? plugin.manifest.id : null)}
+            view={openId != null ? 'lightbox' : view}
+            appVersion={info?.version ?? ''}
+            onToast={setToast}
+          />
+        ) : null
+      )}
 
       {toast && <div className="toast">{toast}</div>}
     </div>

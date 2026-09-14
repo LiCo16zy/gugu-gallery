@@ -5,7 +5,7 @@
  * 执行改动的人（或模型）很可能看不到图，只能靠这些文字 + 截图裁片定位问题。
  * 所以选择器、父级链、组件名、关键样式、对比度都要一并记录下来。
  */
-import type { AnnotationRect, AnnotationTarget } from './types'
+import type { AnnotationRect, AnnotationTarget } from '@plugins/devlog/shared/types'
 
 /** 只挑和视觉/布局判断相关的属性，避免把几百行计算样式灌进去 */
 const STYLE_KEYS = [

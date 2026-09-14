@@ -1,129 +1,23 @@
 /**
- * 渲染进程访问主进程能力的唯一入口（全部通过 preload 的 contextBridge）。
- * 这里只做类型收敛与展示层格式化，不含任何业务逻辑。
+ * 渲染进程访问主进程能力的入口。
+ *
+ * 契约定义在 @shared/bridge，这样插件界面也能用同一份类型，
+ * 不需要反过来依赖应用源码（插件只依赖 preload 暴露的 window.gugu）。
  */
-import type {
-  AppInfo,
-  AppSettings,
-  CrawlProgress,
-  CrawlRequest,
-  Facet,
-  GalleryPage,
-  GalleryQuery,
-  ItemDetail,
-  LibraryStats,
-  PlateFacet,
-  SourceRef
-} from '@shared/types'
-import { DEFAULT_SETTINGS } from '@shared/types'
+import type { GuguBridge } from '@shared/bridge'
 
-export interface CrawlSiteInfo {
-  plates: { name: string; words: string[] }[]
-  fetchedAt: number
+export type { GuguBridge }
+export type { CrawlSiteInfo, JobRow } from '@shared/bridge'
+
+const unavailable = (): never => {
+  throw new Error('主进程桥接不可用：请通过 Electron 启动本应用')
 }
 
-export interface GuguBridge {
-  appInfo(): Promise<AppInfo>
-  settings: {
-    get(): Promise<AppSettings>
-    set(patch: Partial<AppSettings>): Promise<AppSettings>
-  }
-  library: {
-    stats(): Promise<LibraryStats>
-    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[] }>
-    query(query: GalleryQuery): Promise<GalleryPage>
-    item(id: number): Promise<ItemDetail | null>
-    favorite(id: number, value: boolean): Promise<boolean>
-    rating(id: number, value: number): Promise<number>
-    remove(ids: number[], deleteFiles: boolean): Promise<number>
-    reveal(id: number): Promise<boolean>
-    pickRoot(): Promise<string | null>
-  }
-  crawl: {
-    siteInfo(): Promise<CrawlSiteInfo>
-    start(request: CrawlRequest): Promise<number>
-    pause(): Promise<boolean>
-    resume(): Promise<boolean>
-    cancel(): Promise<boolean>
-    downloadItems(ids: number[]): Promise<number>
-    progress(): Promise<CrawlProgress | null>
-    jobs(): Promise<JobRow[]>
-    onProgress(cb: (payload: { progress: CrawlProgress; logs: CrawlProgress['logs'] }) => void): () => void
-  }
-  sources: {
-    list(): Promise<SourceRef[]>
-    remove(id: number): Promise<boolean>
-    toggle(id: number, enabled: boolean): Promise<boolean>
-  }
-  devlog: {
-    list(): Promise<unknown>
-    export(payload: unknown): Promise<unknown>
-  }
-  openExternal(url: string): Promise<void>
-}
-
-export interface JobRow {
-  id: number
-  phase: string
-  summary: string
-  stats: string
-  started_at: string
-  finished_at: string | null
-}
-
-declare global {
-  interface Window {
-    gugu?: GuguBridge
-  }
-}
-
-const bridge = (): GuguBridge => {
-  if (!window.gugu) throw new Error('主进程桥接不可用：请通过 Electron 启动本应用')
-  return window.gugu
-}
-
-export const api: GuguBridge = {
-  appInfo: () => bridge().appInfo(),
-  settings: {
-    get: async () => {
-      if (!window.gugu) return DEFAULT_SETTINGS
-      return bridge().settings.get()
-    },
-    set: (patch) => bridge().settings.set(patch)
-  },
-  library: {
-    stats: () => bridge().library.stats(),
-    facets: () => bridge().library.facets(),
-    query: (query) => bridge().library.query(query),
-    item: (id) => bridge().library.item(id),
-    favorite: (id, value) => bridge().library.favorite(id, value),
-    rating: (id, value) => bridge().library.rating(id, value),
-    remove: (ids, deleteFiles) => bridge().library.remove(ids, deleteFiles),
-    reveal: (id) => bridge().library.reveal(id),
-    pickRoot: () => bridge().library.pickRoot()
-  },
-  crawl: {
-    siteInfo: () => bridge().crawl.siteInfo(),
-    start: (request) => bridge().crawl.start(request),
-    pause: () => bridge().crawl.pause(),
-    resume: () => bridge().crawl.resume(),
-    cancel: () => bridge().crawl.cancel(),
-    downloadItems: (ids) => bridge().crawl.downloadItems(ids),
-    progress: () => bridge().crawl.progress(),
-    jobs: () => bridge().crawl.jobs(),
-    onProgress: (cb) => bridge().crawl.onProgress(cb)
-  },
-  sources: {
-    list: () => bridge().sources.list(),
-    remove: (id) => bridge().sources.remove(id),
-    toggle: (id, enabled) => bridge().sources.toggle(id, enabled)
-  },
-  devlog: {
-    list: () => bridge().devlog.list(),
-    export: (payload) => bridge().devlog.export(payload)
-  },
-  openExternal: (url) => bridge().openExternal(url)
-}
+/** 没有 bridge 时退化成会在调用时报错的空壳，避免模块加载阶段直接崩掉 */
+export const api: GuguBridge =
+  typeof window !== 'undefined' && window.gugu
+    ? window.gugu
+    : (new Proxy({} as GuguBridge, { get: () => unavailable }) as GuguBridge)
 
 /* ------------------------------------------------------------ 展示层格式化 */
 
@@ -178,6 +72,5 @@ export const formatRelative = (value: string | null | undefined): string => {
 
 export const megapixels = (width: number | null, height: number | null): string => {
   if (!width || !height) return '—'
-  const mp = (width * height) / 1_000_000
-  return `${mp.toFixed(1)} MP`
+  return `${((width * height) / 1_000_000).toFixed(1)} MP`
 }

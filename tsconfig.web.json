@@ -11,13 +11,21 @@
     "noUnusedParameters": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@plugins/*": ["plugins/*"]
     }
   },
-  "include": ["src/renderer/**/*", "src/shared/**/*", "src/preload/api.d.ts"]
+  "include": [
+    "src/renderer/**/*",
+    "src/shared/**/*",
+    "plugins/*/renderer/**/*",
+    "plugins/*/shared/**/*",
+    "plugins/*/plugin.json"
+  ]
 }

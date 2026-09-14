@@ -8,6 +8,8 @@ import { Readable } from 'node:stream'
 import { app, BrowserWindow, protocol, shell } from 'electron'
 import { AppContext } from './context'
 import { registerIpc } from './ipc'
+import { PluginRegistry } from './plugins'
+import { resolveWorkspaceRoot } from './workspace'
 
 const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -22,6 +24,14 @@ const MIME: Record<string, string> = {
 
 let mainWindow: BrowserWindow | null = null
 const ctx = new AppContext()
+
+// 插件是可选的：一个都没装时这里退化成空注册表，核心逻辑不受影响
+const pluginRegistry = new PluginRegistry()
+const pluginHost = {
+  workspaceRoot: '',
+  getLibraryRoot: () => ctx.library.root,
+  getWindow: () => mainWindow
+}
 
 // 自定义协议必须在使用前登记为特权协议，否则 fetch/stream 都不可用
 protocol.registerSchemesAsPrivileged([
@@ -49,6 +59,10 @@ async function bootstrap(): Promise<void> {
 
   await app.whenReady()
   await ctx.init()
+
+  pluginHost.workspaceRoot = resolveWorkspaceRoot()
+  await pluginRegistry.load(pluginHost)
+  pluginRegistry.registerIpc(pluginHost)
 
   registerMediaProtocol()
   registerIpc(ctx, () => mainWindow)
@@ -244,5 +258,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  void pluginRegistry.deactivateAll()
   void ctx.dispose()
 })

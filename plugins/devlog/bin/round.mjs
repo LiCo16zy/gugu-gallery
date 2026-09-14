@@ -17,7 +17,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
+const root = resolve(here, '../../..')
 const roundsDir = join(root, 'devlog', 'rounds')
 const indexPath = join(root, 'devlog', 'index.json')
 const libraryRoot = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
@@ -69,7 +69,7 @@ function stamp() {
 /** 调用主进程的截图模式，把四个界面截到指定目录 */
 async function capture(targetDir) {
   await mkdir(targetDir, { recursive: true })
-  const result = await sh(process.execPath, [join(root, 'scripts', 'screenshot.mjs')], {
+  const result = await sh(process.execPath, [join(root, 'scripts', 'shot.mjs')], {
     env: {
       ...process.env,
       GUGU_SHOT_DIR: targetDir,

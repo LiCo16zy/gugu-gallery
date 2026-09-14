@@ -19,8 +19,19 @@
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["src/shared/*"],
-      "@main/*": ["src/main/*"]
+      "@main/*": ["src/main/*"],
+      "@plugins/*": ["plugins/*"]
     }
   },
-  "include": ["src/main/**/*", "src/preload/**/*", "src/shared/**/*", "scripts/**/*", "electron.vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/shared/**/*",
+    "plugins/*/main/**/*",
+    "plugins/*/shared/**/*",
+    "plugins/*/plugin.json",
+    "scripts/**/*",
+    "electron.vite.config.ts",
+    "vitest.config.ts"
+  ]
 }

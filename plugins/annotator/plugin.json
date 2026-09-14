@@ -1,0 +1,8 @@
+{
+  "id": "annotator",
+  "name": "页面标注工具",
+  "version": "1.0.0",
+  "description": "在真实界面上点选元素或框选区域写批注，导出成可执行的修改说明",
+  "dependsOn": ["devlog"],
+  "ui": { "topBarAction": true, "overlay": true }
+}

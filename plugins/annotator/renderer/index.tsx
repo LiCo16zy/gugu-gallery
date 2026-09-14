@@ -12,8 +12,7 @@
  *  - 位置同时记「视口坐标」和「文档坐标」：前者用于截图裁切，后者保证滚动后标注还在原地。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import './annotator.css'
-import { describeElement, describeRegion, rectOf } from './inspect'
+import type { PluginOverlayProps, PluginTopBarActionProps, RendererPluginModule } from '@shared/plugin'
 import {
   CATEGORY_OPTIONS,
   SEVERITY_OPTIONS,
@@ -21,19 +20,15 @@ import {
   type AnnotationCategory,
   type AnnotationRect,
   type AnnotationSeverity,
-  type DevlogRound
-} from './types'
+  type ExportResult,
+  type RoundInfo
+} from '@plugins/devlog/shared/types'
+import manifestJson from '../plugin.json'
+import { describeElement, describeRegion, rectOf } from './inspect'
+import './annotator.css'
 
+const manifest = manifestJson as RendererPluginModule['manifest']
 type ToolMode = 'browse' | 'element' | 'region'
-
-interface Props {
-  enabled: boolean
-  onToggle: (enabled: boolean) => void
-  /** 当前界面标识，写进档案 */
-  view: string
-  appVersion: string
-  onToast: (message: string) => void
-}
 
 interface Draft {
   kind: 'element' | 'region'
@@ -45,7 +40,14 @@ interface Draft {
 
 const uid = (): string => Math.random().toString(36).slice(2, 10)
 
-export default function Annotator({ enabled, onToggle, view, appVersion, onToast }: Props): JSX.Element | null {
+/** 覆盖层：把插件契约的 active / onActiveChange 映射到内部沿用的命名上 */
+function AnnotatorOverlay({
+  active: enabled,
+  onActiveChange: onToggle,
+  view,
+  appVersion,
+  onToast
+}: PluginOverlayProps): JSX.Element | null {
   const [mode, setMode] = useState<ToolMode>('browse')
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -56,7 +58,7 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
   const [dragRect, setDragRect] = useState<AnnotationRect | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [note, setNote] = useState('')
-  const [rounds, setRounds] = useState<DevlogRound[]>([])
+  const [rounds, setRounds] = useState<RoundInfo[]>([])
   const [scrollTick, setScrollTick] = useState(0)
 
   const dragStart = useRef<{ x: number; y: number } | null>(null)
@@ -99,8 +101,8 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
     // 顺手读一下历史轮次，导出时可以提示进度
     void (async () => {
       try {
-        const list = await window.gugu?.devlog.list()
-        setRounds((list as DevlogRound[]) ?? [])
+        const list = await window.gugu?.plugins.invoke<RoundInfo[]>('devlog', 'listRounds')
+        setRounds(list ?? [])
       } catch {
         setRounds([])
       }
@@ -263,8 +265,8 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
       onToast('还没有任何标注')
       return
     }
-    if (!window.gugu?.devlog) {
-      onToast('导出能力不可用（未通过 Electron 启动？）')
+    if (!window.gugu?.plugins) {
+      onToast('导出能力不可用：devlog 插件未加载')
       return
     }
     const scrollX = window.scrollX
@@ -285,16 +287,12 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
       }))
     }
     try {
-      const result = (await window.gugu.devlog.export(payload)) as {
-        roundId: string
-        roundDir: string
-        files: string[]
-      }
+      const result = await window.gugu.plugins.invoke<ExportResult>('devlog', 'exportAnnotations', payload)
       setExportOpen(false)
       setNote('')
       onToast(`已导出到 devlog/rounds/${result.roundId}/`)
-      const list = (await window.gugu.devlog.list()) as DevlogRound[]
-      setRounds(list)
+      const list = await window.gugu.plugins.invoke<RoundInfo[]>('devlog', 'listRounds')
+      setRounds(list ?? [])
     } catch (err) {
       onToast(`导出失败：${err instanceof Error ? err.message : String(err)}`)
     }
@@ -623,3 +621,46 @@ function CommentEditor({
     </div>
   )
 }
+
+/* --------------------------------------------------------------- 插件导出 */
+
+/** 顶栏入口图标：内联 SVG，插件不依赖应用的图标组件 */
+function MarkerIcon(): JSX.Element {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 20h16" />
+      <path d="M14.5 3.5 20 9l-9.5 9.5H5v-5.5z" />
+      <path d="M12.5 5.5 18 11" />
+    </svg>
+  )
+}
+
+function AnnotatorTopBarAction({ active, toggle }: PluginTopBarActionProps): JSX.Element {
+  return (
+    <button
+      data-component="annotator/TopBarAction"
+      className={`btn icon ghost${active ? ' annotate-on' : ''}`}
+      title="页面标注工具（Ctrl+Shift+A）"
+      onClick={toggle}
+    >
+      <MarkerIcon />
+    </button>
+  )
+}
+
+const annotatorPlugin: RendererPluginModule = {
+  manifest,
+  TopBarAction: AnnotatorTopBarAction,
+  Overlay: AnnotatorOverlay
+}
+
+export default annotatorPlugin

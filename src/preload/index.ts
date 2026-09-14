@@ -1,6 +1,9 @@
 /**
  * 预加载脚本：通过 contextBridge 暴露一组白名单 API。
  * 渲染进程永远拿不到 ipcRenderer / require / fs。
+ *
+ * 插件能力统一走 plugins.invoke(id, method, payload)，
+ * 核心不需要为每个插件单独开通道，插件也不需要改这里。
  */
 import { contextBridge, ipcRenderer } from 'electron'
 
@@ -29,9 +32,12 @@ const IPC = {
   sourcesList: 'sources:list',
   sourcesRemove: 'sources:remove',
   sourcesToggle: 'sources:toggle',
-  progressEvent: 'crawl:progress-event',
-  devlogList: 'devlog:list',
-  devlogExport: 'devlog:export'
+  progressEvent: 'crawl:progress-event'
+} as const
+
+const pluginIpc = {
+  list: 'plugin:list',
+  invoke: 'plugin:invoke'
 } as const
 
 const api = {
@@ -71,9 +77,10 @@ const api = {
     remove: (id: number) => ipcRenderer.invoke(IPC.sourcesRemove, id),
     toggle: (id: number, enabled: boolean) => ipcRenderer.invoke(IPC.sourcesToggle, id, enabled)
   },
-  devlog: {
-    list: () => ipcRenderer.invoke(IPC.devlogList),
-    export: (payload: unknown) => ipcRenderer.invoke(IPC.devlogExport, payload)
+  plugins: {
+    list: () => ipcRenderer.invoke(pluginIpc.list),
+    invoke: (pluginId: string, method: string, payload?: unknown) =>
+      ipcRenderer.invoke(pluginIpc.invoke, pluginId, method, payload)
   },
   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url)
 }
