@@ -38,6 +38,7 @@ export const IPC = {
   windowClose: 'window:close',
   windowState: 'window:state',
   siteInfo: 'crawl:siteInfo',
+  crawlTargetInfo: 'crawl:targetInfo',
   crawlStart: 'crawl:start',
   crawlPause: 'crawl:pause',
   crawlResume: 'crawl:resume',
@@ -155,6 +156,15 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
   }))
 
   handle(IPC.siteInfo, () => ctx.crawler.fetchSiteInfo(false))
+
+  handle(IPC.crawlTargetInfo, (target: { kind: string; plate?: string | null; word?: string | null; url?: string | null }) =>
+    ctx.crawler.fetchPageInfo({
+      kind: target.kind as 'home' | 'category' | 'search' | 'ranking' | 'custom',
+      plate: target.plate ?? null,
+      word: target.word ?? null,
+      url: target.url ?? null
+    })
+  )
 
   handle(IPC.crawlStart, async (request: CrawlRequest): Promise<number> => {
     const jobId = await ctx.crawler.start(request)

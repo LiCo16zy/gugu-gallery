@@ -47,6 +47,8 @@ export interface GuguBridge {
   }
   crawl: {
     siteInfo(): Promise<CrawlSiteInfo>
+    /** 某个目标的总页数 / 总条数，用于在界面上给个规模预期 */
+    targetInfo(target: unknown): Promise<{ totalPages: number | null; totalItems: number | null }>
     start(request: unknown): Promise<number>
     pause(): Promise<boolean>
     resume(): Promise<boolean>

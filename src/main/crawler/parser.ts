@@ -125,6 +125,20 @@ export function parsePagination(html: string): { totalPages: number | null; tota
 /* -------------------------------------------------------------- 导航分类 */
 
 /**
+ * 导航里的「示例模板」占位名。
+ *
+ * 站点在 <nav> 里留了一段注释掉的格式说明：
+ *   <a class="nav_one">...一级分类名</a>
+ *   <a href=".../plate/一级分类名/wd/二级分类名1.html">二级分类名1</a>
+ * 注释里同样有大段**真实**分类（例如搞笑图片，URL 至今可用）需要采集，
+ * 所以不能简单跳过注释，而要把这段模板单独识别出来丢掉 ——
+ * 否则它会变成列表里的第一个分类，抓取时默认就选中一个不存在的目标。
+ */
+function isTemplatePlaceholder(name: string): boolean {
+  return name.includes('分类名')
+}
+
+/**
  * 解析顶部导航，得到「一级分类 -> 二级分类」树。
  * 导航里有大段被注释掉的分类（例如搞笑图片），它们对应的 URL 依然可用，因此一并采集。
  */
@@ -144,6 +158,7 @@ export function parseNav(html: string): RawNavPlate[] {
     const nameHtml = firstMatch(source, /<\/span>([\s\S]*?)<\/p>/)
     const name = nameHtml ? stripTags(nameHtml) : ''
     if (!name || name.length > 20) continue
+    if (isTemplatePlaceholder(name)) continue
 
     // 二级分类：优先看 nav_two 区块里的链接，没有则退化为整个片段里的链接
     const sectionStart = source.indexOf('nav_two')
@@ -153,7 +168,7 @@ export function parseNav(html: string): RawNavPlate[] {
     let lm: RegExpExecArray | null
     while ((lm = linkRe.exec(scope))) {
       const w = decodeURIComponent(lm[1])
-      if (w && w !== '排行' && !words.includes(w)) words.push(w)
+      if (w && w !== '排行' && !isTemplatePlaceholder(w) && !words.includes(w)) words.push(w)
     }
     const existing = plates.find((p) => p.name === name)
     if (existing) {

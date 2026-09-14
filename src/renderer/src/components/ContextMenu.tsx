@@ -25,6 +25,26 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
   const ref = useRef<HTMLDivElement | null>(null)
   const [pos, setPos] = useState({ left: x, top: y })
   const [openKey, setOpenKey] = useState<string | null>(null)
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /**
+   * 折叠子项的收起刻意做得「迟钝」一些：
+   * 菜单项和子菜单之间有一道视觉间隙，鼠标慢速移过去时会经过空白，
+   * 立刻收起的话子项根本点不到。所以改成离开 2s 后才收，
+   * 中途只要回到父项或进入子项就取消。
+   */
+  const cancelCollapse = (): void => {
+    if (collapseTimer.current) {
+      clearTimeout(collapseTimer.current)
+      collapseTimer.current = null
+    }
+  }
+  const scheduleCollapse = (key: string): void => {
+    cancelCollapse()
+    collapseTimer.current = setTimeout(() => setOpenKey((k) => (k === key ? null : k)), 2000)
+  }
+
+  useEffect(() => cancelCollapse, [])
 
   // 贴边时把菜单收进视口
   useLayoutEffect(() => {
@@ -65,12 +85,19 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
       onContextMenu={(e) => e.preventDefault()}
     >
       {entries.map((entry) => (
-        <div key={entry.key}>
+        <div
+          key={entry.key}
+          onMouseEnter={() => {
+            cancelCollapse()
+            if (entry.children?.length) setOpenKey(entry.key)
+          }}
+          onMouseLeave={() => {
+            if (entry.children?.length) scheduleCollapse(entry.key)
+          }}
+        >
           <button
             className={'ctx-item' + (entry.danger ? ' danger' : '') + (openKey === entry.key ? ' open' : '')}
             disabled={entry.disabled}
-            onMouseEnter={() => setOpenKey((k) => (entry.children?.length ? entry.key : k))}
-            onMouseLeave={() => setOpenKey((k) => (k === entry.key && entry.children?.length ? null : k))}
             onClick={() => {
               if (entry.children?.length) return
               entry.onSelect?.()
@@ -88,11 +115,7 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
             ) : null}
           </button>
           {entry.children?.length && openKey === entry.key ? (
-            <div
-              className="ctx-sub"
-              onMouseEnter={() => setOpenKey(entry.key)}
-              onMouseLeave={() => setOpenKey((k) => (k === entry.key ? null : k))}
-            >
+            <div className="ctx-sub" onMouseEnter={() => cancelCollapse()}>
               {entry.children.map((child) => (
                 <button
                   key={child.key}

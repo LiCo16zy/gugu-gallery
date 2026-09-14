@@ -124,6 +124,9 @@ describe('导航解析', () => {
     expect(acg!.words).toContain('电脑壁纸')
     // 被注释掉的搞笑图片分类也应被采集到
     expect(plates.some((p) => p.name === '搞笑图片')).toBe(true)
+    // 但注释里的「示例模板」必须被丢掉，否则它会变成默认选中的第一个分类
+    expect(plates.some((p) => p.name.includes('分类名'))).toBe(false)
+    expect(plates.every((p) => p.words.every((w) => !w.includes('分类名')))).toBe(true)
   })
 })
 

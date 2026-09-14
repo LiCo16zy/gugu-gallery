@@ -851,11 +851,11 @@ export default function App(): JSX.Element {
             <h3>帮助</h3>
             <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
               <dt>搜索</dt>
-              <dd>标题、标签、分类、Pixiv ID 都能搜</dd>
-              <dt>卡片右键</dt>
+              <dd>标题、标签、Pixiv ID 都能搜</dd>
+              <dt>卡片</dt>
               <dd>收藏 / 复制 pid / 打开于（文件管理器、Pixiv）</dd>
               <dt>灯箱</dt>
-              <dd>← → 翻页，Esc 关闭，滚轮缩放，左键拖动</dd>
+              <dd>左键拖动，滚轮缩放，← → 翻页，Esc 关闭</dd>
             </dl>
             <div className="sep" />
             <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>

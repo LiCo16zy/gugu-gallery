@@ -1342,6 +1342,29 @@ body.resizing * {
   pointer-events: none;
 }
 
+.lb-exit-immersive {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 16, 24, 0.66);
+  color: #e7ebf3;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.16s var(--ease);
+}
+.lb-exit-immersive:hover {
+  background: rgba(124, 156, 255, 0.24);
+  border-color: rgba(124, 156, 255, 0.5);
+}
+
 .lb-immersive {
   flex: none;
   width: 30px;
@@ -1943,11 +1966,11 @@ body.resizing * {
   place-items: center;
   color: var(--text-faint);
 }
+/* 去掉上下外边距，父项与子项之间不留「空白陷阱」 */
 .ctx-sub {
   padding-left: 14px;
-  margin: 2px 0 4px;
+  margin: 0 0 2px 16px;
   border-left: 1px solid var(--border);
-  margin-left: 16px;
 }
 
 /* 标注模式开启时高亮顶栏按钮，避免忘记自己还开着工具 */

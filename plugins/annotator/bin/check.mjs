@@ -115,6 +115,65 @@ const SCRIPT = `(async () => {
   await sleep(2200)
   out.toastAfterExport = document.querySelector('.toast')?.textContent ?? null
 
+  // 6.5) 批注框必须完整落在视口内，且「添加」够得着
+  //      挑一个贴右下角的元素，旧实现（按固定高度硬算）会把它顶到屏幕外
+  btn('点选')?.click()
+  await sleep(200)
+  {
+    // 侧栏底部按钮正好贴在视口下沿，最能暴露「批注框被顶到屏幕外」的问题
+    const target = document.querySelector('.sidebar-foot .side-item') || document.querySelector('.card')
+    if (!target) return { error: 'no target for corner test' }
+    const r = target.getBoundingClientRect()
+    fire(target, 'mousedown', r.x + r.width / 2, r.y + r.height / 2)
+    fire(target, 'mouseup', r.x + r.width / 2, r.y + r.height / 2)
+    await sleep(450)
+    const box = document.querySelector('.gugu-anno-editor')
+    out.cornerEditorOpen = Boolean(box)
+    if (box) {
+      const br = box.getBoundingClientRect()
+      out.editorRect = [Math.round(br.left), Math.round(br.top), Math.round(br.width), Math.round(br.height)]
+      out.editorInViewport =
+        br.left >= -1 && br.top >= -1 && br.right <= window.innerWidth + 1 && br.bottom <= window.innerHeight + 1
+      const addBtn = Array.from(box.querySelectorAll('button')).find((b) => b.textContent.trim() === '添加')
+      if (addBtn) {
+        const ar = addBtn.getBoundingClientRect()
+        const hit = document.elementFromPoint(ar.left + ar.width / 2, ar.top + ar.height / 2)
+        out.addButtonHittable = hit === addBtn
+      }
+    }
+    // 顺手验证：保存后仍然停在「点选」，可以直接继续标注
+    const ta3 = box ? box.querySelector('textarea') : null
+    if (ta3) {
+      setTextarea(ta3, '连续标注第一笔')
+      await sleep(150)
+      Array.from(box.querySelectorAll('button')).find((b) => b.textContent.trim() === '添加')?.click()
+      await sleep(450)
+      out.modeAfterSave = [...document.querySelectorAll('.gugu-anno-seg button')].find((b) => b.className === 'on')?.textContent
+      const pinsBefore = document.querySelectorAll('.gugu-anno-pin').length
+      // 不点任何模式按钮，直接再点一次元素
+      const chip2 = document.querySelector('.tag-chip')
+      const cr = chip2.getBoundingClientRect()
+      fire(chip2, 'mousedown', cr.x + cr.width / 2, cr.y + cr.height / 2)
+      fire(chip2, 'mouseup', cr.x + cr.width / 2, cr.y + cr.height / 2)
+      await sleep(450)
+      out.continuedWithoutReclick = Boolean(document.querySelector('.gugu-anno-editor'))
+      const ta4 = document.querySelector('.gugu-anno-editor textarea')
+      if (ta4) {
+        setTextarea(ta4, '连续标注第二笔')
+        await sleep(150)
+        Array.from(document.querySelectorAll('.gugu-anno-editor button'))
+          .find((b) => b.textContent.trim() === '添加')
+          ?.click()
+        await sleep(400)
+      }
+      out.pinsAfterChain = document.querySelectorAll('.gugu-anno-pin').length
+      out.pinsBeforeChain = pinsBefore
+    }
+    // 恢复浏览模式
+    btn('浏览')?.click()
+    await sleep(200)
+  }
+
   // 7) 工具栏层级：标注记号不能盖住工具栏
   // 前面的流程耗时已经超过 5s，工具栏此时多半已自动收起，先点把手展开
   const handleEarly = document.querySelector('.gugu-anno-handle')
@@ -150,6 +209,19 @@ const SCRIPT = `(async () => {
     }
     return true
   })()
+
+  // 7.8) 标注清单跟随「显示标注」一起显隐
+  {
+    btn('浏览')?.click()
+    await sleep(250)
+    out.panelVisibleBefore = Boolean(document.querySelector('.gugu-anno-panel'))
+    btn('隐藏标注')?.click()
+    await sleep(350)
+    out.panelVisibleWhenPinsHidden = Boolean(document.querySelector('.gugu-anno-panel'))
+    btn('显示标注')?.click()
+    await sleep(350)
+    out.panelVisibleAfter = Boolean(document.querySelector('.gugu-anno-panel'))
+  }
 
   // 8) 说明气泡：点击选项后出现，5s 后消失
   btn('点选')?.click()
@@ -249,7 +321,7 @@ const checks = [
   ['提交后生成图钉', result.pinsAfterFirst === 1],
   ['框选区域也能弹出批注框', result.regionEditorOpen === true],
   ['第二条标注生成', result.pinsAfterSecond === 2],
-  ['提交后自动回到浏览模式', result.modeAfterSubmit === '浏览'],
+  ['框选保存后仍停留在框选模式', result.modeAfterSubmit === '框选'],
   ['标注清单列出两条', result.panelItems === 2],
   ['导出弹窗能打开', result.modalOpen === true],
   ['导出后给出轮次提示', /devlog\/rounds/.test(result.toastAfterExport ?? '')],
@@ -261,6 +333,13 @@ const checks = [
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
   ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
   ['工具栏整体位于窗口拖动区下方', result.toolbarBelowDragZone === true],
+  ['贴边元素的批注框完整落在视口内', result.editorInViewport === true],
+  ['批注框的「添加」按钮点得到', result.addButtonHittable === true],
+  ['保存后仍停留在点选模式', result.modeAfterSave === '点选'],
+  ['无需重新点模式即可连续标注', result.continuedWithoutReclick === true],
+  ['标注清单默认可见', result.panelVisibleBefore === true],
+  ['隐藏标注时清单一起隐藏', result.panelVisibleWhenPinsHidden === false],
+  ['恢复显示后清单回来', result.panelVisibleAfter === true],
   ['工具栏层级高于标注记号', result.toolbarAbovePins === true],
   ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
   ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],

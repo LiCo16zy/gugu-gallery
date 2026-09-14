@@ -45,6 +45,8 @@ export default function CrawlPanel({
   const [retries, setRetries] = useState(settings.retries)
   const [resumeFromMarks, setResumeFromMarks] = useState(false)
   const [starting, setStarting] = useState(false)
+  /** 当前首个目标的规模，用于给「结束页」之类的输入一个参照 */
+  const [pageInfo, setPageInfo] = useState<{ totalPages: number | null; totalItems: number | null } | null>(null)
 
   useEffect(() => {
     setListConcurrency(settings.listConcurrency)
@@ -84,6 +86,30 @@ export default function CrawlPanel({
     }
     return list
   }, [site, selected])
+
+  const firstTargetKey =
+    targets.length > 0 ? [targets[0].kind, targets[0].plate, targets[0].word].join('|') : ''
+
+  /** 目标一变就顺手问一次规模，界面上的「约 N 页」就是从这里来的 */
+  useEffect(() => {
+    if (!firstTargetKey) {
+      setPageInfo(null)
+      return
+    }
+    let alive = true
+    void api.crawl
+      .targetInfo(targets[0])
+      .then((info) => {
+        if (alive) setPageInfo(info)
+      })
+      .catch(() => {
+        if (alive) setPageInfo(null)
+      })
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstTargetKey])
 
   const active = progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
 
@@ -149,7 +175,9 @@ export default function CrawlPanel({
           <IconRadar width={14} height={14} />
           抓取目标
           <span className="hint">
-            已选 {targets.length} 个{site ? ` · 站点分类读取于 ${new Date(site.fetchedAt).toLocaleTimeString()}` : ''}
+            已选 {targets.length} 个
+            {site ? ` · 站点分类读取于 ${new Date(site.fetchedAt).toLocaleTimeString()}` : ''}
+            {pageInfo?.totalPages ? ` · 当前目标共 ${pageInfo.totalPages} 页` : ''}
           </span>
           <div className="spacer" />
           <button className="btn sm ghost" onClick={() => void loadSite()} disabled={loadingSite || active}>
@@ -231,7 +259,11 @@ export default function CrawlPanel({
               value={pageTo}
               onChange={(e) => setPageTo(e.target.value)}
             />
-            <span className="help">Pixiv萌图 目前约 1430 页</span>
+            <span className="help">
+              {pageInfo?.totalPages
+                ? `当前目标共 ${pageInfo.totalPages} 页${pageInfo.totalItems ? ` · ${pageInfo.totalItems} 条` : ''}`
+                : '每页 10 条'}
+            </span>
           </div>
           <div className="field">
             <label>最多处理条目</label>

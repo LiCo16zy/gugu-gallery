@@ -226,6 +226,18 @@ const SCRIPT = `(async () => {
     toggle?.click()
     await sleep(700)
     out.immersiveHidesPanel = lb?.classList.contains('immersive') === true && side ? Number(getComputedStyle(side).opacity) < 0.5 : false
+    // 右栏滑走后必须还有别的出口，否则用户退不出沉浸模式
+    const exitBtn = document.querySelector('.lb-exit-immersive')
+    out.immersiveExitVisible = Boolean(exitBtn)
+    if (exitBtn) {
+      const er = exitBtn.getBoundingClientRect()
+      out.immersiveExitHittable = document.elementFromPoint(er.left + er.width / 2, er.top + er.height / 2) === exitBtn
+      exitBtn.click()
+      await sleep(600)
+      out.immersiveExitedByStageBtn = !lb?.classList.contains('immersive')
+      toggle?.click()
+      await sleep(600)
+    }
     out.immersiveOpacityBefore = before
     toggle?.click()
     await sleep(700)
@@ -346,6 +358,8 @@ const checks = [
   ['内容页无横向溢出', result.mainOverflowX === 0],
   ['灯箱有沉浸模式开关', result.immersiveToggle === true],
   ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
+  ['沉浸模式下仍可退出（舞台内有出口）', result.immersiveExitHittable === true],
+  ['舞台出口能真正退出沉浸模式', result.immersiveExitedByStageBtn === true],
   ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
   ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
   ['视图密度只剩一个按钮', result.viewToggleCount === 1],

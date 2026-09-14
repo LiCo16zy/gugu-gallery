@@ -11,7 +11,7 @@
  *    这样可以直接用 e.target 拿到真实元素，也避免遮罩挡住自己的工具栏。
  *  - 位置同时记「视口坐标」和「文档坐标」：前者用于截图裁切，后者保证滚动后标注还在原地。
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { PluginOverlayProps, PluginTopBarActionProps, RendererPluginModule } from '@shared/plugin'
 import {
   CATEGORY_OPTIONS,
@@ -333,7 +333,8 @@ function AnnotatorOverlay({
         }
       ])
       setDraft(null)
-      setMode('browse')
+      // 刻意不回到浏览模式：连续标注时不该每次都重新点一遍「点选 / 框选」
+      setMode((current) => (current === 'browse' ? 'browse' : current))
     },
     [draft]
   )
@@ -553,7 +554,8 @@ function AnnotatorOverlay({
       )}
 
       {/* ------------------------------------------------------------ 标注列表 */}
-      {annotations.length > 0 && mode === 'browse' && (
+      {/* 清单与标注记号同生共死：隐藏标注时清单也一起收起来 */}
+      {showPins && annotations.length > 0 && (
         <div className="gugu-anno-panel">
           <div className="gugu-anno-panel-head">
             <b>标注清单</b>
@@ -639,6 +641,8 @@ function CommentEditor({
   const [category, setCategory] = useState<AnnotationCategory>(editing?.category ?? 'style')
   const [severity, setSeverity] = useState<AnnotationSeverity>(editing?.severity ?? 'should')
   const ref = useRef<HTMLTextAreaElement | null>(null)
+  const boxRef = useRef<HTMLDivElement | null>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
 
   useEffect(() => {
     ref.current?.focus()
@@ -647,13 +651,47 @@ function CommentEditor({
   const target = editing?.target ?? draft?.target ?? null
   const rect = editing?.rect ?? draft?.rect ?? null
 
-  // 面板贴着标注框放，超出视口就挪回来
-  const style: React.CSSProperties = rect
-    ? {
-        left: Math.min(Math.max(12, rect.x), window.innerWidth - 372),
-        top: Math.min(Math.max(12, rect.y + rect.height + 10), window.innerHeight - 300)
+  /**
+   * 批注框不能跑到视口外面 —— 之前是按「面板高 300px」硬算的，
+   * 内容一多（标签长、批注长）就会把「添加」按钮顶到屏幕外点不到。
+   * 改成先渲染再量实际尺寸，然后：优先贴在标注框下方，下方放不下就翻到上方，
+   * 最后统一夹进视口内。
+   */
+  useLayoutEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    const place = (): void => {
+      const width = el.offsetWidth || 360
+      const height = el.offsetHeight || 260
+      const margin = 12
+      const gap = 10
+      if (!rect) {
+        setPos({ left: margin, top: 78 })
+        return
       }
-    : { left: 12, top: 90 }
+      let top = rect.y + rect.height + gap
+      if (top + height > window.innerHeight - margin) {
+        const above = rect.y - gap - height
+        top = above >= margin ? above : window.innerHeight - height - margin
+      }
+      let left = rect.x
+      if (left + width > window.innerWidth - margin) left = rect.x + rect.width - width
+      left = Math.min(Math.max(margin, left), Math.max(margin, window.innerWidth - width - margin))
+      top = Math.min(Math.max(margin, top), Math.max(margin, window.innerHeight - height - margin))
+      setPos({ left, top })
+    }
+    place()
+    const observer = new ResizeObserver(place)
+    observer.observe(el)
+    window.addEventListener('resize', place)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', place)
+    }
+  }, [rect])
+
+  // 还没量出尺寸前先藏在屏幕外，避免闪一下再跳位
+  const style: React.CSSProperties = pos ? { left: pos.left, top: pos.top } : { left: -9999, top: -9999 }
 
   const submit = (): void => {
     const comment = text.trim()
@@ -663,7 +701,7 @@ function CommentEditor({
   }
 
   return (
-    <div className="gugu-anno-editor" style={style}>
+    <div ref={boxRef} className="gugu-anno-editor" style={style}>
       <div className="gugu-anno-editor-head">
         {editing ? `编辑标注 #${editing.index}` : draft?.kind === 'region' ? '新增区域标注' : '新增元素标注'}
         <button className="gugu-anno-x" onClick={onCancel} title="取消 (Esc)">

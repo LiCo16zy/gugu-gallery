@@ -220,7 +220,6 @@ function Card({
     if (img?.complete && img.naturalWidth > 0) setLoaded(true)
   }, [])
 
-  const ratio = item.width && item.height ? item.width / item.height : 0.75
   const imgHeight = placement?.imgHeight ?? 260
   const geometry: React.CSSProperties | undefined = placement
     ? {
@@ -263,7 +262,6 @@ function Card({
 
         <div className="card-badges">
           {item.fileStatus !== 'ready' && <span className="badge">仅索引</span>}
-          {item.width != null && ratio >= SPAN2_RATIO && <span className="badge">横图</span>}
         </div>
 
         <div className="card-overlay">

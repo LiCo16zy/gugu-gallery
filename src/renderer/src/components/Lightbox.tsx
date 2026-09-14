@@ -235,6 +235,24 @@ export default function Lightbox({
           </div>
         )}
 
+        {/* 沉浸模式把右栏整块滑走了，连开关一起没了出口，所以舞台里要留一个 */}
+        {immersive && (
+          <button
+            className="lb-exit-immersive"
+            onClick={(e) => {
+              e.stopPropagation()
+              setImmersive(false)
+            }}
+            title="退出沉浸模式"
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M15 4v16" />
+            </svg>
+            退出沉浸
+          </button>
+        )}
+
         <button className="lb-nav prev" onClick={() => step(-1)} disabled={!prev} title="上一张 (←)">
           <IconChevronLeft width={20} height={20} />
         </button>
@@ -249,7 +267,7 @@ export default function Lightbox({
           <button
             className={'lb-immersive' + (immersive ? ' on' : '')}
             onClick={() => setImmersive((v) => !v)}
-            title={immersive ? '退出沉浸模式' : '沉浸模式：隐藏右侧信息栏'}
+            title="沉浸模式"
             aria-pressed={immersive}
           >
             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -417,7 +435,7 @@ export default function Lightbox({
           </button>
         </div>
 
-        <p className="lb-tip">滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭</p>
+        <p className="lb-tip">左键拖动 · 滚轮缩放 · ← → 翻页 · Esc 关闭</p>
 
         {detail && detail.tags.length > 0 && (
           <>

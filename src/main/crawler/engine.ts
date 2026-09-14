@@ -144,6 +144,15 @@ export class CrawlEngine {
   }
 
   /**
+   * 查某个抓取目标的总页数 / 总条数。
+   * 只请求第 1 页，解析底部的「共 N 页 M 条数据」，用于界面上给个规模预期。
+   */
+  async fetchPageInfo(target: SiteTarget): Promise<{ totalPages: number | null; totalItems: number | null }> {
+    const { html } = await this.http.getHtml(listUrl(target, 1))
+    return parsePagination(html)
+  }
+
+  /**
    * 启动一次抓取。立即返回 jobId，实际工作在后台推进。
    */
   async start(request: CrawlRequest): Promise<number> {

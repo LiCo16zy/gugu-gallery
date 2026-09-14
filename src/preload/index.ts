@@ -27,6 +27,7 @@ const IPC = {
   windowClose: 'window:close',
   windowState: 'window:state',
   siteInfo: 'crawl:siteInfo',
+  crawlTargetInfo: 'crawl:targetInfo',
   crawlStart: 'crawl:start',
   crawlPause: 'crawl:pause',
   crawlResume: 'crawl:resume',
@@ -64,6 +65,7 @@ const api = {
   },
   crawl: {
     siteInfo: () => ipcRenderer.invoke(IPC.siteInfo),
+    targetInfo: (target: unknown) => ipcRenderer.invoke(IPC.crawlTargetInfo, target),
     start: (request: unknown) => ipcRenderer.invoke(IPC.crawlStart, request),
     pause: () => ipcRenderer.invoke(IPC.crawlPause),
     resume: () => ipcRenderer.invoke(IPC.crawlResume),
