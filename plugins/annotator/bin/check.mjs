@@ -114,6 +114,55 @@ const SCRIPT = `(async () => {
   btn('确认导出')?.click()
   await sleep(2200)
   out.toastAfterExport = document.querySelector('.toast')?.textContent ?? null
+
+  // 7) 工具栏层级：标注记号不能盖住工具栏
+  // 前面的流程耗时已经超过 5s，工具栏此时多半已自动收起，先点把手展开
+  const handleEarly = document.querySelector('.gugu-anno-handle')
+  if (document.querySelector('.gugu-anno-toolbar.collapsed')) {
+    out.autoCollapsedBeforeCheck = true
+    handleEarly?.click()
+    await sleep(450)
+  }
+  out.pinsBeforeTopCheck = document.querySelectorAll('.gugu-anno-pin').length
+  const toolbar = document.querySelector('.gugu-anno-toolbar')
+  const firstPin = document.querySelector('.gugu-anno-pin')
+  out.toolbarZ = toolbar ? Number(getComputedStyle(toolbar).zIndex) || 0 : -1
+  out.pinZ = firstPin ? Number(getComputedStyle(firstPin).zIndex) || 0 : -1
+  out.toolbarAbovePins = out.toolbarZ > out.pinZ
+  out.toolbarHitTest = (() => {
+    const r = toolbar.getBoundingClientRect()
+    // 在工具栏内取几个点，避开按钮文字，确认没有被标注记号或其它层挡住
+    for (const [dx, dy] of [[0.5, 0.5], [0.15, 0.5], [0.85, 0.5], [0.5, 0.2]]) {
+      const el = document.elementFromPoint(r.left + r.width * dx, r.top + r.height * dy)
+      if (!el || !el.closest('.gugu-anno-toolbar')) {
+        out.toolbarBlockedAt = [dx, dy, el ? el.className || el.tagName : 'null']
+        return false
+      }
+    }
+    return true
+  })()
+
+  // 8) 说明气泡：点击选项后出现，5s 后消失
+  btn('点选')?.click()
+  await sleep(250)
+  out.hintAfterClick = document.querySelector('.gugu-anno-hint')?.textContent ?? null
+  await sleep(5200)
+  out.hintAfter5s = document.querySelector('.gugu-anno-hint')?.textContent ?? null
+
+  // 9) 工具栏自动上收 + 靠近顶部呼出
+  document.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }))
+  await sleep(5600)
+  out.toolbarCollapsedAfterLeave = Boolean(document.querySelector('.gugu-anno-toolbar.collapsed'))
+  const handle = document.querySelector('.gugu-anno-handle')
+  out.handleExists = Boolean(handle)
+  out.handleOpacityWhenCollapsed = handle ? Number(getComputedStyle(handle).opacity) : -1
+  // 鼠标靠近顶部
+  window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 600, clientY: 10 }))
+  await sleep(400)
+  out.handleOpacityWhenHot = handle ? Number(getComputedStyle(handle).opacity) : -1
+  handle?.click()
+  await sleep(400)
+  out.toolbarReopened = !document.querySelector('.gugu-anno-toolbar.collapsed')
   return out
 })()`
 
@@ -200,7 +249,17 @@ const checks = [
   ['annotations.md 有内容', markdown.includes('逐条标注')],
   ['整页截图已落盘', shots.includes('00-full.png')],
   ['每条标注都有裁片', shots.filter((f) => /^\d{3}-/.test(f)).length === 2],
-  ['运行期无控制台错误', (consoleErrors ?? []).length === 0]
+  ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
+  ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
+  ['工具栏层级高于标注记号', result.toolbarAbovePins === true],
+  ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
+  ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],
+  ['说明气泡 5s 后自动隐藏', result.hintAfter5s === null],
+  ['鼠标离开后工具栏自动上收', result.toolbarCollapsedAfterLeave === true],
+  ['收起后存在呼出把手', result.handleExists === true],
+  ['收起时把手不可见', result.handleOpacityWhenCollapsed === 0],
+  ['鼠标靠近顶部时把手显形', result.handleOpacityWhenHot === 1],
+  ['点击把手可重新展开工具栏', result.toolbarReopened === true]
 ]
 
 console.log('标注工具自检：')

@@ -1,0 +1,109 @@
+/* ============================================================================
+   标注工具栏的层级与自动收起
+   单独成文件，是因为这块的行为（置顶、上收、呼出把手）和工具栏内容无关。
+   ========================================================================== */
+
+/* 工具栏必须盖住标注记号：标注多了以后，记号是后渲染的兄弟节点，
+   不给层级就会被压在下面。 */
+.gugu-anno-toolbar {
+  z-index: 30;
+  transition:
+    transform 0.22s var(--ease),
+    opacity 0.22s var(--ease);
+}
+
+.gugu-anno-toolbar.collapsed {
+  transform: translate(-50%, -160%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 说明气泡跟着工具栏一起走 */
+.gugu-anno-hint {
+  z-index: 29;
+}
+
+/* 标注记号压在工具栏下面，但仍然可点 */
+.gugu-anno-pin {
+  z-index: 10;
+}
+
+/* 编辑框与弹出层继续在工具栏之上 */
+.gugu-anno-editor {
+  z-index: 40;
+}
+.gugu-anno-panel {
+  z-index: 25;
+}
+.gugu-anno-modal-mask {
+  z-index: 60;
+}
+
+/* ------------------------------------------------- 收起后的「呼出把手」 */
+
+.gugu-anno-handle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 31;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 22px;
+  padding: 0 12px;
+  border: 1px solid var(--anno-border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: color-mix(in srgb, var(--anno-panel) 92%, transparent);
+  color: var(--anno-dim);
+  font-size: 11px;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s var(--ease),
+    color 0.16s var(--ease),
+    height 0.16s var(--ease);
+}
+
+/* 只有工具栏收起、且鼠标靠近顶部时才显形 */
+.gugu-anno-handle.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.gugu-anno-handle.hot:not(.gone) {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gugu-anno-handle.hot:not(.gone):hover {
+  height: 26px;
+  color: var(--anno-text);
+}
+
+.gugu-anno-handle-grip {
+  width: 16px;
+  height: 3px;
+  border-radius: 99px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.gugu-anno-handle-mode {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.gugu-anno-handle.capturing .gugu-anno-handle-mode {
+  color: var(--anno);
+}
+
+.gugu-anno-handle-count {
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--anno-soft);
+  color: var(--anno);
+  font-variant-numeric: tabular-nums;
+}
