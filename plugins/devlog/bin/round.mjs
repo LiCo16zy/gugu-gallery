@@ -1,9 +1,10 @@
 /**
  * 轮次档案工具。
  *
- *   node scripts/round.mjs list                 列出所有轮次
- *   node scripts/round.mjs new <slug>           开一轮：建目录 + 起始截图 + 元数据
- *   node scripts/round.mjs finalize <轮次ID>    收尾：改动截图 + 代码 diff + 更新说明 + 打 tag
+ *   node plugins/devlog/bin/round.mjs list               列出所有轮次
+ *   node plugins/devlog/bin/round.mjs inbox              打印最新未收尾轮次的内容
+ *   node plugins/devlog/bin/round.mjs new <slug>         开一轮：建目录 + 起始截图 + 元数据
+ *   node plugins/devlog/bin/round.mjs finalize <轮次ID>  收尾：改动截图 + 代码 diff + 更新说明 + 打 tag
  *
  * 配合界面上的「标注工具」使用：
  *   标注工具负责产出 annotations.md/json 与逐条裁片，
@@ -84,6 +85,42 @@ async function capture(targetDir) {
 }
 
 /* ---------------------------------------------------------------- 子命令 */
+
+/** 打印最新一个尚未收尾的轮次，含逐条标注 —— 这是「拿到用户意见」的标准入口 */
+async function cmdInbox() {
+  const dirs = await listRoundDirs()
+  if (dirs.length === 0) {
+    console.log('还没有任何轮次。等用户在界面里导出标注，或先跑 new <slug>。')
+    return
+  }
+  const index = await readIndex()
+  const closed = new Set(index.rounds.filter((r) => r.status === 'closed').map((r) => r.id))
+  const open = dirs.filter((d) => !closed.has(d))
+  const target = (open.length > 0 ? open : dirs).at(-1)
+  const dir = join(roundsDir, target)
+
+  console.log('='.repeat(72))
+  console.log('  轮次 ' + target)
+  console.log('='.repeat(72) + '\n')
+
+  for (const name of ['README.md', 'annotations.md']) {
+    const file = join(dir, name)
+    if (!existsSync(file)) continue
+    console.log('----- ' + name + ' -----\n')
+    console.log((await readFile(file, 'utf8')).trim())
+    console.log('')
+  }
+
+  // 附上截图清单，便于按图索骥
+  for (const sub of ['screenshots', 'screenshots-before', 'screenshots-after']) {
+    const shotsDir = join(dir, sub)
+    if (!existsSync(shotsDir)) continue
+    const files = await readdir(shotsDir)
+    console.log(`----- ${sub}/${' '.repeat(Math.max(0, 22 - sub.length))} ${files.length} 张: ${files.join(', ')}`)
+  }
+
+  if (open.length === 0) console.log('\n（没有未收尾的轮次，已回退到最新一轮）')
+}
 
 async function cmdList() {
   const dirs = await listRoundDirs()
@@ -249,6 +286,9 @@ switch (command) {
   case 'list':
     await cmdList()
     break
+  case 'inbox':
+    await cmdInbox()
+    break
   case 'new':
     await cmdNew(rest[0])
     break
@@ -258,8 +298,9 @@ switch (command) {
   default:
     console.log(`轮次档案工具
 
-  node scripts/round.mjs list                 列出所有轮次
-  node scripts/round.mjs new <slug>           开一轮（建目录 + 起始截图 + 元数据）
-  node scripts/round.mjs finalize <轮次ID>    收尾（改动截图 + 代码 diff + 更新说明 + 打 tag）
+  node plugins/devlog/bin/round.mjs list               列出所有轮次
+  node plugins/devlog/bin/round.mjs inbox              打印最新未收尾轮次的内容
+  node plugins/devlog/bin/round.mjs new <slug>         开一轮（建目录 + 起始截图 + 元数据）
+  node plugins/devlog/bin/round.mjs finalize <轮次ID>  收尾（改动截图 + 代码 diff + 更新说明 + 打 tag）
 `)
 }

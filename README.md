@@ -16,6 +16,7 @@ Electron + React + TypeScript，索引用 WebAssembly 版 SQLite（**零原生�
 - [数据模型](#数据模型)
 - [爬虫是怎么设计的](#爬虫是怎么设计的)
 - [命令行模式](#命令行模式)
+- [插件机制](#插件机制)
 - [页面标注工具](#页面标注工具)
 - [开发过程档案](#开发过程档案)
 - [开发与测试](#开发与测试)
@@ -260,9 +261,32 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
 
 ---
 
+## 插件机制
+
+标注工具和开发档案都是**可选插件**，默认不进发布产物 —— 工具代码不该出现在给最终用户的应用里。
+
+```jsonc
+// plugins/plugins.json
+{ "enabled": ["devlog", "annotator"] }   // 去掉哪项，它的代码就完全不会被打包
+```
+
+- 主进程插件产物按需生成在 `out/main/plugins/<id>.js`，运行时动态加载
+- 渲染进程用虚拟模块聚合插件入口，禁用时生成空数组
+- 渲染进程统一走 `window.gugu.plugins.invoke(id, method, payload)` ——
+  **新增插件不需要改 preload / ipc，核心代码零改动**
+- 依赖缺失（`annotator` 需要 `devlog`）会在构建期告警并自动跳过，插件装载失败也不会拖垮应用
+- `npm run build:release` 构建完会**实际扫描产物**，确认没有插件残留：
+  主进程无 `out/main/plugins/`，渲染 bundle 330KB → 303KB，CSS 36.2KB → 25.3KB
+
+完整的插件契约与开发指南见 [`docs/plugin-development.md`](docs/plugin-development.md)，
+插件索引见 [`plugins/README.md`](plugins/README.md)。
+
 ## 页面标注工具
 
-专门为「审阅界面 → 提修改意见」做的工具，内置在应用里，**按 `Ctrl+Shift+A` 打开**（顶栏右侧也有个笔形按钮）。
+> 这是一个**可选插件**（`plugins/annotator`），发布构建时不会打进应用。
+> 详见 [`plugins/annotator/SKILL.md`](plugins/annotator/SKILL.md)。
+
+专门为「审阅界面 → 提修改意见」做的工具，开发模式下**按 `Ctrl+Shift+A` 打开**（顶栏右侧也有个笔形按钮）。
 
 用法：
 
@@ -291,13 +315,19 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
 
 ## 开发过程档案
 
+> 这也是一个**可选插件**（`plugins/devlog`）。详见 [`plugins/devlog/SKILL.md`](plugins/devlog/SKILL.md)。
+
 每一轮迭代的「快照 + 说明 + 前后对照截图」都归档在 `devlog/`，用于回溯与对外展示。
-完整说明见 [`devlog/README.md`](devlog/README.md)，轮次索引见 `devlog/index.json`。
+轮次索引见 `devlog/index.json`。
+
+**平时改代码只管 commit 就行，不需要每次都建档案。**
+只在有体量的迭代（一批界面修改、一次重构、一个功能从无到有）时才开一轮。
 
 ```bash
-node scripts/round.mjs list                # 列出所有轮次
-node scripts/round.mjs new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
-node scripts/round.mjs finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 tag
+npm run round -- inbox               # 打印最新未收尾轮次的内容（拿到反馈的标准入口）
+npm run round -- list                # 列出所有轮次
+npm run round -- new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
+npm run round -- finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 tag
 ```
 
 每个轮次目录长这样：
@@ -328,9 +358,11 @@ npm run e2e        # 真连目标站点跑一次端到端，校验索引与磁�
 npm run uicheck    # 启动真实界面点一遍关键路径（17 项交互断言）
 npm run annotatecheck  # 驱动标注工具走完「点选 → 批注 → 框选 → 导出」（18 项断言）
 npm run shot       # 自动截图四个界面到 screenshots/
+npm run build:release  # 无插件构建，并校验产物里确实没有插件代码
+npm run dist       # 打包安装包（自动走无插件构建）
 ```
 
-三层验证各有分工：
+四层验证各有分工：
 
 | 命令 | 覆盖范围 | 是否需要联网 |
 | --- | --- | --- |
@@ -338,6 +370,7 @@ npm run shot       # 自动截图四个界面到 screenshots/
 | `npm run uicheck` | 渲染、筛选、搜索、灯箱、键盘、主题、分类树 | 否（用本地图库） |
 | `npm run annotatecheck` | 标注工具的交互与导出产物 | 否（用临时目录） |
 | `npm run e2e` | 真实抓取 → 下载 → 落盘 → 缩略图 | 是 |
+| `npm run build:release` | 产物里不含任何插件代码 | 否 |
 
 - 单元测试用的是**真实抓下来的 HTML 样本**（`tests/fixtures/`），
   站点改版时测试会第一时间失败，比人肉发现快。
@@ -349,32 +382,45 @@ npm run shot       # 自动截图四个界面到 screenshots/
 ### 代码结构
 
 ```
-src/
-├── main/                      Electron 主进程
-│   ├── index.ts               入口：窗口、自定义协议、截图自检模式
-│   ├── cli.ts                 无界面 CLI 抓取
-│   ├── context.ts             依赖装配 + 运行期切换图库
-│   ├── config.ts              设置持久化（userData/settings.json）
-│   ├── ipc.ts                 IPC 处理函数（渲染进程的全部能力边界）
-│   ├── devlog.ts              开发过程档案：轮次目录、截图裁片、Markdown 生成
-│   ├── crawler/
-│   │   ├── site.ts            站点常量、URL 规则、base64 编解码
-│   │   ├── parser.ts          列表页 / 详情页解析 + 图片魔数嗅探
-│   │   ├── http.ts            重试、限速、并发闸门、完整性校验
-│   │   └── engine.ts          两阶段流水线调度
-│   ├── store/
-│   │   ├── schema.ts          建表 SQL
-│   │   ├── db.ts              sql.js 封装 + 防抖落盘
-│   │   └── repository.ts      全部 SQL 集中在这里
-│   └── media/
-│       ├── library.ts         磁盘布局与路径安全
-│       ├── thumbnail.ts       nativeImage 缩略图
-│       └── downloader 逻辑     在 crawler/engine.ts 内联（与进度上报强耦合）
-├── preload/index.ts           contextBridge 白名单
-├── renderer/                  React 界面（无 UI 库，纯手写 CSS 设计系统）
-│   └── src/devtools/          页面标注工具（点选/框选、元素自省、导出）
-└── shared/types.ts            两端共享的领域类型与 IPC 契约
+src/                          应用本体 —— 发布产物只含这里
+├── main/                     Electron 主进程
+│   ├── index.ts              入口：窗口、自定义协议、截图自检钩子
+│   ├── cli.ts                无界面 CLI 抓取
+│   ├── context.ts            依赖装配（设置 / 图库 / 库表 / 引擎）
+│   ├── config.ts             设置持久化（userData/settings.json）
+│   ├── ipc.ts                核心 IPC —— 不含任何插件相关通道
+│   ├── plugins.ts            插件宿主
+│   ├── workspace.ts          工作区根目录解析
+│   ├── crawler/              site / parser / http / engine
+│   ├── store/                schema / db(sql.js) / repository
+│   └── media/                library / thumbnail
+├── preload/index.ts          contextBridge 白名单
+├── renderer/                 React 界面（无 UI 库，纯手写 CSS 设计系统）
+│   └── src/
+│       ├── App.tsx           壳：布局、路由、状态、插件插槽
+│       ├── plugins.ts        插件宿主（渲染侧）
+│       ├── api.ts            桥接 + 展示层格式化
+│       ├── styles.css        设计系统
+│       └── components/       Sidebar / GalleryGrid / Lightbox / CrawlPanel / SettingsPanel / Icons
+└── shared/                   两端共享的纯类型
+    ├── types.ts              领域模型
+    ├── bridge.ts             preload 暴露的 API 契约
+    ├── plugin.ts             插件契约
+    └── globals.d.ts          构建期注入的全局声明
+
+plugins/                      可选工具 —— 默认不进发布产物
+├── plugins.json              装载清单
+├── annotator/                页面标注工具（renderer + bin）
+└── devlog/                   开发过程档案（main + shared + bin）
+
+scripts/                      仓库级工具
+├── shot.mjs                  界面截图
+├── uicheck.mjs               界面交互回归
+├── e2e.mjs                   真实站点端到端
+└── release.mjs               无插件发布构建 + 产物校验
 ```
+
+完整分层说明与设计取舍见 [`docs/architecture.md`](docs/architecture.md)。
 
 **安全边界**：渲染进程没有 Node 集成、开了 `contextIsolation`，只能调用 preload 暴露的
 白名单方法；所有文件访问都经过 `Library.resolveInside()` 做越权检查；
