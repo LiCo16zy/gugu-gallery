@@ -8,7 +8,7 @@
  */
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { cp, mkdir, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,7 +22,7 @@ const electronBinary = join(
   process.platform === 'win32' ? 'electron.exe' : 'electron'
 )
 
-const libraryRoot = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
+const sourceLibrary = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
 const outDir = join(root, 'screenshots', 'uicheck')
 
 if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
@@ -30,6 +30,15 @@ if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
   process.exit(1)
 }
 await mkdir(outDir, { recursive: true })
+
+/*
+ * 在副本上跑：这套用例里有「删除」这种破坏性操作，
+ * 直接对着 data/demo 跑会把演示图库一点点吃掉（实测跑了几轮少了 7 条）。
+ */
+const libraryRoot = join(root, 'data', 'uicheck-lib')
+await rm(libraryRoot, { recursive: true, force: true })
+await cp(sourceLibrary, libraryRoot, { recursive: true })
+console.log(`用例图库副本：${libraryRoot}（源：${sourceLibrary}）`)
 
 const SCRIPT = `(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
