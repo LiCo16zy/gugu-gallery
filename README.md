@@ -78,9 +78,15 @@ npm run dev
 npm run build
 npm start
 
-# 打包成安装包（输出到 release/）
-npm run dist
+# 打包（release/ 下产出免安装目录与安装包）
+npm run pack     # 只生成 release/win-unpacked，快
+npm run dist     # 生成 NSIS 安装包
 ```
+
+> **Windows 打包提示**：`electron-builder` 解压 `winCodeSign` 时会创建符号链接，
+> 普通用户权限下会报 `Cannot create symbolic link`。此时 `release/win-unpacked/` 已经生成完毕，
+> 里面的 `GuguGallery.exe` 是可以直接运行的免安装版本；想要安装包则需要以管理员身份运行，
+> 或者打开「设置 → 隐私和安全性 → 开发者选项 → 开发人员模式」后重试。
 
 首次启动会提示图库目录，默认 `<图片>/GuguGallery`。也可以在「设置 → 图库位置」里随时更改，
 换目录会切换到另一套独立的索引与文件（旧库原样保留）。
