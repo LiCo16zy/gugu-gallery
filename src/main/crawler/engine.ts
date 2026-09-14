@@ -36,6 +36,10 @@ export interface EngineDeps {
   /** 由上层决定用哪个 fetch 实现：直连走全局 fetch，配了代理则交给 Electron 网络栈 */
   fetchImpl?: typeof fetch
   resolveFetch?: (proxy: string) => typeof fetch | undefined
+  /** 当前登录态 Cookie；未登录返回 null */
+  getCookie: () => string | null
+  /** 会话失效时回调一次，用于提醒用户重新登录 */
+  onSessionExpired: (message: string) => void
 }
 
 interface EngineState {
@@ -106,6 +110,23 @@ export class CrawlEngine {
     })
   }
 
+  /**
+   * 校验登录态：拿一份首页看导航里有没有「泳装类分享」。
+   * 它是登录后才出现的栏目，比找 cookie 过期关键字更可靠。
+   */
+  async verifySession(): Promise<{ ok: boolean; message: string }> {
+    const cookie = this.deps.getCookie()
+    if (!cookie) return { ok: false, message: '还没有设置登录凭据' }
+    this.http.configure({ cookie })
+    try {
+      const { html } = await this.http.getHtml(`${SITE_ORIGIN}/`)
+      if (html.includes('泳装类分享')) return { ok: true, message: '登录态有效' }
+      return { ok: false, message: '站点没返回登录后的栏目，凭据可能已失效' }
+    } catch (err) {
+      return { ok: false, message: `校验失败：${err instanceof Error ? err.message : String(err)}` }
+    }
+  }
+
   pause(): void {
     if (!this.running || this.paused) return
     this.paused = true
@@ -161,7 +182,8 @@ export class CrawlEngine {
     this.http.configure({
       delayMs: request.delayMs,
       retries: request.retries,
-      concurrency: Math.max(request.listConcurrency, request.downloadConcurrency)
+      concurrency: Math.max(request.listConcurrency, request.downloadConcurrency),
+      cookie: this.deps.getCookie()
     })
     this.http.resumeAll()
 

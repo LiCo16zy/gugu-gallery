@@ -8,23 +8,36 @@ import { Database } from './store/db'
 import { Repository } from './store/repository'
 import { Library } from './media/library'
 import { SettingsStore } from './config'
+import { SessionStore, type SessionStatus } from './session'
 import type { AppSettings, CrawlProgress } from '@shared/types'
 
 export class AppContext {
   readonly settings: SettingsStore
+  readonly session = new SessionStore()
   private db!: Database
   private repo!: Repository
   private lib!: Library
   private engine!: CrawlEngine
 
   private progressListeners = new Set<(p: CrawlProgress, logs: CrawlProgress['logs']) => void>()
+  private sessionExpiredListeners = new Set<(message: string) => void>()
 
   constructor() {
     this.settings = new SettingsStore()
   }
 
+  onSessionExpired(listener: (message: string) => void): () => void {
+    this.sessionExpiredListeners.add(listener)
+    return () => this.sessionExpiredListeners.delete(listener)
+  }
+
+  sessionStatus(): SessionStatus {
+    return this.session.status()
+  }
+
   async init(): Promise<void> {
     await this.settings.load()
+    await this.session.load()
     await applyProxy(this.settings.get().proxy)
     await this.openLibrary(this.settings.get().libraryRoot)
   }
@@ -41,6 +54,13 @@ export class AppContext {
       library: lib,
       getSettings: () => this.settings.get(),
       resolveFetch: (proxy) => (proxy.trim() ? electronFetch : undefined),
+      getCookie: () => this.session.cookieHeader,
+      onSessionExpired: (message) => {
+        // 只提醒一次：会话失效后反复弹窗只会让人烦
+        if (!this.session.shouldNotifyExpiry()) return
+        this.session.markExpired(message)
+        for (const listener of this.sessionExpiredListeners) listener(message)
+      },
       onProgress: (progress, logs) => {
         for (const listener of this.progressListeners) listener(progress, logs)
       }

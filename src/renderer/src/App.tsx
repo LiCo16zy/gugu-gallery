@@ -24,6 +24,7 @@ import Toast, { type ToastPayload } from './components/Toast'
 import SetupWizard from './components/SetupWizard'
 import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
 import { visibleCategories } from '@shared/categories'
+import type { SessionStatus } from '@shared/bridge'
 import { loadedPlugins } from './plugins'
 import {
   IconArrowUp,
@@ -150,6 +151,11 @@ export default function App(): JSX.Element {
   /** 自绘标题栏：最大化状态与窗口按钮联动 */
   const [maximized, setMaximized] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  /** 登录态：只保存站点会话 cookie，账号密码不经过本应用 */
+  const [session, setSession] = useState<SessionStatus | null>(null)
+  const [cookieDraft, setCookieDraft] = useState('')
+  const [sessionBusy, setSessionBusy] = useState(false)
+  const [sessionMsg, setSessionMsg] = useState<string | null>(null)
   /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
   const [reflowing, setReflowing] = useState(false)
   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
@@ -185,6 +191,7 @@ export default function App(): JSX.Element {
       if (!s.setupCompleted) {
         setSuggestedRoot(await api.suggestedLibraryRoot())
       }
+      setSession(await api.session.status())
       setBootstrapped(true)
     })()
   }, [])
@@ -212,6 +219,15 @@ export default function App(): JSX.Element {
   useEffect(() => {
     void refreshMeta()
   }, [refreshMeta])
+
+  // 会话失效：引擎侧已经去重，这里只负责呈现
+  useEffect(() => {
+    return api.session.onExpired((message) => {
+      setSessionMsg(message)
+      setToast({ id: Date.now(), text: '登录态已失效，请到「帮助」里重新贴一次 cookie', duration: 4000, kind: 'warn' })
+      void api.session.status().then(setSession)
+    })
+  }, [])
 
   /* ---------------------------------------------------------- 渐进式加载 */
 
@@ -891,6 +907,87 @@ export default function App(): JSX.Element {
               <dt>图库目录</dt>
               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
             </dl>
+            <div className="sep" />
+
+            <div className="panel-title" style={{ marginBottom: 8 }}>
+              登录态
+              <span className="hint">
+                {session?.loggedIn
+                  ? '已登录 ' + (session.fingerprint ?? '') + (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
+                  : '未登录 · 只影响「泳装分享」分类'}
+              </span>
+            </div>
+
+            {sessionMsg && <p className="setup-error" style={{ marginTop: 0 }}>{sessionMsg}</p>}
+
+            <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.8 }}>
+              本应用<strong>不保存账号密码</strong>。请先用浏览器登录 guguxz.com，
+              按 F12 → Console 输入 <code>document.cookie</code>，
+              把 <code>PHPSESSID=...</code> 那一段粘到下面。
+              它会用系统密钥链加密后存在本地，随时可以清除。
+            </p>
+
+            <textarea
+              className="cookie-input"
+              rows={2}
+              spellCheck={false}
+              placeholder="PHPSESSID=xxxxxxxx"
+              value={cookieDraft}
+              onChange={(e) => setCookieDraft(e.target.value)}
+            />
+
+            <div className="row" style={{ gap: 8, marginTop: 8 }}>
+              <button
+                className="btn primary sm"
+                disabled={sessionBusy || cookieDraft.trim() === ''}
+                onClick={async () => {
+                  setSessionBusy(true)
+                  setSessionMsg(null)
+                  try {
+                    const r = await api.session.set(cookieDraft.trim())
+                    setSession(r.status)
+                    setSessionMsg(r.verify.message)
+                    if (r.verify.ok) {
+                      setCookieDraft('')
+                      showToast('登录态已生效', 1600, 'success')
+                    }
+                  } catch (err) {
+                    setSessionMsg(err instanceof Error ? err.message : '保存失败')
+                  } finally {
+                    setSessionBusy(false)
+                  }
+                }}
+              >
+                保存并验证
+              </button>
+              <button
+                className="btn sm"
+                disabled={sessionBusy || !session?.loggedIn}
+                onClick={async () => {
+                  setSessionBusy(true)
+                  try {
+                    const r = await api.session.verify()
+                    setSession(r.status)
+                    setSessionMsg(r.verify.message)
+                  } finally {
+                    setSessionBusy(false)
+                  }
+                }}
+              >
+                重新验证
+              </button>
+              <button
+                className="btn sm danger"
+                disabled={sessionBusy || !session?.loggedIn}
+                onClick={async () => {
+                  setSession(await api.session.clear())
+                  setSessionMsg('已清除本地登录凭据')
+                }}
+              >
+                清除
+              </button>
+            </div>
+
             <div className="modal-actions">
               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
                 访问网站

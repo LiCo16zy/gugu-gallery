@@ -6,6 +6,16 @@
 import type { AppInfo, AppSettings, CrawlProgress, GalleryPage, GalleryQuery, ItemDetail, LibraryStats, PlateFacet, SourceRef, Facet } from './types'
 import type { PluginManifest } from './plugin'
 
+/** 登录态（只保存站点会话 cookie，不保存账号密码） */
+export interface SessionStatus {
+  loggedIn: boolean
+  fingerprint: string | null
+  savedAt: string | null
+  encrypted: boolean
+  verified: boolean | null
+  verifyMessage: string | null
+}
+
 export interface JobRow {
   id: number
   phase: string
@@ -68,6 +78,15 @@ export interface GuguBridge {
     list(): Promise<SourceRef[]>
     remove(id: number): Promise<boolean>
     toggle(id: number, enabled: boolean): Promise<boolean>
+  }
+  session: {
+    status(): Promise<SessionStatus>
+    /** 保存 cookie 并立即去站点校验一次 */
+    set(cookie: string): Promise<{ status: SessionStatus; verify: { ok: boolean; message: string } }>
+    clear(): Promise<SessionStatus>
+    verify(): Promise<{ status: SessionStatus; verify: { ok: boolean; message: string } }>
+    /** 会话失效时回调一次（引擎侧已去重） */
+    onExpired(cb: (message: string) => void): () => void
   }
   plugins: PluginBridge
   openExternal(url: string): Promise<void>

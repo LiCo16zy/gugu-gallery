@@ -35,6 +35,11 @@ export const IPC = {
   libraryChooseDir: 'library:chooseDir',
   librarySetRoot: 'library:setRoot',
   suggestedLibraryRoot: 'app:suggestedLibraryRoot',
+  sessionStatus: 'session:status',
+  sessionSet: 'session:set',
+  sessionClear: 'session:clear',
+  sessionVerify: 'session:verify',
+  sessionExpiredEvent: 'session:expired',
   openExternal: 'app:openExternal',
   copyText: 'app:copyText',
   windowMinimize: 'window:minimize',
@@ -127,6 +132,30 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
   })
 
   handle(IPC.suggestedLibraryRoot, (): string => suggestedLibraryRoot())
+
+  /* ------------------------------------------------------------ 登录态 */
+
+  handle(IPC.sessionStatus, () => ctx.sessionStatus())
+
+  handle(IPC.sessionSet, async (cookie: string) => {
+    await ctx.session.save(cookie)
+    const result = await ctx.crawler.verifySession()
+    if (result.ok) ctx.session.markVerified()
+    else ctx.session.markExpired(result.message)
+    return { status: ctx.sessionStatus(), verify: result }
+  })
+
+  handle(IPC.sessionClear, async () => {
+    await ctx.session.clear()
+    return ctx.sessionStatus()
+  })
+
+  handle(IPC.sessionVerify, async () => {
+    const result = await ctx.crawler.verifySession()
+    if (result.ok) ctx.session.markVerified()
+    else ctx.session.markExpired(result.message)
+    return { status: ctx.sessionStatus(), verify: result }
+  })
 
   // 只弹目录选择框、只返回路径，不做切换 —— 首次启动向导里用
   handle(IPC.libraryChooseDir, async (defaultPath?: string): Promise<string | null> => {
@@ -238,6 +267,12 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
 
   // 引擎进度 -> 渲染进程
   ctx.onProgress((progress, logs) => emitProgress(getWindow(), progress, logs))
+
+  // 会话失效 -> 只通知一次
+  ctx.onSessionExpired((message) => {
+    const win = getWindow()
+    if (win && !win.isDestroyed()) win.webContents.send(IPC.sessionExpiredEvent, message)
+  })
 }
 
 function emitProgress(

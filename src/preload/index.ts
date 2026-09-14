@@ -23,6 +23,11 @@ const IPC = {
   libraryChooseDir: 'library:chooseDir',
   librarySetRoot: 'library:setRoot',
   suggestedLibraryRoot: 'app:suggestedLibraryRoot',
+  sessionStatus: 'session:status',
+  sessionSet: 'session:set',
+  sessionClear: 'session:clear',
+  sessionVerify: 'session:verify',
+  sessionExpiredEvent: 'session:expired',
   openExternal: 'app:openExternal',
   copyText: 'app:copyText',
   windowMinimize: 'window:minimize',
@@ -69,6 +74,17 @@ const api = {
     chooseDir: (defaultPath?: string) => ipcRenderer.invoke(IPC.libraryChooseDir, defaultPath)
   },
   suggestedLibraryRoot: () => ipcRenderer.invoke(IPC.suggestedLibraryRoot),
+  session: {
+    status: () => ipcRenderer.invoke(IPC.sessionStatus),
+    set: (cookie: string) => ipcRenderer.invoke(IPC.sessionSet, cookie),
+    clear: () => ipcRenderer.invoke(IPC.sessionClear),
+    verify: () => ipcRenderer.invoke(IPC.sessionVerify),
+    onExpired: (cb: (message: string) => void) => {
+      const listener = (_e: unknown, message: string): void => cb(message)
+      ipcRenderer.on(IPC.sessionExpiredEvent, listener)
+      return () => ipcRenderer.removeListener(IPC.sessionExpiredEvent, listener)
+    }
+  },
   crawl: {
     siteInfo: () => ipcRenderer.invoke(IPC.siteInfo),
     targetInfo: (target: unknown) => ipcRenderer.invoke(IPC.crawlTargetInfo, target),

@@ -25,6 +25,8 @@ export interface HttpClientOptions {
   concurrency: number
   /** 代理地址；在 Electron 主进程里会交给 Chromium 网络栈处理 */
   proxy?: string
+  /** 每请求注入的 Cookie 头（登录态），null 表示未登录 */
+  cookie?: string | null
   fetchImpl?: typeof fetch
   onRetry?: (info: { url: string; attempt: number; reason: string; waitMs: number }) => void
 }
@@ -312,12 +314,16 @@ export class HttpClient {
   }
 
   private headers(extra: Record<string, string>): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       'User-Agent': BROWSER_UA,
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       'Cache-Control': 'no-cache',
       ...extra
     }
+    // 登录态：站点用 PHPSESSID 记会话，带上它才能看到泳装分享等分类
+    const cookie = this.opts.cookie
+    if (cookie) headers.Cookie = cookie
+    return headers
   }
 
   private backoff(attempt: number): number {
