@@ -2,7 +2,7 @@
  * 渲染进程 <-> 主进程的 IPC 契约实现。
  * 所有能力都通过 contextBridge 暴露，渲染进程不直接碰 Node / fs。
  */
-import { ipcMain, shell, dialog, BrowserWindow, app } from 'electron'
+import { ipcMain, shell, dialog, BrowserWindow } from 'electron'
 import { existsSync } from 'node:fs'
 import type {
   AppInfo,
@@ -57,7 +57,7 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
   handle(IPC.appInfo, (): AppInfo => {
     const s = ctx.settingsValue()
     return {
-      version: app.getVersion(),
+      version: __APP_VERSION__,
       electron: process.versions.electron,
       node: process.versions.node,
       chrome: process.versions.chrome,

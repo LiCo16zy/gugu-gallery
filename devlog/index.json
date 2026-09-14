@@ -14,6 +14,19 @@
       "status": "closed",
       "summary": "站点逆向 + 爬虫 + 数据层 + 前端首版；测试与端到端验证全绿，等待界面审阅。",
       "hasAnnotations": false
+    },
+    {
+      "id": "0002-annotation-tooling",
+      "slug": "annotation-tooling",
+      "title": "页面标注工具与开发过程档案",
+      "createdAt": "2026-09-14 12:30",
+      "finishedAt": "2026-09-14 12:34",
+      "baseCommit": "343a0e6",
+      "endCommit": "c4c09eb",
+      "branch": "master",
+      "status": "closed",
+      "summary": "交付页面标注工具（点选/框选/元素自省/导出）与 devlog 轮次档案工具链；顺带修掉版本号取错与文件名标点两个问题。",
+      "hasAnnotations": false
     }
   ]
 }

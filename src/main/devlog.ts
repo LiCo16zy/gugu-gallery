@@ -321,11 +321,11 @@ function truncate(text: string, max: number): string {
 
 function slugify(text: string): string {
   const cleaned = firstLine(text)
-    .replace(/[\\/:*?"<>|]/g, '')
+    // 半角与全角标点都可能出现在文件名里，统一清掉；中文本身保留
+    .replace(/[\\/:*?"<>|：；？！，。、（）【】《》""''…—]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-  // 中文保留，只是限制长度；完全为空时给个占位
   return cleaned.slice(0, 28) || 'annotation'
 }
 

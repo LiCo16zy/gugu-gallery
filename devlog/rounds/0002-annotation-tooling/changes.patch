@@ -1,0 +1,3277 @@
+# 轮次 0002-annotation-tooling 代码差异
+# 基线提交 343a0e6 -> c4c09eb
+
+diff --git a/.gitignore b/.gitignore
+index fffffd6..cec7b0e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -12,6 +12,7 @@ Thumbs.db
+ data/
+ library/
+ _research/
+-screenshots/
++/screenshots/
++!/devlog/**/screenshots/
+ *.db
+ *.db-journal
+diff --git a/README.md b/README.md
+index cac5f4f..4a566bc 100644
+--- a/README.md
++++ b/README.md
+@@ -16,6 +16,8 @@ Electron + React + TypeScript，索引用 WebAssembly 版 SQLite（**零原生
+ - [数据模型](#数据模型)
+ - [爬虫是怎么设计的](#爬虫是怎么设计的)
+ - [命令行模式](#命令行模式)
++- [页面标注工具](#页面标注工具)
++- [开发过程档案](#开发过程档案)
+ - [开发与测试](#开发与测试)
+ - [已知限制](#已知限制)
+ - [合规声明](#合规声明)
+@@ -258,6 +260,64 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
+ 
+ ---
+ 
++## 页面标注工具
++
++专门为「审阅界面 → 提修改意见」做的工具，内置在应用里，**按 `Ctrl+Shift+A` 打开**（顶栏右侧也有个笔形按钮）。
++
++用法：
++
++1. 打开后默认是**浏览**模式，不拦截任何点击 —— 正常操作应用，翻到你想提意见的那一屏
++   （比如打开某张图的灯箱、切到抓取面板、把窗口拖成你常用的尺寸）
++2. 切到**点选**：鼠标悬停时实时高亮元素并显示它属于哪个组件；点一下某个元素即可写批注
++3. 或者切到**框选**：按住左键拖出一个矩形，给一整片区域提意见
++4. 每条批注可以标类别（视觉样式 / 布局结构 / 文案内容 / 交互行为 / 缺陷 / 其它）
++   和优先级（必须改 / 建议改 / 锦上添花）
++5. 右下角「标注清单」可以回看、跳转、编辑、删除
++6. 点「导出标注」→ 填一句总体说明 → 确认
++
++导出会在 `devlog/rounds/` 下生成一个新轮次目录，包含：
++
++- `annotations.md` / `annotations.json` —— 每条批注的**原文**，外加自动采集的执行信息：
++  **组件名、CSS 选择器、父级链、元素文本、关键计算样式（字号/颜色/间距/圆角/阴影…）、WCAG 对比度**、
++  以及标注框的坐标尺寸
++- `screenshots/00-full.png` —— 导出时的整页截图
++- `screenshots/001-xxx.png` —— **每条标注自动裁切的局部截图**
++
++> 为什么记录得这么细：批注里写「这个按钮太小」是无法执行的，而执行改动的人（或 AI）
++> 未必看得到界面。所以工具把选择器、当前字号、当前颜色、当前间距全都记下来，
++> 拿到 `annotations.md` 就能直接定位到源码位置、并知道当前值是多少、要改成什么。
++
++标注只会写进 `devlog/`，**不会修改任何代码**，可以放心多点几下。
++
++## 开发过程档案
++
++每一轮迭代的「快照 + 说明 + 前后对照截图」都归档在 `devlog/`，用于回溯与对外展示。
++完整说明见 [`devlog/README.md`](devlog/README.md)，轮次索引见 `devlog/index.json`。
++
++```bash
++node scripts/round.mjs list                # 列出所有轮次
++node scripts/round.mjs new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
++node scripts/round.mjs finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 tag
++```
++
++每个轮次目录长这样：
++
++```
++devlog/rounds/0002-xxx/
++├── README.md             背景 / 改动 / 验证 / 遗留
++├── annotations.md        界面标注原文（人会读的版本）
++├── annotations.json      界面标注原始数据（机器可读）
++├── changes.md            代码差异概览（变更文件清单 + 统计）
++├── changes.patch         完整代码差异，可 git apply
++├── screenshots/          本轮界面截图
++├── screenshots-before/   改动前（用于前后对照）
++└── screenshots-after/    改动后（用于前后对照）
++```
++
++收尾时会自动打一个 `round/<轮次ID>` 的 git tag，
++所以任何一轮都能用 `git checkout round/0002-xxx` 完整复原。
++起点是 [`devlog/rounds/0001-baseline/`](devlog/rounds/0001-baseline/README.md)。
++
+ ## 开发与测试
+ 
+ ```bash
+@@ -266,6 +326,7 @@ npm run typecheck  # 主进程 / 渲染进程分别做严格类型检查
+ npm test           # 单元测试：解析器、URL 规则、格式嗅探（23 例）
+ npm run e2e        # 真连目标站点跑一次端到端，校验索引与磁盘产物
+ npm run uicheck    # 启动真实界面点一遍关键路径（17 项交互断言）
++npm run annotatecheck  # 驱动标注工具走完「点选 → 批注 → 框选 → 导出」（18 项断言）
+ npm run shot       # 自动截图四个界面到 screenshots/
+ ```
+ 
+@@ -275,6 +336,7 @@ npm run shot       # 自动截图四个界面到 screenshots/
+ | --- | --- | --- |
+ | `npm test` | HTML 解析、URL 规则、base64、格式嗅探 | 否 |
+ | `npm run uicheck` | 渲染、筛选、搜索、灯箱、键盘、主题、分类树 | 否（用本地图库） |
++| `npm run annotatecheck` | 标注工具的交互与导出产物 | 否（用临时目录） |
+ | `npm run e2e` | 真实抓取 → 下载 → 落盘 → 缩略图 | 是 |
+ 
+ - 单元测试用的是**真实抓下来的 HTML 样本**（`tests/fixtures/`），
+@@ -294,6 +356,7 @@ src/
+ │   ├── context.ts             依赖装配 + 运行期切换图库
+ │   ├── config.ts              设置持久化（userData/settings.json）
+ │   ├── ipc.ts                 IPC 处理函数（渲染进程的全部能力边界）
++│   ├── devlog.ts              开发过程档案：轮次目录、截图裁片、Markdown 生成
+ │   ├── crawler/
+ │   │   ├── site.ts            站点常量、URL 规则、base64 编解码
+ │   │   ├── parser.ts          列表页 / 详情页解析 + 图片魔数嗅探
+@@ -309,6 +372,7 @@ src/
+ │       └── downloader 逻辑     在 crawler/engine.ts 内联（与进度上报强耦合）
+ ├── preload/index.ts           contextBridge 白名单
+ ├── renderer/                  React 界面（无 UI 库，纯手写 CSS 设计系统）
++│   └── src/devtools/          页面标注工具（点选/框选、元素自省、导出）
+ └── shared/types.ts            两端共享的领域类型与 IPC 契约
+ ```
+ 
+diff --git a/devlog/README.md b/devlog/README.md
+new file mode 100644
+index 0000000..197c5d3
+--- /dev/null
++++ b/devlog/README.md
+@@ -0,0 +1,70 @@
++# 开发过程档案
++
++这里保存本项目每一轮迭代的**快照、说明与截图**，目的是让整个开发过程可以完整回溯、复盘与对外展示。
++
++## 目录结构
++
++```
++devlog/
++├── README.md              本文件：档案使用说明
++├── index.json             轮次索引（编号、时间、起止提交、状态）
++└── rounds/
++    ├── 0001-baseline/     基线：初始可用版本
++    │   ├── README.md              本轮说明（背景 / 改动 / 验证 / 遗留）
++    │   ├── annotations.md         界面标注原文（人会读的版本）
++    │   ├── annotations.json       界面标注原始数据（机器可读）
++    │   ├── changes.md             代码差异概览（变更文件清单 + 统计）
++    │   ├── changes.patch          完整代码差异（可 git apply）
++    │   ├── screenshots/           本轮界面截图
++    │   ├── screenshots-before/    改动前截图（用于前后对照）
++    │   └── screenshots-after/     改动后截图（用于前后对照）
++    └── 0002-.../
++```
++
++## 一轮是怎么产生的
++
++一条完整的轮次记录由**两部分**拼成：
++
++**1）界面标注工具产出**（你来做）
++
++在应用里按 `Ctrl+Shift+A` 打开标注工具：
++
++1. 先留在「浏览」模式正常操作，翻到你想提意见的那一屏（比如打开某张图的灯箱、切到抓取面板）
++2. 切到「点选」——鼠标悬停时会实时高亮元素并显示它属于哪个组件；点一下即可写批注
++3. 或者切到「框选」——按住左键拖出一个矩形，给一整片区域提意见
++4. 每条批注可以标类别（视觉样式 / 布局结构 / 文案内容 / 交互行为 / 缺陷 / 其它）和优先级（必须改 / 建议改 / 锦上添花）
++5. 点「导出标注」，填一句总体说明，确认
++
++导出会在 `devlog/rounds/` 下自动生成一个新轮次目录，包含：
++
++- `annotations.md` / `annotations.json`：每条批注的文字、**组件名、CSS 选择器、父级链、元素文本、关键计算样式、WCAG 对比度**，以及标注框的坐标尺寸
++- `screenshots/00-full.png`：导出时的整页截图
++- `screenshots/001-xxx.png`：**每条标注自动裁切的局部截图**
++
++> 为什么记录这么细：批注只有「这个按钮太小」这种话是无法执行的，
++> 而执行改动的人（或 AI）不一定看得到界面截图。所以工具会把选择器、组件名、字号颜色间距一并记下来，
++> 拿到 `annotations.md` 就能直接定位到源码位置并知道当前值是多少。
++
++**2）轮次工具产出**（我来做）
++
++```bash
++node scripts/round.mjs list                # 看有哪些轮次
++node scripts/round.mjs new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
++node scripts/round.mjs finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 git tag
++```
++
++`finalize` 会自动补上 `changes.md`、`changes.patch`、`screenshots-after/`，
++并在 `README.md` 追加「过程存档」小节，最后打一个 `round/<轮次ID>` 的 git tag。
++每个轮次都能用 `git checkout round/<轮次ID>` 完整复原。
++
++## 命名规范
++
++- 轮次编号四位递增：`0001`、`0002`……
++- slug 用简短英文或中文，描述本轮主题，例如 `0002-tighten-typography`
++- git tag 与目录同名：`round/0002-tighten-typography`
++
++## 怎么用它做展示
++
++按轮次顺序读 `README.md`，配合 `screenshots-before/` 与 `screenshots-after/` 做前后对照，
++再翻 `annotations.md` 看当时的原始反馈、`changes.patch` 看具体改了什么 —— 一条完整的
++「提出意见 → 落地实现 → 验证结果」链路就有了。
+diff --git a/devlog/index.json b/devlog/index.json
+new file mode 100644
+index 0000000..a03ca32
+--- /dev/null
++++ b/devlog/index.json
+@@ -0,0 +1,19 @@
++{
++  "project": "gugu-gallery",
++  "description": "咕咕小站（guguxz.com）桌面爬虫与本地图库浏览器",
++  "rounds": [
++    {
++      "id": "0001-baseline",
++      "slug": "baseline",
++      "title": "初始可用版本",
++      "createdAt": "2026-09-14 12:24",
++      "finishedAt": "2026-09-14 12:24",
++      "baseCommit": null,
++      "endCommit": "343a0e6",
++      "branch": "master",
++      "status": "closed",
++      "summary": "站点逆向 + 爬虫 + 数据层 + 前端首版；测试与端到端验证全绿，等待界面审阅。",
++      "hasAnnotations": false
++    }
++  ]
++}
+diff --git a/devlog/rounds/0001-baseline/README.md b/devlog/rounds/0001-baseline/README.md
+new file mode 100644
+index 0000000..1ca7e6e
+--- /dev/null
++++ b/devlog/rounds/0001-baseline/README.md
+@@ -0,0 +1,115 @@
++# 轮次 0001-baseline · 初始可用版本
++
++- 时间：2026-09-14
++- 提交：`d12d19d` → `670e8b1` → `343a0e6`
++- 状态：**已收尾**（这是起点，不是某一轮反馈的结果）
++- 说明：本轮没有界面标注，它记录的是「等待审阅的第一版」。
++
++## 背景
++
++需求原文：
++
++> 检查这个网站：https://www.guguxz.com/
++> 我想制作这个网站的爬虫，获取图片，保存在本地。
++> 创建一个桌面应用的代码仓库，使用 git 管理，应用除了包含爬虫功能，还应是简介美观的本地图库浏览功能。
++> 后端数据管理部分你来设计，我会检查前端界面，并给出我的建议。
++
++所以本轮的目标是：先把**站点逆向 + 爬虫 + 数据层**这条地基打完，前端做到「可审阅」的程度，
++把视觉与交互的决策权留给下一轮反馈。
++
++## 做了什么
++
++### 一、站点逆向（决定了整个爬虫的形态）
++
++实测 guguxz.com 后确认的几条关键事实，完整笔记见 [`docs/site-analysis.md`](../../../docs/site-analysis.md)：
++
++| 发现 | 对实现的影响 |
++| --- | --- |
++| 图片接口 `/index/imageBed` 必须带 `Referer`，否则 403 | 所有请求统一注入 Referer |
++| `item=<base64>` 给的是**压缩预览图**，`item=<明文路径>&dw=true` 才是**真原图**（1.69MB vs 322KB，差约 5 倍） | 下载统一走 dw 通道 |
++| 列表页的 HTML 注释里藏着原图相对路径 | **不必访问详情页就能下载**，请求量减半 |
++| 扩展名完全不可信（`.png` 经常实际是 JPEG） | 一律靠魔数判断真实格式 |
++| **约 25% 的请求会被截断或挂死**，且截断时 HTTP 状态码仍是 200 | 「重试 + 完整性校验」成为核心机制而非可选项 |
++
++失败形态实测（顺序请求 12 个列表页，间隔 1s）：
++
++```
++page=3  FAIL      0 bytes 20.02s   ← 连接挂死
++page=6  FAIL      0 bytes 20.02s
++page=7  FAIL    618 bytes 20.02s   ← 响应截断，但状态码 200
++```
++
++### 二、爬虫
++
++- **两阶段流水线**：先建索引（只抓列表页，极省流量）→ 再按条件下载原图。
++  这样你可以「先看一眼有什么，再决定下什么」。
++- **完整性校验**：HTML 必须以 `</html>` 收尾；图片实际字节数必须等于 `Content-Length`。
++- **指数退避重试**（默认 4 次）+ 请求节流 + 并发闸门 + 下载停滞看门狗。
++- **详情页补全**：Pixiv 作品 ID、画师主页、完整标签（可开关）。
++- 断点续爬（`page_marks` 表）、暂停 / 继续 / 取消、实时进度与日志。
++- 下载落 `.part` 再原子改名，中断不会留下半个文件。
++- 附赠**无界面 CLI 模式**，可放进计划任务。
++
++### 三、数据层（本轮由我设计，等审阅）
++
++图库目录自包含，脱离本应用也能直接翻图：
++
++```
++<图库根目录>/
++├── index.db                 SQLite 索引
++├── originals/<一级>/<二级>/  原图（按站点分类归档）
++├── thumbs/<id>.jpg          缩略图
++└── .tmp/                    下载中转
++```
++
++六张表：`items`（站点条目元数据）、`tags`/`item_tags`、`files`（本地文件）、
++`sources`（抓取源）、`jobs`（任务留痕）、`page_marks`（断点续爬）。
++
++两个设计取舍：
++
++1. **`items` 与 `files` 分开** —— 「只索引没下载」和「下载了但元数据缺失」两种状态都能自然表达。
++2. **分页用 LIMIT/OFFSET 而非 keyset** —— 几万条量级下 SQLite 走覆盖索引扫偏移非常快，
++   复杂度低得多；真到百万级再换。
++
++技术选型上的一个被动决定：**本机没有 MSVC 工具链，任何原生模块都装不上**，
++所以 SQLite 用了 WebAssembly 版（sql.js）。代价是整库常驻内存、写盘靠整库导出（1.5s 防抖）；
++换来的是 `npm install` 之后零编译直接能跑。
++
++### 四、前端
++
++Electron + React + TypeScript，**零 UI 库**，纯手写 CSS 设计系统。
++
++- 左侧资料库导航（全部 / 收藏 / 已下载 / 待下载 / 分类树 / 热门标签）
++- 瀑布流网格，滚动到底自动翻页
++- 灯箱查看器：缩放拖拽、键盘翻页、缩略图条、元数据面板
++- 抓取面板：目标多选、范围与过滤、并发限速、实时进度与日志流
++- 设置面板：图库位置、下载行为、网络限速、主题与主题色
++
++## 验证
++
++| 项目 | 手段 | 结果 |
++| --- | --- | --- |
++| HTML 解析 | `npm test`，用真实抓下的 HTML 当样本 | 23 / 23 通过 |
++| 界面交互 | `npm run uicheck`，程序化点一遍关键路径 | 17 / 17 通过，运行期零控制台错误 |
++| 真实抓取 | `npm run e2e`，真连站点索引 + 下载 | 240 条索引 / 34 张原图（193MB）/ **0 失败** |
++| 渲染正确性 | `npm run shot` + DOM 体检 + 像素直方图 | 无破图、无横向溢出、非空白页 |
++| 打包产物 | `electron-builder --dir` 后启动产物 | 正常运行，索引库正常打开 |
++
++自查中发现并修掉的三个真实缺陷：
++
++1. 卡片标题直接用了站点原始文案（`2160x3456 1.69MB [匿名-分享]`），毫无辨识度 → 改用标签作主标题
++2. 侧栏分类树的二级项会把别的分类的词也列出来 → 改成一次查询返回完整的「一级 → 二级」树
++3. `pageSize` 与 `proxy` 两个设置项只存不用 → `pageSize` 接通；`proxy` 接上 Chromium 网络栈（`net.fetch`）
++
++## 过程存档
++
++- 界面截图（4 张）：`screenshots/`
++- 代码差异：见 `changes.md`（初始提交，基线为空）
++- 本轮无界面标注
++
++## 遗留（留待后续轮次）
++
++- 网格是「滚动到底追加」而不是真正的虚拟列表，几万张时滚动会变慢
++- 灯箱没有多选 / 批量操作
++- 没有做图片内容去重（`files.sha256` 已存下来，加硬链接去重很容易）
++- 打包成 NSIS 安装包需要管理员权限（符号链接），普通权限下只能出免安装目录
+diff --git a/devlog/rounds/0001-baseline/changes.md b/devlog/rounds/0001-baseline/changes.md
+new file mode 100644
+index 0000000..7bfd59f
+--- /dev/null
++++ b/devlog/rounds/0001-baseline/changes.md
+@@ -0,0 +1,131 @@
++# 轮次 0001-baseline 代码概览
++
++这是项目的起点，不是某一轮反馈的结果。下面是从空仓库到当前状态的全部变更。
++
++- 提交序列：`d12d19d` → `670e8b1` → `343a0e6`
++- 起点：空仓库
++- 结果：`343a0e6`
++
++## 提交记录
++
++```
++d12d19d feat: 咕咕图库 —— guguxz.com 桌面爬虫与本地图库浏览器
++670e8b1 fix: 让设置项真正生效（每页数量、代理），移除未实现的严格 TLS 开关
++343a0e6 docs: 补充打包说明与 Windows 符号链接权限的注意事项
++```
++
++## 变更文件
++
++```
++A	.editorconfig
++A	.gitattributes
++A	.gitignore
++A	LICENSE
++A	README.md
++A	docs/site-analysis.md
++A	electron.vite.config.ts
++A	package-lock.json
++A	package.json
++A	scripts/e2e.mjs
++A	scripts/screenshot.mjs
++A	scripts/uicheck.mjs
++A	src/main/cli.ts
++A	src/main/config.ts
++A	src/main/context.ts
++A	src/main/crawler/engine.ts
++A	src/main/crawler/http.ts
++A	src/main/crawler/parser.ts
++A	src/main/crawler/site.ts
++A	src/main/index.ts
++A	src/main/ipc.ts
++A	src/main/media/library.ts
++A	src/main/media/thumbnail.ts
++A	src/main/store/db.ts
++A	src/main/store/repository.ts
++A	src/main/store/schema.ts
++A	src/preload/index.ts
++A	src/renderer/index.html
++A	src/renderer/src/App.tsx
++A	src/renderer/src/api.ts
++A	src/renderer/src/components/CrawlPanel.tsx
++A	src/renderer/src/components/GalleryGrid.tsx
++A	src/renderer/src/components/Icons.tsx
++A	src/renderer/src/components/Lightbox.tsx
++A	src/renderer/src/components/SettingsPanel.tsx
++A	src/renderer/src/components/Sidebar.tsx
++A	src/renderer/src/main.tsx
++A	src/renderer/src/styles.css
++A	src/shared/types.ts
++A	tests/fixtures/detail-19519.html
++A	tests/fixtures/home.html
++A	tests/fixtures/list-pixiv.html
++A	tests/fixtures/list-ranking.html
++A	tests/fixtures/list-wallpaper.html
++A	tests/parser.test.ts
++A	tsconfig.json
++A	tsconfig.node.json
++A	tsconfig.web.json
++A	vitest.config.ts
++```
++
++## 统计
++
++```
++.editorconfig                                 |   12 +
++ .gitattributes                                |   10 +
++ .gitignore                                    |   17 +
++ LICENSE                                       |   27 +
++ README.md                                     |  341 +++++++
++ docs/site-analysis.md                         |  189 ++++
++ electron.vite.config.ts                       |   43 +
++ package-lock.json                             |  Bin 0 -> 262547 bytes
++ package.json                                  |   66 ++
++ scripts/e2e.mjs                               |   90 ++
++ scripts/screenshot.mjs                        |   68 ++
++ scripts/uicheck.mjs                           |  236 +++++
++ src/main/cli.ts                               |  130 +++
++ src/main/config.ts                            |   63 ++
++ src/main/context.ts                           |  113 +++
++ src/main/crawler/engine.ts                    |  745 +++++++++++++++
++ src/main/crawler/http.ts                      |  340 +++++++
++ src/main/crawler/parser.ts                    |  321 +++++++
++ src/main/crawler/site.ts                      |  142 +++
++ src/main/index.ts                             |  245 +++++
++ src/main/ipc.ts                               |  179 ++++
++ src/main/media/library.ts                     |  140 +++
++ src/main/media/thumbnail.ts                   |   49 +
++ src/main/store/db.ts                          |  159 ++++
++ src/main/store/repository.ts                  |  694 ++++++++++++++
++ src/main/store/schema.ts                      |  113 +++
++ src/preload/index.ts                          |   77 ++
++ src/renderer/index.html                       |   16 +
++ src/renderer/src/App.tsx                      |  514 ++++++++++
++ src/renderer/src/api.ts                       |  175 ++++
++ src/renderer/src/components/CrawlPanel.tsx    |  482 ++++++++++
++ src/renderer/src/components/GalleryGrid.tsx   |  164 ++++
++ src/renderer/src/components/Icons.tsx         |  168 ++++
++ src/renderer/src/components/Lightbox.tsx      |  322 +++++++
++ src/renderer/src/components/SettingsPanel.tsx |  248 +++++
++ src/renderer/src/components/Sidebar.tsx       |  179 ++++
++ src/renderer/src/main.tsx                     |   10 +
++ src/renderer/src/styles.css                   | 1268 +++++++++++++++++++++++++
++ src/shared/types.ts                           |  271 ++++++
++ tests/fixtures/detail-19519.html              |  267 ++++++
++ tests/fixtures/home.html                      |  344 +++++++
++ tests/fixtures/list-pixiv.html                |  302 ++++++
++ tests/fixtures/list-ranking.html              |  261 +++++
++ tests/fixtures/list-wallpaper.html            |  302 ++++++
++ tests/parser.test.ts                          |  174 ++++
++ tsconfig.json                                 |    4 +
++ tsconfig.node.json                            |   26 +
++ tsconfig.web.json                             |   23 +
++ vitest.config.ts                              |   15 +
++ 49 files changed, 10144 insertions(+)
++```
++
++## 规模
++
++```
++源码/测试/脚本行数：9443 行
++纳入版本控制的文件：49 个
++```
+diff --git a/devlog/rounds/0001-baseline/changes.patch b/devlog/rounds/0001-baseline/changes.patch
+new file mode 100644
+index 0000000..e545ff0
+--- /dev/null
++++ b/devlog/rounds/0001-baseline/changes.patch
+@@ -0,0 +1,7 @@
++# 轮次 0001-baseline 无代码差异文件
++#
++# 这是项目的起始状态，「改动前」是空仓库，因此不产生 patch。
++# 需要完整查看本轮的代码，执行：
++#     git show d12d19d
++#     git checkout round/0001-baseline
++#
+diff --git a/devlog/rounds/0001-baseline/screenshots/crawl.jpg b/devlog/rounds/0001-baseline/screenshots/crawl.jpg
+new file mode 100644
+index 0000000..598343e
+Binary files /dev/null and b/devlog/rounds/0001-baseline/screenshots/crawl.jpg differ
+diff --git a/devlog/rounds/0001-baseline/screenshots/home.jpg b/devlog/rounds/0001-baseline/screenshots/home.jpg
+new file mode 100644
+index 0000000..e0380ee
+Binary files /dev/null and b/devlog/rounds/0001-baseline/screenshots/home.jpg differ
+diff --git a/devlog/rounds/0001-baseline/screenshots/lightbox.jpg b/devlog/rounds/0001-baseline/screenshots/lightbox.jpg
+new file mode 100644
+index 0000000..d977c49
+Binary files /dev/null and b/devlog/rounds/0001-baseline/screenshots/lightbox.jpg differ
+diff --git a/devlog/rounds/0001-baseline/screenshots/settings.jpg b/devlog/rounds/0001-baseline/screenshots/settings.jpg
+new file mode 100644
+index 0000000..b7f0ee5
+Binary files /dev/null and b/devlog/rounds/0001-baseline/screenshots/settings.jpg differ
+diff --git a/package.json b/package.json
+index e15b9a2..a74f019 100644
+--- a/package.json
++++ b/package.json
+@@ -24,7 +24,9 @@
+     "crawl": "electron-vite build && electron out/main/cli.js",
+     "crawl:dev": "electron out/main/cli.js",
+     "e2e": "node scripts/e2e.mjs",
+-    "uicheck": "node scripts/uicheck.mjs"
++    "uicheck": "node scripts/uicheck.mjs",
++    "annotatecheck": "node scripts/annotatecheck.mjs",
++    "annotate": "electron-vite build && electron out/main/index.js"
+   },
+   "dependencies": {
+     "sql.js": "^1.13.0"
+diff --git a/scripts/annotatecheck.mjs b/scripts/annotatecheck.mjs
+new file mode 100644
+index 0000000..27d862b
+--- /dev/null
++++ b/scripts/annotatecheck.mjs
+@@ -0,0 +1,230 @@
++/**
++ * 标注工具自检：程序化驱动界面完成「打开工具 -> 点选元素 -> 写批注 -> 框选区域 -> 导出」，
++ * 然后校验 devlog 轮次目录里的产物是否齐全。
++ *
++ *   npm run annotatecheck
++ *
++ * 导出目标通过 GUGU_WORKSPACE 指向 data/annotate-test，不会污染真实的 devlog 档案。
++ */
++import { spawn } from 'node:child_process'
++import { existsSync } from 'node:fs'
++import { mkdir, readFile, readdir, rm } from 'node:fs/promises'
++import { dirname, join, resolve } from 'node:path'
++import { fileURLToPath } from 'node:url'
++
++const here = dirname(fileURLToPath(import.meta.url))
++const root = resolve(here, '..')
++const electronBinary = join(
++  root,
++  'node_modules',
++  'electron',
++  'dist',
++  process.platform === 'win32' ? 'electron.exe' : 'electron'
++)
++
++const workspace = join(root, 'data', 'annotate-test')
++const libraryRoot = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
++
++if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
++  console.error('缺少构建产物，请先 npm run build')
++  process.exit(1)
++}
++
++await rm(workspace, { recursive: true, force: true })
++await mkdir(workspace, { recursive: true })
++
++/* ------------------------------------------------------- 注入到页面的脚本 */
++
++const SCRIPT = `(async () => {
++  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
++  const out = {}
++  const btn = (text) =>
++    [...document.querySelectorAll('.gugu-anno-seg button, .gugu-anno-btn')].find(
++      (b) => b.textContent.trim() === text
++    )
++  const setTextarea = (el, value) => {
++    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
++    setter.call(el, value)
++    el.dispatchEvent(new Event('input', { bubbles: true }))
++  }
++  const fire = (el, type, x, y) =>
++    el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 }))
++
++  await sleep(400)
++
++  // 1) Ctrl+Shift+A 打开工具
++  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'A', ctrlKey: true, shiftKey: true, bubbles: true }))
++  await sleep(450)
++  out.toolbarVisible = Boolean(document.querySelector('.gugu-anno-toolbar'))
++  out.hintBrowse = document.querySelector('.gugu-anno-hint')?.textContent?.slice(0, 12) ?? null
++
++  // 2) 切到点选模式
++  btn('点选')?.click()
++  await sleep(200)
++  out.modeAfterSwitch = [...document.querySelectorAll('.gugu-anno-seg button')].find((b) => b.className === 'on')?.textContent
++
++  // 3) 点选标签胶囊
++  const chip = document.querySelector('.tag-chip')
++  out.pickedElement = chip ? chip.className : null
++  const rect = chip.getBoundingClientRect()
++  const cx = rect.x + rect.width / 2
++  const cy = rect.y + rect.height / 2
++  fire(chip, 'mousemove', cx, cy)
++  await sleep(150)
++  out.hoverLabel = document.querySelector('.gugu-anno-hover-label')?.textContent ?? null
++  fire(chip, 'mousedown', cx, cy)
++  fire(chip, 'mouseup', cx, cy)
++  await sleep(350)
++  out.editorOpen = Boolean(document.querySelector('.gugu-anno-editor'))
++  out.editorComponent = document.querySelector('.gugu-anno-target code')?.textContent ?? null
++  out.editorSelector = [...document.querySelectorAll('.gugu-anno-target code')].pop()?.textContent ?? null
++
++  // 4) 写批注并提交
++  const ta = document.querySelector('.gugu-anno-editor textarea')
++  setTextarea(ta, '标签胶囊太挤：字号想从 11.5px 提到 12.5px，左右内边距加到 12px')
++  await sleep(120)
++  btn('添加')?.click()
++  await sleep(350)
++  out.pinsAfterFirst = document.querySelectorAll('.gugu-anno-pin').length
++
++  // 5) 框选一个区域
++  btn('框选')?.click()
++  await sleep(150)
++  fire(document.body, 'mousedown', 420, 300)
++  fire(document.body, 'mousemove', 760, 540)
++  fire(document.body, 'mouseup', 760, 540)
++  await sleep(350)
++  out.regionEditorOpen = Boolean(document.querySelector('.gugu-anno-editor'))
++  const ta2 = document.querySelector('.gugu-anno-editor textarea')
++  setTextarea(ta2, '卡片区域留白偏大，希望整体收紧一档')
++  await sleep(120)
++  btn('添加')?.click()
++  await sleep(350)
++  out.pinsAfterSecond = document.querySelectorAll('.gugu-anno-pin').length
++  out.modeAfterSubmit = [...document.querySelectorAll('.gugu-anno-seg button')].find((b) => b.className === 'on')?.textContent
++  out.panelItems = document.querySelectorAll('.gugu-anno-item').length
++
++  // 6) 导出
++  btn('导出标注')?.click()
++  await sleep(400)
++  out.modalOpen = Boolean(document.querySelector('.gugu-anno-modal'))
++  const noteEl = document.querySelector('.gugu-anno-modal textarea')
++  setTextarea(noteEl, '自检脚本生成的示例标注，用于验证导出链路。')
++  await sleep(150)
++  btn('确认导出')?.click()
++  await sleep(2200)
++  out.toastAfterExport = document.querySelector('.toast')?.textContent ?? null
++  return out
++})()`
++
++/* ------------------------------------------------------------------ 运行 */
++
++const env = {
++  ...process.env,
++  GUGU_SHOT: join(workspace, 'shots'),
++  GUGU_SHOT_VIEW: '',
++  GUGU_SHOT_DELAY: '3400',
++  GUGU_LIBRARY_ROOT: libraryRoot,
++  GUGU_SETTINGS_FILE: join(root, 'data', 'annotate-settings.json'),
++  GUGU_WORKSPACE: workspace,
++  GUGU_EVAL: SCRIPT
++}
++
++await mkdir(join(workspace, 'shots'), { recursive: true })
++
++const output = await new Promise((resolvePromise) => {
++  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
++    cwd: root,
++    env,
++    stdio: ['ignore', 'pipe', 'pipe']
++  })
++  let buf = ''
++  child.stdout.on('data', (d) => (buf += String(d)))
++  child.stderr.on('data', (d) => (buf += String(d)))
++  child.on('exit', () => resolvePromise(buf))
++})
++
++const match = /__EVAL__(\{.*\})/s.exec(output)
++if (!match) {
++  console.error('未拿到执行结果，原始输出：\n' + output)
++  process.exit(1)
++}
++const { ok, result, error, consoleErrors } = JSON.parse(match[1])
++if (!ok) {
++  console.error('注入脚本执行失败:', error)
++  process.exit(1)
++}
++
++/* ------------------------------------------------------------ 校验产物 */
++
++const roundsDir = join(workspace, 'devlog', 'rounds')
++const rounds = existsSync(roundsDir) ? await readdir(roundsDir) : []
++const roundDir = rounds.length > 0 ? join(roundsDir, rounds[0]) : null
++
++let exported = null
++let markdown = ''
++let shots = []
++if (roundDir) {
++  try {
++    exported = JSON.parse(await readFile(join(roundDir, 'annotations.json'), 'utf8'))
++  } catch {
++    /* ignore */
++  }
++  try {
++    markdown = await readFile(join(roundDir, 'annotations.md'), 'utf8')
++  } catch {
++    /* ignore */
++  }
++  try {
++    shots = await readdir(join(roundDir, 'screenshots'))
++  } catch {
++    /* ignore */
++  }
++}
++
++const checks = [
++  ['工具栏能打开', result.toolbarVisible === true],
++  ['能切换点选模式', result.modeAfterSwitch === '点选'],
++  ['悬停能识别到元素', Boolean(result.hoverLabel)],
++  ['点选后弹出批注框', result.editorOpen === true],
++  ['批注框记录了组件名', Boolean(result.editorComponent)],
++  ['提交后生成图钉', result.pinsAfterFirst === 1],
++  ['框选区域也能弹出批注框', result.regionEditorOpen === true],
++  ['第二条标注生成', result.pinsAfterSecond === 2],
++  ['提交后自动回到浏览模式', result.modeAfterSubmit === '浏览'],
++  ['标注清单列出两条', result.panelItems === 2],
++  ['导出弹窗能打开', result.modalOpen === true],
++  ['导出后给出轮次提示', /devlog\/rounds/.test(result.toastAfterExport ?? '')],
++  ['生成了轮次目录', rounds.length === 1],
++  ['annotations.json 可解析且有 2 条', exported?.annotations?.length === 2],
++  ['annotations.md 有内容', markdown.includes('逐条标注')],
++  ['整页截图已落盘', shots.includes('00-full.png')],
++  ['每条标注都有裁片', shots.filter((f) => /^\d{3}-/.test(f)).length === 2],
++  ['运行期无控制台错误', (consoleErrors ?? []).length === 0]
++]
++
++console.log('标注工具自检：')
++let failed = 0
++for (const [label, pass] of checks) {
++  console.log(`  ${pass ? '✓' : '✗'} ${label}`)
++  if (!pass) failed += 1
++}
++
++console.log('\n页面脚本返回值：')
++console.log(JSON.stringify(result, null, 2).split('\n').map((l) => '  ' + l).join('\n'))
++
++if (exported) {
++  console.log('\n导出的标注条目：')
++  for (const a of exported.annotations) {
++    console.log(`  ${a.index}. [${a.category}/${a.severity}] ${a.comment}`)
++    console.log(`     组件=${a.target.component} 选择器=${a.target.selector.slice(0, 90)}`)
++  }
++}
++console.log(`\n产物目录：${roundDir ?? '(无)'}`)
++console.log(`截图：${shots.join(', ')}`)
++
++if (failed > 0) {
++  console.error(`\n${failed} 项检查未通过`)
++  process.exit(1)
++}
++console.log('\n标注工具自检通过。')
+diff --git a/scripts/round.mjs b/scripts/round.mjs
+new file mode 100644
+index 0000000..3beed36
+--- /dev/null
++++ b/scripts/round.mjs
+@@ -0,0 +1,265 @@
++/**
++ * 轮次档案工具。
++ *
++ *   node scripts/round.mjs list                 列出所有轮次
++ *   node scripts/round.mjs new <slug>           开一轮：建目录 + 起始截图 + 元数据
++ *   node scripts/round.mjs finalize <轮次ID>    收尾：改动截图 + 代码 diff + 更新说明 + 打 tag
++ *
++ * 配合界面上的「标注工具」使用：
++ *   标注工具负责产出 annotations.md/json 与逐条裁片，
++ *   本脚本负责补齐「改动前后对照截图 + 代码差异 + 轮次说明」，
++ *   让整个开发过程可以完整回溯与展示。
++ */
++import { spawn } from 'node:child_process'
++import { existsSync } from 'node:fs'
++import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
++import { dirname, join, resolve } from 'node:path'
++import { fileURLToPath } from 'node:url'
++
++const here = dirname(fileURLToPath(import.meta.url))
++const root = resolve(here, '..')
++const roundsDir = join(root, 'devlog', 'rounds')
++const indexPath = join(root, 'devlog', 'index.json')
++const libraryRoot = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
++
++const [command, ...rest] = process.argv.slice(2)
++
++/* ------------------------------------------------------------------ 工具 */
++
++function sh(cmd, args, opts = {}) {
++  return new Promise((resolvePromise) => {
++    const child = spawn(cmd, args, { cwd: root, shell: process.platform === 'win32', ...opts })
++    let out = ''
++    child.stdout?.on('data', (d) => (out += String(d)))
++    child.stderr?.on('data', (d) => (out += String(d)))
++    child.on('exit', (code) => resolvePromise({ code, out }))
++  })
++}
++
++const git = async (args) => (await sh('git', args)).out.trim()
++
++async function listRoundDirs() {
++  if (!existsSync(roundsDir)) return []
++  const entries = await readdir(roundsDir, { withFileTypes: true })
++  return entries
++    .filter((e) => e.isDirectory())
++    .map((e) => e.name)
++    .sort()
++}
++
++async function readIndex() {
++  try {
++    return JSON.parse(await readFile(indexPath, 'utf8'))
++  } catch {
++    return { rounds: [] }
++  }
++}
++
++async function writeIndex(index) {
++  await mkdir(dirname(indexPath), { recursive: true })
++  await writeFile(indexPath, JSON.stringify(index, null, 2) + '\n', 'utf8')
++}
++
++function stamp() {
++  const d = new Date()
++  const p = (n) => String(n).padStart(2, '0')
++  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
++}
++
++/** 调用主进程的截图模式，把四个界面截到指定目录 */
++async function capture(targetDir) {
++  await mkdir(targetDir, { recursive: true })
++  const result = await sh(process.execPath, [join(root, 'scripts', 'screenshot.mjs')], {
++    env: {
++      ...process.env,
++      GUGU_SHOT_DIR: targetDir,
++      GUGU_SHOT_FORMAT: 'jpeg',
++      GUGU_LIBRARY_ROOT: libraryRoot,
++      GUGU_SETTINGS_FILE: join(root, 'data', 'round-settings.json'),
++      GUGU_DIAG: ''
++    },
++    stdio: 'inherit'
++  })
++  return result.code === 0
++}
++
++/* ---------------------------------------------------------------- 子命令 */
++
++async function cmdList() {
++  const dirs = await listRoundDirs()
++  if (dirs.length === 0) {
++    console.log('还没有任何轮次。用 `node scripts/round.mjs new <slug>` 开一轮。')
++    return
++  }
++  const index = await readIndex()
++  console.log('轮次档案：\n')
++  for (const dir of dirs) {
++    const meta = index.rounds.find((r) => r.id === dir)
++    const files = await readdir(join(roundsDir, dir))
++    const anno = existsSync(join(roundsDir, dir, 'annotations.json'))
++    console.log(`  ${dir}`)
++    console.log(`    文件: ${files.join(', ')}`)
++    if (meta?.summary) console.log(`    说明: ${meta.summary}`)
++    if (anno) console.log('    含界面标注')
++    console.log('')
++  }
++}
++
++async function cmdNew(slug) {
++  if (!slug) {
++    console.error('用法: node scripts/round.mjs new <slug>')
++    process.exit(1)
++  }
++  const safe = slug.replace(/[^\w\u4e00-\u9fa5-]/g, '-').replace(/-+/g, '-')
++  const dirs = await listRoundDirs()
++  const number = String(dirs.length + 1).padStart(4, '0')
++  const id = `${number}-${safe}`
++  const dir = join(roundsDir, id)
++  if (existsSync(dir)) {
++    console.error(`轮次已存在: ${id}`)
++    process.exit(1)
++  }
++  await mkdir(join(dir, 'screenshots-before'), { recursive: true })
++
++  const commit = await git(['rev-parse', '--short', 'HEAD'])
++  const branch = await git(['rev-parse', '--abbrev-ref', 'HEAD'])
++  const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
++
++  console.log(`== 采集起始截图 -> ${id}/screenshots-before`)
++  const ok = await capture(join(dir, 'screenshots-before'))
++  if (!ok) console.warn('  （截图失败，可稍后手动补）')
++
++  const readme = `# 轮次 ${id}
++
++- 时间：${stamp()}
++- 起点提交：\`${commit}\`（分支 ${branch}）
++- 应用版本：${pkg.version}
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++## 反馈标注
++
++<!-- 若本轮有界面标注，链接到 annotations.md；没有就删掉这段 -->
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
++`
++  await writeFile(join(dir, 'README.md'), readme, 'utf8')
++
++  const index = await readIndex()
++  index.rounds = index.rounds.filter((r) => r.id !== id)
++  index.rounds.push({
++    id,
++    slug: safe,
++    createdAt: stamp(),
++    baseCommit: commit,
++    branch,
++    summary: '',
++    status: 'open'
++  })
++  await writeIndex(index)
++
++  console.log(`\n已创建轮次 ${id}`)
++  console.log(`  目录: devlog/rounds/${id}`)
++  console.log('  完成后执行: node scripts/round.mjs finalize ' + id)
++}
++
++async function cmdFinalize(roundId) {
++  if (!roundId) {
++    console.error('用法: node scripts/round.mjs finalize <轮次ID>')
++    process.exit(1)
++  }
++  const dirs = await listRoundDirs()
++  const id = dirs.find((d) => d === roundId) ?? dirs.find((d) => d.startsWith(roundId))
++  if (!id) {
++    console.error(`找不到轮次: ${roundId}\n现有：${dirs.join(', ') || '(无)'}`)
++    process.exit(1)
++  }
++  const dir = join(roundsDir, id)
++  const index = await readIndex()
++  const meta = index.rounds.find((r) => r.id === id) ?? {}
++  const baseCommit = meta.baseCommit ?? 'HEAD~1'
++
++  console.log(`== 采集改动后截图 -> ${id}/screenshots-after`)
++  await capture(join(dir, 'screenshots-after'))
++
++  const commit = await git(['rev-parse', '--short', 'HEAD'])
++  const diffStat = await git(['diff', '--stat', `${baseCommit}..HEAD`])
++  const diffNameStatus = await git(['diff', '--name-status', `${baseCommit}..HEAD`])
++  const fullDiff = await git(['diff', `${baseCommit}..HEAD`])
++
++  await writeFile(
++    join(dir, 'changes.patch'),
++    `# 轮次 ${id} 代码差异\n# 基线提交 ${baseCommit} -> ${commit}\n\n${fullDiff}`,
++    'utf8'
++  )
++  await writeFile(
++    join(dir, 'changes.md'),
++    `# 轮次 ${id} 代码差异概览\n\n- 基线：\`${baseCommit}\`\n- 结果：\`${commit}\`\n\n## 变更文件\n\n\`\`\`\n${diffNameStatus}\n\`\`\`\n\n## 统计\n\n\`\`\`\n${diffStat}\n\`\`\`\n`,
++    'utf8'
++  )
++
++  // 统计一下有截图的话列进 README
++  const shotsBefore = existsSync(join(dir, 'screenshots-before')) ? await readdir(join(dir, 'screenshots-before')) : []
++  const shotsAfter = existsSync(join(dir, 'screenshots-after')) ? await readdir(join(dir, 'screenshots-after')) : []
++  const hasAnnotations = existsSync(join(dir, 'annotations.json'))
++
++  const readmePath = join(dir, 'README.md')
++  let readme = existsSync(readmePath) ? await readFile(readmePath, 'utf8') : `# 轮次 ${id}\n`
++  const evidence = [
++    '',
++    '## 过程存档',
++    '',
++    `- 起始截图（${shotsBefore.length} 张）：\`screenshots-before/\``,
++    `- 改动后截图（${shotsAfter.length} 张）：\`screenshots-after/\``,
++    `- 代码差异：\`changes.patch\` / \`changes.md\``,
++    hasAnnotations ? '- 界面标注原文：`annotations.md` / `annotations.json`' : '- （本轮无界面标注）',
++    ''
++  ].join('\n')
++  if (!readme.includes('## 过程存档')) readme += evidence
++  await writeFile(readmePath, readme, 'utf8')
++
++  index.rounds = index.rounds.filter((r) => r.id !== id)
++  index.rounds.push({ ...meta, id, finishedAt: stamp(), endCommit: commit, status: 'closed' })
++  await writeIndex(index)
++
++  const tag = `round/${id}`
++  const tagResult = await git(['tag', '-f', tag])
++  void tagResult
++
++  console.log(`\n轮次 ${id} 已收尾`)
++  console.log(`  改动文件：\n${diffNameStatus.split('\n').map((l) => '    ' + l).join('\n')}`)
++  console.log(`  git tag: ${tag}`)
++}
++
++/* ---------------------------------------------------------------- 分发 */
++
++switch (command) {
++  case 'list':
++    await cmdList()
++    break
++  case 'new':
++    await cmdNew(rest[0])
++    break
++  case 'finalize':
++    await cmdFinalize(rest[0])
++    break
++  default:
++    console.log(`轮次档案工具
++
++  node scripts/round.mjs list                 列出所有轮次
++  node scripts/round.mjs new <slug>           开一轮（建目录 + 起始截图 + 元数据）
++  node scripts/round.mjs finalize <轮次ID>    收尾（改动截图 + 代码 diff + 更新说明 + 打 tag）
++`)
++}
+diff --git a/scripts/screenshot.mjs b/scripts/screenshot.mjs
+index 95d5d82..a458a2e 100644
+--- a/scripts/screenshot.mjs
++++ b/scripts/screenshot.mjs
+@@ -32,7 +32,7 @@ if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
+   process.exit(1)
+ }
+ 
+-const outDir = join(root, 'screenshots')
++const outDir = process.env.GUGU_SHOT_DIR ?? join(root, 'screenshots')
+ await mkdir(outDir, { recursive: true })
+ 
+ const views = process.argv.slice(2)
+@@ -50,7 +50,8 @@ for (const view of targets) {
+       GUGU_SHOT_SETTLE: '2200',
+       GUGU_LIBRARY_ROOT: libraryRoot,
+       GUGU_SETTINGS_FILE: join(root, 'data', 'screenshot-settings.json'),
+-      GUGU_DIAG: process.env.GUGU_DIAG ?? '1'
++      GUGU_DIAG: process.env.GUGU_DIAG ?? '1',
++      GUGU_SHOT_FORMAT: process.env.GUGU_SHOT_FORMAT ?? 'png'
+     }
+     const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
+       cwd: root,
+@@ -62,7 +63,8 @@ for (const view of targets) {
+       else reject(new Error(`截图 ${view} 退出码 ${code}`))
+     })
+   })
+-  console.log(`已截图: ${join(outDir, `${view === 'gallery' ? 'home' : view}.png`)}`)
++  const ext = (process.env.GUGU_SHOT_FORMAT ?? 'png') === 'jpeg' ? 'jpg' : 'png'
++  console.log(`已截图: ${join(outDir, `${view === 'gallery' ? 'home' : view}.${ext}`)}`)
+ }
+ 
+ console.log('完成。')
+diff --git a/src/main/context.ts b/src/main/context.ts
+index 10501fc..e39c4e5 100644
+--- a/src/main/context.ts
++++ b/src/main/context.ts
+@@ -8,10 +8,12 @@ import { Database } from './store/db'
+ import { Repository } from './store/repository'
+ import { Library } from './media/library'
+ import { SettingsStore } from './config'
++import { DevlogStore } from './devlog'
+ import type { AppSettings, CrawlProgress } from '@shared/types'
+ 
+ export class AppContext {
+   readonly settings: SettingsStore
++  readonly devlog: DevlogStore
+   private db!: Database
+   private repo!: Repository
+   private lib!: Library
+@@ -21,6 +23,7 @@ export class AppContext {
+ 
+   constructor() {
+     this.settings = new SettingsStore()
++    this.devlog = new DevlogStore(DevlogStore.resolveRoot())
+   }
+ 
+   async init(): Promise<void> {
+diff --git a/src/main/devlog.ts b/src/main/devlog.ts
+new file mode 100644
+index 0000000..c46f8b3
+--- /dev/null
++++ b/src/main/devlog.ts
+@@ -0,0 +1,336 @@
++/**
++ * 开发过程档案（devlog）。
++ *
++ * 每做一轮改动就是一个「轮次」，落在 devlog/rounds/<编号>-<时间戳>/ 下，
++ * 内含：用户标注原文、逐条标注的截图裁片、当轮改动说明、代码差异。
++ * 目的是让整个项目的演进过程可回溯、可展示。
++ *
++ * 标注由界面上的「标注工具」产生，导出时主进程负责截图与落盘。
++ */
++import { existsSync } from 'node:fs'
++import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
++import { join } from 'node:path'
++import { app, type BrowserWindow } from 'electron'
++
++export interface AnnotationRect {
++  x: number
++  y: number
++  width: number
++  height: number
++}
++
++export interface AnnotationTarget {
++  selector: string
++  component: string | null
++  tag: string
++  classes: string
++  text: string
++  parentChain: string[]
++  styles: Record<string, string>
++  attributes: Record<string, string>
++}
++
++export interface Annotation {
++  id: string
++  index: number
++  comment: string
++  category: 'style' | 'layout' | 'content' | 'behavior' | 'bug' | 'other'
++  severity: 'must' | 'should' | 'nice'
++  kind: 'element' | 'region'
++  createdAt: number
++  rect: AnnotationRect
++  viewport: { width: number; height: number }
++  target: AnnotationTarget
++}
++
++export interface ExportPayload {
++  annotations: Annotation[]
++  /** 本轮的整体说明，可选 */
++  note: string
++  /** 标注时所在界面（gallery / lightbox / crawl / settings …） */
++  view: string
++  devicePixelRatio: number
++  appVersion: string
++}
++
++export interface RoundInfo {
++  id: string
++  dir: string
++  createdAt: string
++  annotationCount: number
++  hasScreenshot: boolean
++}
++
++const CATEGORY_LABEL: Record<Annotation['category'], string> = {
++  style: '视觉样式',
++  layout: '布局结构',
++  content: '文案内容',
++  behavior: '交互行为',
++  bug: '缺陷',
++  other: '其它'
++}
++
++const SEVERITY_LABEL: Record<Annotation['severity'], string> = {
++  must: '必须改',
++  should: '建议改',
++  nice: '锦上添花'
++}
++
++export class DevlogStore {
++  constructor(private readonly root: string) {}
++
++  /**
++   * 档案根目录的定位顺序：
++   *   1. GUGU_WORKSPACE 环境变量（显式指定）
++   *   2. 应用目录下的 devlog/（开发态就是仓库根）
++   *   3. 用户数据目录（打包后 asar 不可写时的兜底，保证导出永远能成功）
++   */
++  static resolveRoot(): string {
++    const fromEnv = process.env.GUGU_WORKSPACE
++    if (fromEnv) return fromEnv
++    const appPath = app.getAppPath()
++    if (!appPath.includes('app.asar') && existsSync(join(appPath, 'devlog'))) return appPath
++    return join(app.getPath('userData'), 'devlog-workspace')
++  }
++
++  get roundsDir(): string {
++    return join(this.root, 'devlog', 'rounds')
++  }
++
++  async listRounds(): Promise<RoundInfo[]> {
++    if (!existsSync(this.roundsDir)) return []
++    const entries = await readdir(this.roundsDir, { withFileTypes: true })
++    const rounds: RoundInfo[] = []
++    for (const entry of entries) {
++      if (!entry.isDirectory()) continue
++      const dir = join(this.roundsDir, entry.name)
++      let annotationCount = 0
++      try {
++        const raw = await readFile(join(dir, 'annotations.json'), 'utf8')
++        const parsed = JSON.parse(raw) as { annotations?: unknown[] }
++        annotationCount = parsed.annotations?.length ?? 0
++      } catch {
++        /* 没有标注文件也正常（纯代码轮次） */
++      }
++      rounds.push({
++        id: entry.name,
++        dir,
++        createdAt: entry.name.match(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/)?.[0] ?? entry.name,
++        annotationCount,
++        hasScreenshot: existsSync(join(dir, 'screenshots', '00-full.png'))
++      })
++    }
++    return rounds.sort((a, b) => a.id.localeCompare(b.id))
++  }
++
++  /** 下一个轮次目录：<4 位序号>-<yyyyMMdd-HHmm> */
++  async nextRoundDir(): Promise<{ id: string; dir: string }> {
++    const rounds = await this.listRounds()
++    const nextNumber = rounds.length + 1
++    const id = `${String(nextNumber).padStart(4, '0')}-${stamp()}`
++    return { id, dir: join(this.roundsDir, id) }
++  }
++
++  /**
++   * 导出一次标注：整页截图 + 每条标注的裁片 + JSON + Markdown。
++   * 截图裁切要注意 devicePixelRatio：capturePage 给的是物理像素，标注框是 CSS 像素。
++   */
++  async exportAnnotations(
++    payload: ExportPayload,
++    win: BrowserWindow | null
++  ): Promise<{ roundId: string; roundDir: string; files: string[] }> {
++    const { id, dir } = await this.nextRoundDir()
++    const shotsDir = join(dir, 'screenshots')
++    await mkdir(shotsDir, { recursive: true })
++
++    const files: string[] = []
++
++    // 1) 整页截图
++    let fullImage: Electron.NativeImage | null = null
++    if (win && !win.isDestroyed()) {
++      win.webContents.invalidate()
++      await sleep(320)
++      fullImage = await win.webContents.capturePage()
++      await writeFile(join(shotsDir, '00-full.png'), fullImage.toPNG())
++      files.push('screenshots/00-full.png')
++    }
++
++    // 2) 每条标注裁片
++    const dpr = payload.devicePixelRatio || 1
++    for (const anno of payload.annotations) {
++      if (!fullImage) break
++      const name = `${String(anno.index).padStart(3, '0')}-${slugify(anno.comment)}.png`
++      try {
++        const size = fullImage.getSize()
++        const x = clamp(Math.round(anno.rect.x * dpr) - 12, 0, size.width)
++        const y = clamp(Math.round(anno.rect.y * dpr) - 12, 0, size.height)
++        const width = clamp(Math.round(anno.rect.width * dpr) + 24, 1, size.width - x)
++        const height = clamp(Math.round(anno.rect.height * dpr) + 24, 1, size.height - y)
++        const crop = fullImage.crop({ x, y, width, height })
++        if (!crop.isEmpty()) {
++          await writeFile(join(shotsDir, name), crop.toPNG())
++          files.push(`screenshots/${name}`)
++        }
++      } catch {
++        /* 裁切失败不影响主体导出 */
++      }
++    }
++
++    // 3) 原始数据
++    const record = {
++      roundId: id,
++      exportedAt: new Date().toISOString(),
++      view: payload.view,
++      note: payload.note,
++      viewport: payload.annotations[0]?.viewport ?? null,
++      devicePixelRatio: dpr,
++      appVersion: payload.appVersion,
++      annotations: payload.annotations
++    }
++    await writeFile(join(dir, 'annotations.json'), JSON.stringify(record, null, 2), 'utf8')
++    files.push('annotations.json')
++
++    // 4) 人能读的 Markdown
++    await writeFile(join(dir, 'annotations.md'), renderMarkdown(record), 'utf8')
++    files.push('annotations.md')
++
++    // 5) 轮次说明骨架，供后续填写
++    if (!existsSync(join(dir, 'README.md'))) {
++      await writeFile(join(dir, 'README.md'), renderRoundReadme(record), 'utf8')
++      files.push('README.md')
++    }
++
++    return { roundId: id, roundDir: dir, files }
++  }
++}
++
++/* ------------------------------------------------------------------ 渲染 */
++
++interface ExportRecord {
++  roundId: string
++  exportedAt: string
++  view: string
++  note: string
++  viewport: { width: number; height: number } | null
++  devicePixelRatio: number
++  appVersion: string
++  annotations: Annotation[]
++}
++
++function renderRoundReadme(record: ExportRecord): string {
++  const viewport = record.viewport ? `${record.viewport.width}×${record.viewport.height}` : '未知'
++  return `# 轮次 ${record.roundId}
++
++> 由界面上的「标注工具」自动生成，请在完成本轮改动后补全下面的小节。
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++${record.note ? record.note : '（待补充）'}
++
++## 反馈标注
++
++共 ${record.annotations.length} 条，详见 [\`annotations.md\`](annotations.md) 与 [\`annotations.json\`](annotations.json)。
++
++导出时视口 ${viewport}，界面 ${record.view}，应用版本 ${record.appVersion}。
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
++`
++}
++
++function renderMarkdown(record: ExportRecord): string {
++  const lines: string[] = []
++  lines.push(`# 界面标注 · 轮次 ${record.roundId}`)
++  lines.push('')
++  lines.push(`- 导出时间：${record.exportedAt}`)
++  lines.push(`- 所在界面：${record.view}`)
++  if (record.viewport) lines.push(`- 视口：${record.viewport.width}×${record.viewport.height}（DPR ${record.devicePixelRatio}）`)
++  lines.push(`- 应用版本：${record.appVersion}`)
++  lines.push(`- 标注条数：${record.annotations.length}`)
++  if (record.note) {
++    lines.push('')
++    lines.push('## 总体说明')
++    lines.push('')
++    lines.push(record.note)
++  }
++  lines.push('')
++  lines.push('## 逐条标注')
++  lines.push('')
++
++  for (const a of record.annotations) {
++    const t = a.target
++    lines.push(`### ${a.index}. ${firstLine(a.comment) || '(无标题)'}`)
++    lines.push('')
++    lines.push(
++      `- **类别**：${CATEGORY_LABEL[a.category]} ｜ **优先级**：${SEVERITY_LABEL[a.severity]} ｜ **方式**：${
++        a.kind === 'element' ? '点选元素' : '框选区域'
++      }`
++    )
++    if (t.component) lines.push(`- **组件**：\`${t.component}\``)
++    lines.push(`- **选择器**：\`${t.selector}\``)
++    if (t.parentChain.length > 0) lines.push(`- **父级链**：${t.parentChain.map((p) => `\`${p}\``).join(' ← ')}`)
++    if (t.text) lines.push(`- **元素文本**：${truncate(t.text.replace(/\s+/g, ' '), 120)}`)
++    lines.push(
++      `- **位置尺寸**：x=${Math.round(a.rect.x)} y=${Math.round(a.rect.y)} ${Math.round(a.rect.width)}×${Math.round(
++        a.rect.height
++      )}`
++    )
++    const styleEntries = Object.entries(t.styles)
++    if (styleEntries.length > 0) {
++      lines.push(`- **关键样式**：${styleEntries.map(([k, v]) => `${k}: ${v}`).join('; ')}`)
++    }
++    const attrEntries = Object.entries(t.attributes)
++    if (attrEntries.length > 0) {
++      lines.push(`- **属性**：${attrEntries.map(([k, v]) => `${k}="${truncate(v, 40)}"`).join(' ')}`)
++    }
++    lines.push('')
++    lines.push('> ' + a.comment.split('\n').join('\n> '))
++    lines.push('')
++  }
++  return lines.join('\n')
++}
++
++/* ------------------------------------------------------------------ 工具 */
++
++function clamp(value: number, min: number, max: number): number {
++  return Math.max(min, Math.min(max, value))
++}
++
++function sleep(ms: number): Promise<void> {
++  return new Promise((resolve) => setTimeout(resolve, ms))
++}
++
++function firstLine(text: string): string {
++  return (text.split('\n')[0] ?? '').trim().slice(0, 60)
++}
++
++function truncate(text: string, max: number): string {
++  return text.length <= max ? text : `${text.slice(0, max)}…`
++}
++
++function slugify(text: string): string {
++  const cleaned = firstLine(text)
++    .replace(/[\\/:*?"<>|]/g, '')
++    .replace(/\s+/g, '-')
++    .replace(/-+/g, '-')
++    .replace(/^-|-$/g, '')
++  // 中文保留，只是限制长度；完全为空时给个占位
++  return cleaned.slice(0, 28) || 'annotation'
++}
++
++function stamp(): string {
++  const d = new Date()
++  const pad = (n: number): string => String(n).padStart(2, '0')
++  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
++}
+diff --git a/src/main/index.ts b/src/main/index.ts
+index d83881d..a567f18 100644
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -171,7 +171,10 @@ async function runScreenshot(win: BrowserWindow): Promise<void> {
+   await new Promise((resolve) => setTimeout(resolve, 400))
+ 
+   const image = await win.webContents.capturePage()
+-  await writeFile(join(outDir, `${view || 'home'}.png`), image.toPNG())
++  // 归档用 JPEG（体积约为 PNG 的 1/5），日常自检仍用 PNG 保留无损细节
++  const asJpeg = process.env.GUGU_SHOT_FORMAT === 'jpeg'
++  const ext = asJpeg ? 'jpg' : 'png'
++  await writeFile(join(outDir, `${view || 'home'}.${ext}`), asJpeg ? image.toJPEG(86) : image.toPNG())
+ 
+   if (process.env.GUGU_DIAG) {
+     const report = await win.webContents.executeJavaScript(DIAGNOSTICS_SCRIPT)
+@@ -190,7 +193,7 @@ async function runScreenshot(win: BrowserWindow): Promise<void> {
+       )
+     }
+     const after = await win.webContents.capturePage()
+-    await writeFile(join(outDir, `${view || 'home'}-after-eval.png`), after.toPNG())
++    await writeFile(join(outDir, `${view || 'home'}-after-eval.${ext}`), asJpeg ? after.toJPEG(86) : after.toPNG())
+   }
+ 
+   app.quit()
+diff --git a/src/main/ipc.ts b/src/main/ipc.ts
+index a92192f..06e7625 100644
+--- a/src/main/ipc.ts
++++ b/src/main/ipc.ts
+@@ -16,6 +16,7 @@ import type {
+   TargetInput
+ } from '@shared/types'
+ import type { AppContext } from './context'
++import type { ExportPayload } from './devlog'
+ import { defaultLibraryRoot } from './config'
+ 
+ export const IPC = {
+@@ -43,7 +44,9 @@ export const IPC = {
+   sourcesList: 'sources:list',
+   sourcesRemove: 'sources:remove',
+   sourcesToggle: 'sources:toggle',
+-  progressEvent: 'crawl:progress-event'
++  progressEvent: 'crawl:progress-event',
++  devlogList: 'devlog:list',
++  devlogExport: 'devlog:export'
+ } as const
+ 
+ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | null): void {
+@@ -163,6 +166,12 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
+     return true
+   })
+ 
++  handle(IPC.devlogList, () => ctx.devlog.listRounds())
++
++  handle(IPC.devlogExport, (payload: ExportPayload) =>
++    ctx.devlog.exportAnnotations(payload, getWindow())
++  )
++
+   // 引擎进度 -> 渲染进程
+   ctx.onProgress((progress, logs) => emitProgress(getWindow(), progress, logs))
+ }
+diff --git a/src/preload/index.ts b/src/preload/index.ts
+index 345e3c8..d372b56 100644
+--- a/src/preload/index.ts
++++ b/src/preload/index.ts
+@@ -29,7 +29,9 @@ const IPC = {
+   sourcesList: 'sources:list',
+   sourcesRemove: 'sources:remove',
+   sourcesToggle: 'sources:toggle',
+-  progressEvent: 'crawl:progress-event'
++  progressEvent: 'crawl:progress-event',
++  devlogList: 'devlog:list',
++  devlogExport: 'devlog:export'
+ } as const
+ 
+ const api = {
+@@ -69,6 +71,10 @@ const api = {
+     remove: (id: number) => ipcRenderer.invoke(IPC.sourcesRemove, id),
+     toggle: (id: number, enabled: boolean) => ipcRenderer.invoke(IPC.sourcesToggle, id, enabled)
+   },
++  devlog: {
++    list: () => ipcRenderer.invoke(IPC.devlogList),
++    export: (payload: unknown) => ipcRenderer.invoke(IPC.devlogExport, payload)
++  },
+   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url)
+ }
+ 
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index cf3bd6a..5d891f4 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -19,7 +19,8 @@ import GalleryGrid from './components/GalleryGrid'
+ import Lightbox from './components/Lightbox'
+ import CrawlPanel from './components/CrawlPanel'
+ import SettingsPanel from './components/SettingsPanel'
+-import { IconGrid, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
++import Annotator from './devtools/Annotator'
++import { IconGrid, IconMarker, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
+ 
+ export type View = 'gallery' | 'crawl' | 'settings'
+ 
+@@ -67,6 +68,7 @@ export default function App(): JSX.Element {
+   const [view, setView] = useState<View>('gallery')
+   const [openId, setOpenId] = useState<number | null>(null)
+ 
++  const [annotateOn, setAnnotateOn] = useState(false)
+   const [progress, setProgress] = useState<CrawlProgress | null>(null)
+   const [logs, setLogs] = useState<CrawlLogLine[]>([])
+   const [toast, setToast] = useState<string | null>(null)
+@@ -261,7 +263,7 @@ export default function App(): JSX.Element {
+         )}
+       </div>
+ 
+-      <header className="topbar">
++      <header className="topbar" data-component="App/TopBar">
+         <button
+           className="btn icon ghost"
+           title="折叠/展开侧栏"
+@@ -311,6 +313,14 @@ export default function App(): JSX.Element {
+           </button>
+         </div>
+ 
++        <button
++          className={`btn icon ghost${annotateOn ? ' annotate-on' : ''}`}
++          title="页面标注工具（Ctrl+Shift+A）"
++          onClick={() => setAnnotateOn((v) => !v)}
++        >
++          <IconMarker />
++        </button>
++
+         <div className="seg">
+           <button className={view === 'gallery' ? 'active' : ''} onClick={() => setView('gallery')}>
+             图库
+@@ -342,7 +352,7 @@ export default function App(): JSX.Element {
+       <main className="main" ref={scrollRef} onScroll={onScroll}>
+         {view === 'gallery' && (
+           <>
+-            <div className="filter-bar">
++            <div className="filter-bar" data-component="App/FilterBar">
+               <button
+                 className={`pill${filters.downloaded === 'any' && !filters.favorite && !filters.plate && filters.tags.length === 0 ? ' active' : ''}`}
+                 onClick={() =>
+@@ -464,7 +474,7 @@ export default function App(): JSX.Element {
+       </main>
+ 
+       {jobActive && progress && (
+-        <div className="statusbar">
++        <div className="statusbar" data-component="App/StatusBar">
+           <span className={`dot ${progress.phase}`} />
+           <span className="text">
+             {progress.phase === 'indexing' ? '建立索引' : progress.phase === 'paused' ? '已暂停' : '下载中'}
+@@ -508,6 +518,14 @@ export default function App(): JSX.Element {
+         />
+       )}
+ 
++      <Annotator
++        enabled={annotateOn}
++        onToggle={setAnnotateOn}
++        view={openId != null ? 'lightbox' : view}
++        appVersion={info?.version ?? ''}
++        onToast={setToast}
++      />
++
+       {toast && <div className="toast">{toast}</div>}
+     </div>
+   )
+diff --git a/src/renderer/src/api.ts b/src/renderer/src/api.ts
+index eae40ee..c8d227c 100644
+--- a/src/renderer/src/api.ts
++++ b/src/renderer/src/api.ts
+@@ -55,6 +55,10 @@ export interface GuguBridge {
+     remove(id: number): Promise<boolean>
+     toggle(id: number, enabled: boolean): Promise<boolean>
+   }
++  devlog: {
++    list(): Promise<unknown>
++    export(payload: unknown): Promise<unknown>
++  }
+   openExternal(url: string): Promise<void>
+ }
+ 
+@@ -114,6 +118,10 @@ export const api: GuguBridge = {
+     remove: (id) => bridge().sources.remove(id),
+     toggle: (id, enabled) => bridge().sources.toggle(id, enabled)
+   },
++  devlog: {
++    list: () => bridge().devlog.list(),
++    export: (payload) => bridge().devlog.export(payload)
++  },
+   openExternal: (url) => bridge().openExternal(url)
+ }
+ 
+diff --git a/src/renderer/src/components/CrawlPanel.tsx b/src/renderer/src/components/CrawlPanel.tsx
+index af8702e..f319177 100644
+--- a/src/renderer/src/components/CrawlPanel.tsx
++++ b/src/renderer/src/components/CrawlPanel.tsx
+@@ -134,7 +134,7 @@ export default function CrawlPanel({
+   }, [progress])
+ 
+   return (
+-    <div className="page">
++    <div className="page" data-component="CrawlPanel">
+       <div className="page-head">
+         <h2>抓取任务</h2>
+         <p>
+diff --git a/src/renderer/src/components/GalleryGrid.tsx b/src/renderer/src/components/GalleryGrid.tsx
+index 73a46be..a9e19bd 100644
+--- a/src/renderer/src/components/GalleryGrid.tsx
++++ b/src/renderer/src/components/GalleryGrid.tsx
+@@ -22,7 +22,7 @@ export default function GalleryGrid({
+ }: Props): JSX.Element {
+   if (!loading && items.length === 0) {
+     return (
+-      <div className="empty">
++      <div className="empty" data-component="GalleryGrid/Empty">
+         <IconImage width={34} height={34} />
+         <h3>这里还没有内容</h3>
+         <p>{emptyHint}</p>
+@@ -31,7 +31,7 @@ export default function GalleryGrid({
+   }
+ 
+   return (
+-    <div className="grid" style={{ ['--card-min' as string]: cardMin }}>
++    <div className="grid" data-component="GalleryGrid" style={{ ['--card-min' as string]: cardMin }}>
+       {items.map((item) => (
+         <Card key={item.id} item={item} onOpen={onOpen} onQuickFavorite={onQuickFavorite} />
+       ))}
+@@ -95,7 +95,7 @@ function Card({
+   const isTall = ratio < 0.66
+ 
+   return (
+-    <div className="card" onClick={() => onOpen(item.id)} title={item.title}>
++    <div className="card" data-component="GalleryGrid/Card" onClick={() => onOpen(item.id)} title={item.title}>
+       <div className="card-media" style={!loaded ? { aspectRatio: String(ratio || 0.75) } : undefined}>
+         {item.thumbUrl && !failed ? (
+           <img
+diff --git a/src/renderer/src/components/Icons.tsx b/src/renderer/src/components/Icons.tsx
+index d902033..586f902 100644
+--- a/src/renderer/src/components/Icons.tsx
++++ b/src/renderer/src/components/Icons.tsx
+@@ -153,6 +153,14 @@ export const IconCheck = (p: P) => (
+   </svg>
+ )
+ 
++export const IconMarker = (p: P) => (
++  <svg {...base(p)}>
++    <path d="M4 20h16" />
++    <path d="M14.5 3.5 20 9l-9.5 9.5H5v-5.5z" />
++    <path d="M12.5 5.5 18 11" />
++  </svg>
++)
++
+ export const IconZoomIn = (p: P) => (
+   <svg {...base(p)}>
+     <circle cx="11" cy="11" r="7" />
+diff --git a/src/renderer/src/components/Lightbox.tsx b/src/renderer/src/components/Lightbox.tsx
+index 57ce214..dca7f69 100644
+--- a/src/renderer/src/components/Lightbox.tsx
++++ b/src/renderer/src/components/Lightbox.tsx
+@@ -103,8 +103,9 @@ export default function Lightbox({
+   const summary = items.find((i) => i.id === id) ?? null
+ 
+   return (
+-    <div className="lightbox" onWheel={onWheel}>
++    <div className="lightbox" data-component="Lightbox" onWheel={onWheel}>
+       <div
++        data-component="Lightbox/Stage"
+         className="lightbox-stage"
+         onMouseDown={(e) => {
+           if (zoom <= 1) return
+@@ -149,7 +150,7 @@ export default function Lightbox({
+         </button>
+       </div>
+ 
+-      <div className="lightbox-side">
++      <div className="lightbox-side" data-component="Lightbox/SidePanel">
+         <div className="lb-head">
+           <h3>{detail?.title || summary?.title || `#${id}`}</h3>
+           <button className="lb-close" onClick={onClose} title="关闭 (Esc)">
+@@ -208,7 +209,7 @@ export default function Lightbox({
+           )}
+         </dl>
+ 
+-        <div className="lb-actions">
++        <div className="lb-actions" data-component="Lightbox/Actions">
+           <button className="btn sm" onClick={() => void toggleFavorite()}>
+             <IconStar
+               width={13}
+diff --git a/src/renderer/src/components/SettingsPanel.tsx b/src/renderer/src/components/SettingsPanel.tsx
+index 14c5cd5..32c45d8 100644
+--- a/src/renderer/src/components/SettingsPanel.tsx
++++ b/src/renderer/src/components/SettingsPanel.tsx
+@@ -14,7 +14,7 @@ const ACCENTS = ['#7c9cff', '#b98cff', '#4ade80', '#fbbf24', '#f87171', '#38bdf8
+ 
+ export default function SettingsPanel({ settings, info, stats, onChange, onToast }: Props): JSX.Element {
+   return (
+-    <div className="page">
++    <div className="page" data-component="SettingsPanel">
+       <div className="page-head">
+         <h2>设置</h2>
+         <p>抓取与图库的全局参数。改动即时生效，无需重启。</p>
+diff --git a/src/renderer/src/components/Sidebar.tsx b/src/renderer/src/components/Sidebar.tsx
+index 1c1d71b..f307ccd 100644
+--- a/src/renderer/src/components/Sidebar.tsx
++++ b/src/renderer/src/components/Sidebar.tsx
+@@ -43,15 +43,16 @@ export default function Sidebar({
+   }
+ 
+   return (
+-    <aside className="sidebar">
++    <aside className="sidebar" data-component="Sidebar">
+       <div className="side-section">
+         <div className="side-title">{!collapsed && <span>资料库</span>}</div>
+-        <button className={`side-item${isLibraryAll ? ' active' : ''}`} onClick={() => go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, tags: [] }))} title="全部图片">
++        <button data-component="Sidebar/Item" className={`side-item${isLibraryAll ? ' active' : ''}`} onClick={() => go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, tags: [] }))} title="全部图片">
+           <IconImage />
+           {!collapsed && <span className="label">全部图片</span>}
+           {!collapsed && <span className="count">{stats?.items ?? 0}</span>}
+         </button>
+         <button
++          data-component="Sidebar/Item"
+           className={`side-item${view === 'gallery' && filters.favorite ? ' active' : ''}`}
+           onClick={() => go(() => onFilters({ favorite: true }))}
+           title="我的收藏"
+@@ -61,6 +62,7 @@ export default function Sidebar({
+           {!collapsed && <span className="count">{stats?.favorites ?? 0}</span>}
+         </button>
+         <button
++          data-component="Sidebar/Item"
+           className={`side-item${view === 'gallery' && filters.downloaded === 'only' ? ' active' : ''}`}
+           onClick={() => go(() => onFilters({ favorite: false, downloaded: 'only' }))}
+           title="已下载到本地"
+@@ -70,6 +72,7 @@ export default function Sidebar({
+           {!collapsed && <span className="count">{stats?.downloaded ?? 0}</span>}
+         </button>
+         <button
++          data-component="Sidebar/Item"
+           className={`side-item${view === 'gallery' && filters.downloaded === 'never' ? ' active' : ''}`}
+           onClick={() => go(() => onFilters({ favorite: false, downloaded: 'never' }))}
+           title="仅索引、尚未下载"
+@@ -81,6 +84,7 @@ export default function Sidebar({
+           )}
+         </button>
+         <button
++          data-component="Sidebar/Item"
+           className={`side-item${view === 'crawl' ? ' active' : ''}`}
+           onClick={onNavigateCrawl}
+           title="抓取任务"
+@@ -105,6 +109,7 @@ export default function Sidebar({
+             return (
+               <div key={plate.name}>
+                 <button
++                  data-component="Sidebar/Plate"
+                   className={`side-item${activePlate ? ' active' : ''}`}
+                   onClick={() => {
+                     setExpanded(open ? null : plate.name)
+@@ -118,6 +123,7 @@ export default function Sidebar({
+                 {open &&
+                   plate.words.map((word) => (
+                     <button
++                      data-component="Sidebar/Word"
+                       key={word.name}
+                       className={`side-item sub${
+                         filters.plate === plate.name && filters.word === word.name ? ' active' : ''
+@@ -143,10 +149,11 @@ export default function Sidebar({
+             </button>
+           </div>
+           {tagsOpen && (
+-            <div className="tag-cloud">
++            <div className="tag-cloud" data-component="Sidebar/TagCloud">
+               {topTags.slice(0, 28).map((tag) => (
+                 <button
+                   key={tag.name}
++                  data-component="Sidebar/TagChip"
+                   className={`tag-chip${filters.tags.includes(tag.name) ? ' active' : ''}`}
+                   onClick={() => {
+                     onNavigateGallery()
+diff --git a/src/renderer/src/devtools/Annotator.tsx b/src/renderer/src/devtools/Annotator.tsx
+new file mode 100644
+index 0000000..575cbfd
+--- /dev/null
++++ b/src/renderer/src/devtools/Annotator.tsx
+@@ -0,0 +1,625 @@
++/**
++ * 页面标注工具。
++ *
++ * 用法：
++ *   Ctrl+Shift+A 打开/关闭；打开后先处于「浏览」模式（不拦截点击），
++ *   正常操作应用翻到你想要的那一屏，再切到「点选」或「框选」写批注，
++ *   最后「导出标注」——会在 devlog/rounds/<轮次>/ 下落盘标注原文、逐条截图裁片与说明骨架。
++ *
++ * 实现要点：
++ *  - 拦截用 document 捕获阶段的监听器，而不是铺一层遮罩，
++ *    这样可以直接用 e.target 拿到真实元素，也避免遮罩挡住自己的工具栏。
++ *  - 位置同时记「视口坐标」和「文档坐标」：前者用于截图裁切，后者保证滚动后标注还在原地。
++ */
++import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
++import './annotator.css'
++import { describeElement, describeRegion, rectOf } from './inspect'
++import {
++  CATEGORY_OPTIONS,
++  SEVERITY_OPTIONS,
++  type Annotation,
++  type AnnotationCategory,
++  type AnnotationRect,
++  type AnnotationSeverity,
++  type DevlogRound
++} from './types'
++
++type ToolMode = 'browse' | 'element' | 'region'
++
++interface Props {
++  enabled: boolean
++  onToggle: (enabled: boolean) => void
++  /** 当前界面标识，写进档案 */
++  view: string
++  appVersion: string
++  onToast: (message: string) => void
++}
++
++interface Draft {
++  kind: 'element' | 'region'
++  rect: AnnotationRect
++  pageRect: AnnotationRect
++  scroll: { x: number; y: number }
++  target: ReturnType<typeof describeElement>
++}
++
++const uid = (): string => Math.random().toString(36).slice(2, 10)
++
++export default function Annotator({ enabled, onToggle, view, appVersion, onToast }: Props): JSX.Element | null {
++  const [mode, setMode] = useState<ToolMode>('browse')
++  const [annotations, setAnnotations] = useState<Annotation[]>([])
++  const [draft, setDraft] = useState<Draft | null>(null)
++  const [editing, setEditing] = useState<Annotation | null>(null)
++  const [showPins, setShowPins] = useState(true)
++  const [hoverRect, setHoverRect] = useState<AnnotationRect | null>(null)
++  const [hoverLabel, setHoverLabel] = useState<string>('')
++  const [dragRect, setDragRect] = useState<AnnotationRect | null>(null)
++  const [exportOpen, setExportOpen] = useState(false)
++  const [note, setNote] = useState('')
++  const [rounds, setRounds] = useState<DevlogRound[]>([])
++  const [scrollTick, setScrollTick] = useState(0)
++
++  const dragStart = useRef<{ x: number; y: number } | null>(null)
++  const modeRef = useRef<ToolMode>(mode)
++  modeRef.current = mode
++
++  /* ---------------------------------------------------------- 快捷键与滚动 */
++
++  useEffect(() => {
++    const onKey = (e: KeyboardEvent): void => {
++      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
++        e.preventDefault()
++        onToggle(!enabled)
++      } else if (e.key === 'Escape' && enabled) {
++        setDraft(null)
++        setEditing(null)
++        setExportOpen(false)
++        setDragRect(null)
++      }
++    }
++    window.addEventListener('keydown', onKey)
++    return () => window.removeEventListener('keydown', onKey)
++  }, [enabled, onToggle])
++
++  // 位置需要在滚动/缩放后重算
++  useEffect(() => {
++    if (!enabled) return
++    const bump = (): void => setScrollTick((t) => t + 1)
++    window.addEventListener('scroll', bump, true)
++    window.addEventListener('resize', bump)
++    return () => {
++      window.removeEventListener('scroll', bump, true)
++      window.removeEventListener('resize', bump)
++    }
++  }, [enabled])
++
++  useEffect(() => {
++    if (!enabled) return
++    setMode('browse')
++    // 顺手读一下历史轮次，导出时可以提示进度
++    void (async () => {
++      try {
++        const list = await window.gugu?.devlog.list()
++        setRounds((list as DevlogRound[]) ?? [])
++      } catch {
++        setRounds([])
++      }
++    })()
++  }, [enabled])
++
++  /* ------------------------------------------------------------ 事件拦截 */
++
++  useEffect(() => {
++    if (!enabled) return
++
++    const inTool = (target: EventTarget | null): boolean =>
++      target instanceof Element && Boolean(target.closest('.gugu-anno-root'))
++
++    const toRect = (a: { x: number; y: number }, b: { x: number; y: number }): AnnotationRect => ({
++      x: Math.min(a.x, b.x),
++      y: Math.min(a.y, b.y),
++      width: Math.abs(a.x - b.x),
++      height: Math.abs(a.y - b.y)
++    })
++
++    const onMouseMove = (e: MouseEvent): void => {
++      if (inTool(e.target)) return
++      const current = modeRef.current
++      if (current === 'browse') {
++        if (hoverRect) setHoverRect(null)
++        return
++      }
++      if (dragStart.current && current === 'region') {
++        setDragRect(toRect(dragStart.current, { x: e.clientX, y: e.clientY }))
++        return
++      }
++      if (e.target instanceof Element) {
++        const rect = rectOf(e.target)
++        setHoverRect(rect)
++        const tag = e.target.tagName.toLowerCase()
++        const cls = [...e.target.classList].slice(0, 2).join('.')
++        const comp = e.target.closest('[data-component]')?.getAttribute('data-component')
++        setHoverLabel(comp ? `${comp} · ${tag}${cls ? `.${cls}` : ''}` : `${tag}${cls ? `.${cls}` : ''}`)
++      }
++    }
++
++    const onMouseDown = (e: MouseEvent): void => {
++      if (e.button !== 0) return
++      if (inTool(e.target)) return
++      if (modeRef.current === 'browse') return
++      e.preventDefault()
++      e.stopPropagation()
++      dragStart.current = { x: e.clientX, y: e.clientY }
++      setHoverRect(null)
++    }
++
++    const onMouseUp = (e: MouseEvent): void => {
++      if (inTool(e.target)) return
++      if (modeRef.current === 'browse') return
++      e.preventDefault()
++      e.stopPropagation()
++
++      const start = dragStart.current
++      dragStart.current = null
++      if (!start) return
++
++      const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y)
++      const scroll = { x: window.scrollX, y: window.scrollY }
++
++      if (modeRef.current === 'region' || moved > 8) {
++        const rect = toRect(start, { x: e.clientX, y: e.clientY })
++        if (rect.width < 6 || rect.height < 6) {
++          setDragRect(null)
++          return
++        }
++        const viewport = { width: window.innerWidth, height: window.innerHeight }
++        setDragRect(null)
++        setDraft({
++          kind: 'region',
++          rect,
++          pageRect: { ...rect, x: rect.x + scroll.x, y: rect.y + scroll.y },
++          scroll,
++          target: describeRegion(rect, viewport)
++        })
++        return
++      }
++
++      if (e.target instanceof Element) {
++        const rect = rectOf(e.target)
++        setDraft({
++          kind: 'element',
++          rect,
++          pageRect: { ...rect, x: rect.x + scroll.x, y: rect.y + scroll.y },
++          scroll,
++          target: describeElement(e.target)
++        })
++      }
++    }
++
++    const onClick = (e: MouseEvent): void => {
++      if (inTool(e.target)) return
++      if (modeRef.current === 'browse') return
++      // 点选模式下必须吃掉点击，否则会顺带触发应用自身的交互
++      e.preventDefault()
++      e.stopPropagation()
++    }
++
++    document.addEventListener('mousemove', onMouseMove, true)
++    document.addEventListener('mousedown', onMouseDown, true)
++    document.addEventListener('mouseup', onMouseUp, true)
++    document.addEventListener('click', onClick, true)
++    document.addEventListener('dblclick', onClick, true)
++    return () => {
++      document.removeEventListener('mousemove', onMouseMove, true)
++      document.removeEventListener('mousedown', onMouseDown, true)
++      document.removeEventListener('mouseup', onMouseUp, true)
++      document.removeEventListener('click', onClick, true)
++      document.removeEventListener('dblclick', onClick, true)
++    }
++  }, [enabled, hoverRect])
++
++  /* ------------------------------------------------------------ 标注增删改 */
++
++  const commitDraft = useCallback(
++    (comment: string, category: AnnotationCategory, severity: AnnotationSeverity) => {
++      if (!draft) return
++      setAnnotations((prev) => [
++        ...prev,
++        {
++          id: uid(),
++          index: prev.length + 1,
++          comment,
++          category,
++          severity,
++          kind: draft.kind,
++          createdAt: Date.now(),
++          rect: draft.rect,
++          pageRect: draft.pageRect,
++          scroll: draft.scroll,
++          target: draft.target,
++          viewport: { width: window.innerWidth, height: window.innerHeight }
++        }
++      ])
++      setDraft(null)
++      setMode('browse')
++    },
++    [draft]
++  )
++
++  const updateAnnotation = useCallback((id: string, patch: Partial<Annotation>) => {
++    setAnnotations((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)))
++    setEditing(null)
++  }, [])
++
++  const removeAnnotation = useCallback((id: string) => {
++    setAnnotations((prev) => prev.filter((a) => a.id !== id).map((a, i) => ({ ...a, index: i + 1 })))
++    setEditing(null)
++  }, [])
++
++  /* ---------------------------------------------------------------- 导出 */
++
++  const doExport = useCallback(async () => {
++    if (annotations.length === 0) {
++      onToast('还没有任何标注')
++      return
++    }
++    if (!window.gugu?.devlog) {
++      onToast('导出能力不可用（未通过 Electron 启动？）')
++      return
++    }
++    const scrollX = window.scrollX
++    const scrollY = window.scrollY
++    // 导出时按当前滚动位置换算回视口坐标，保证截图裁切对齐
++    const payload = {
++      view,
++      note,
++      appVersion,
++      devicePixelRatio: window.devicePixelRatio || 1,
++      annotations: annotations.map((a) => ({
++        ...a,
++        rect: {
++          ...a.rect,
++          x: a.pageRect.x - scrollX,
++          y: a.pageRect.y - scrollY
++        }
++      }))
++    }
++    try {
++      const result = (await window.gugu.devlog.export(payload)) as {
++        roundId: string
++        roundDir: string
++        files: string[]
++      }
++      setExportOpen(false)
++      setNote('')
++      onToast(`已导出到 devlog/rounds/${result.roundId}/`)
++      const list = (await window.gugu.devlog.list()) as DevlogRound[]
++      setRounds(list)
++    } catch (err) {
++      onToast(`导出失败：${err instanceof Error ? err.message : String(err)}`)
++    }
++  }, [annotations, view, note, appVersion, onToast])
++
++  /* ------------------------------------------------------------ 位置换算 */
++
++  const viewportRectOf = useCallback(
++    (a: Annotation): AnnotationRect => {
++      void scrollTick
++      return { ...a.rect, x: a.pageRect.x - window.scrollX, y: a.pageRect.y - window.scrollY }
++    },
++    [scrollTick]
++  )
++
++  const overlayRects = useMemo(() => {
++    if (!showPins) return []
++    return annotations.map((a) => ({ anno: a, rect: viewportRectOf(a) }))
++  }, [annotations, showPins, viewportRectOf])
++
++  if (!enabled) return null
++
++  const pendingCount = annotations.length
++
++  return (
++    <div className="gugu-anno-root">
++      {/* -------------------------------------------------------- 悬浮工具栏 */}
++      <div className="gugu-anno-toolbar">
++        <span className="gugu-anno-brand">
++          <b>标注模式</b>
++          <em>{pendingCount} 条</em>
++        </span>
++
++        <div className="gugu-anno-seg">
++          {(
++            [
++              ['browse', '浏览'],
++              ['element', '点选'],
++              ['region', '框选']
++            ] as [ToolMode, string][]
++          ).map(([value, label]) => (
++            <button
++              key={value}
++              className={mode === value ? 'on' : ''}
++              onClick={() => {
++                setMode(value)
++                setDraft(null)
++              }}
++              title={value === 'browse' ? '不拦截点击，正常使用应用' : `点击/拖拽以添加标注`}
++            >
++              {label}
++            </button>
++          ))}
++        </div>
++
++        <button className={`gugu-anno-btn${showPins ? ' on' : ''}`} onClick={() => setShowPins((v) => !v)}>
++          {showPins ? '隐藏标注' : '显示标注'}
++        </button>
++        <button className="gugu-anno-btn primary" onClick={() => setExportOpen(true)} disabled={pendingCount === 0}>
++          导出标注
++        </button>
++        <button
++          className="gugu-anno-btn danger"
++          onClick={() => {
++            if (pendingCount > 0 && !window.confirm(`放弃 ${pendingCount} 条未导出的标注？`)) return
++            setAnnotations([])
++            setDraft(null)
++          }}
++          disabled={pendingCount === 0 && !draft}
++        >
++          清空
++        </button>
++        <button className="gugu-anno-btn" onClick={() => onToggle(false)} title="退出标注（Ctrl+Shift+A）">
++          退出
++        </button>
++      </div>
++
++      <div className="gugu-anno-hint">
++        {mode === 'browse'
++          ? '浏览模式：正常操作应用，翻到要改的地方后切「点选」或「框选」'
++          : mode === 'element'
++            ? '点选模式：点击任意元素即可写批注（Esc 取消）'
++            : '框选模式：按住左键拖出一个区域写批注（Esc 取消）'}
++      </div>
++
++      {/* ------------------------------------------------------------ 高亮 */}
++      {hoverRect && mode !== 'browse' && (
++        <div
++          className="gugu-anno-hover"
++          style={{
++            left: hoverRect.x,
++            top: hoverRect.y,
++            width: hoverRect.width,
++            height: hoverRect.height
++          }}
++        >
++          <span className="gugu-anno-hover-label">{hoverLabel}</span>
++        </div>
++      )}
++
++      {dragRect && (
++        <div
++          className="gugu-anno-drag"
++          style={{ left: dragRect.x, top: dragRect.y, width: dragRect.width, height: dragRect.height }}
++        />
++      )}
++
++      {/* ------------------------------------------------------------ 已有标注 */}
++      {overlayRects.map(({ anno, rect }) => (
++        <div
++          key={anno.id}
++          className={`gugu-anno-pin gugu-anno-${anno.category}`}
++          style={{ left: rect.x, top: rect.y, width: Math.max(rect.width, 8), height: Math.max(rect.height, 8) }}
++          onClick={(e) => {
++            e.stopPropagation()
++            setEditing(anno)
++            setMode('browse')
++          }}
++          title={anno.comment}
++        >
++          <span className="gugu-anno-index">{anno.index}</span>
++        </div>
++      ))}
++
++      {/* ------------------------------------------------------------ 批注编辑 */}
++      {(draft || editing) && (
++        <CommentEditor
++          draft={draft}
++          editing={editing}
++          onCancel={() => {
++            setDraft(null)
++            setEditing(null)
++          }}
++          onSave={commitDraft}
++          onUpdate={updateAnnotation}
++          onDelete={removeAnnotation}
++        />
++      )}
++
++      {/* ------------------------------------------------------------ 标注列表 */}
++      {annotations.length > 0 && mode === 'browse' && (
++        <div className="gugu-anno-panel">
++          <div className="gugu-anno-panel-head">
++            <b>标注清单</b>
++            <span>{annotations.length} 条</span>
++          </div>
++          <div className="gugu-anno-panel-list">
++            {annotations.map((a) => (
++              <button
++                key={a.id}
++                className="gugu-anno-item"
++                onClick={() => {
++                  window.scrollTo({ top: Math.max(0, a.pageRect.y - window.innerHeight / 2), behavior: 'smooth' })
++                  setEditing(a)
++                }}
++              >
++                <span className={`gugu-anno-dot gugu-anno-${a.category}`}>{a.index}</span>
++                <span className="gugu-anno-item-body">
++                  <span className="gugu-anno-item-title">{a.comment.split('\n')[0] || '(无标题)'}</span>
++                  <span className="gugu-anno-item-meta">
++                    {CATEGORY_OPTIONS.find((c) => c.value === a.category)?.label} ·{' '}
++                    {SEVERITY_OPTIONS.find((s) => s.value === a.severity)?.label}
++                    {a.target.component ? ` · ${a.target.component}` : ''}
++                  </span>
++                </span>
++              </button>
++            ))}
++          </div>
++        </div>
++      )}
++
++      {/* ------------------------------------------------------------ 导出确认 */}
++      {exportOpen && (
++        <div className="gugu-anno-modal-mask" onClick={() => setExportOpen(false)}>
++          <div className="gugu-anno-modal" onClick={(e) => e.stopPropagation()}>
++            <h3>导出本轮标注</h3>
++            <p>
++              将写入 <code>devlog/rounds/&lt;轮次&gt;/</code>
++              ：<code>annotations.md</code>、<code>annotations.json</code>、整页截图与每条标注的裁片。
++            </p>
++            <label>总体说明（可选）</label>
++            <textarea
++              value={note}
++              onChange={(e) => setNote(e.target.value)}
++              placeholder="这一轮整体想达到什么效果？有什么取舍上的要求？"
++              rows={4}
++            />
++            <div className="gugu-anno-modal-meta">
++              共 {pendingCount} 条 · 当前界面 {view} · 已有 {rounds.length} 个历史轮次
++            </div>
++            <div className="gugu-anno-modal-actions">
++              <button className="gugu-anno-btn" onClick={() => setExportOpen(false)}>
++                取消
++              </button>
++              <button className="gugu-anno-btn primary" onClick={() => void doExport()}>
++                确认导出
++              </button>
++            </div>
++          </div>
++        </div>
++      )}
++    </div>
++  )
++}
++
++/* -------------------------------------------------------------- 批注编辑框 */
++
++function CommentEditor({
++  draft,
++  editing,
++  onCancel,
++  onSave,
++  onUpdate,
++  onDelete
++}: {
++  draft: Draft | null
++  editing: Annotation | null
++  onCancel: () => void
++  onSave: (comment: string, category: AnnotationCategory, severity: AnnotationSeverity) => void
++  onUpdate: (id: string, patch: Partial<Annotation>) => void
++  onDelete: (id: string) => void
++}): JSX.Element {
++  const [text, setText] = useState(editing?.comment ?? '')
++  const [category, setCategory] = useState<AnnotationCategory>(editing?.category ?? 'style')
++  const [severity, setSeverity] = useState<AnnotationSeverity>(editing?.severity ?? 'should')
++  const ref = useRef<HTMLTextAreaElement | null>(null)
++
++  useEffect(() => {
++    ref.current?.focus()
++  }, [])
++
++  const target = editing?.target ?? draft?.target ?? null
++  const rect = editing?.rect ?? draft?.rect ?? null
++
++  // 面板贴着标注框放，超出视口就挪回来
++  const style: React.CSSProperties = rect
++    ? {
++        left: Math.min(Math.max(12, rect.x), window.innerWidth - 372),
++        top: Math.min(Math.max(12, rect.y + rect.height + 10), window.innerHeight - 300)
++      }
++    : { left: 12, top: 90 }
++
++  const submit = (): void => {
++    const comment = text.trim()
++    if (!comment) return
++    if (editing) onUpdate(editing.id, { comment, category, severity })
++    else onSave(comment, category, severity)
++  }
++
++  return (
++    <div className="gugu-anno-editor" style={style}>
++      <div className="gugu-anno-editor-head">
++        {editing ? `编辑标注 #${editing.index}` : draft?.kind === 'region' ? '新增区域标注' : '新增元素标注'}
++        <button className="gugu-anno-x" onClick={onCancel} title="取消 (Esc)">
++          ×
++        </button>
++      </div>
++
++      {target && (
++        <div className="gugu-anno-target">
++          {target.component && (
++            <div>
++              <span>组件</span>
++              <code>{target.component}</code>
++            </div>
++          )}
++          <div>
++            <span>选择器</span>
++            <code>{target.selector}</code>
++          </div>
++          {target.text && (
++            <div>
++              <span>文本</span>
++              <em>{target.text.slice(0, 80)}</em>
++            </div>
++          )}
++        </div>
++      )}
++
++      <textarea
++        ref={ref}
++        value={text}
++        rows={4}
++        placeholder="想怎么改？例如：卡片标题字号偏小，希望提到 13px 并加粗；间距从 3px 调到 6px"
++        onChange={(e) => setText(e.target.value)}
++        onKeyDown={(e) => {
++          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
++            e.preventDefault()
++            submit()
++          }
++        }}
++      />
++
++      <div className="gugu-anno-editor-row">
++        <select value={category} onChange={(e) => setCategory(e.target.value as AnnotationCategory)}>
++          {CATEGORY_OPTIONS.map((c) => (
++            <option key={c.value} value={c.value}>
++              {c.label}
++            </option>
++          ))}
++        </select>
++        <select value={severity} onChange={(e) => setSeverity(e.target.value as AnnotationSeverity)}>
++          {SEVERITY_OPTIONS.map((s) => (
++            <option key={s.value} value={s.value}>
++              {s.label}
++            </option>
++          ))}
++        </select>
++      </div>
++
++      <div className="gugu-anno-editor-actions">
++        {editing && (
++          <button className="gugu-anno-btn danger" onClick={() => onDelete(editing.id)}>
++            删除
++          </button>
++        )}
++        <span className="gugu-anno-spacer" />
++        <button className="gugu-anno-btn" onClick={onCancel}>
++          取消
++        </button>
++        <button className="gugu-anno-btn primary" onClick={submit} disabled={!text.trim()}>
++          {editing ? '保存' : '添加'}
++        </button>
++      </div>
++      <div className="gugu-anno-editor-tip">Ctrl+Enter 快速提交</div>
++    </div>
++  )
++}
+diff --git a/src/renderer/src/devtools/annotator.css b/src/renderer/src/devtools/annotator.css
+new file mode 100644
+index 0000000..f12a27d
+--- /dev/null
++++ b/src/renderer/src/devtools/annotator.css
+@@ -0,0 +1,522 @@
++/* ============================================================================
++   页面标注工具 · 样式
++   刻意用一套独立的暖色调，和应用的冷色主题区分开，避免误判当前处于哪种模式。
++   ========================================================================== */
++
++.gugu-anno-root {
++  --anno: #ff9f45;
++  --anno-soft: rgba(255, 159, 69, 0.16);
++  --anno-line: rgba(255, 159, 69, 0.85);
++  --anno-panel: #16130f;
++  --anno-panel-2: #1e1a15;
++  --anno-border: rgba(255, 178, 102, 0.22);
++  --anno-text: #f4ece2;
++  --anno-dim: #a99a89;
++
++  position: fixed;
++  inset: 0;
++  z-index: 9999;
++  pointer-events: none;
++  font-family: var(--font);
++  font-size: 12.5px;
++  color: var(--anno-text);
++}
++
++.gugu-anno-root * {
++  box-sizing: border-box;
++}
++
++/* ------------------------------------------------------------------ 工具栏 */
++
++.gugu-anno-toolbar {
++  position: absolute;
++  top: 12px;
++  left: 50%;
++  transform: translateX(-50%);
++  pointer-events: auto;
++  display: flex;
++  align-items: center;
++  gap: 7px;
++  padding: 7px 9px;
++  border-radius: 13px;
++  background: color-mix(in srgb, var(--anno-panel) 94%, transparent);
++  border: 1px solid var(--anno-border);
++  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.8);
++  backdrop-filter: blur(14px);
++}
++
++.gugu-anno-brand {
++  display: flex;
++  align-items: baseline;
++  gap: 7px;
++  padding: 0 6px 0 3px;
++  border-right: 1px solid var(--anno-border);
++}
++.gugu-anno-brand b {
++  color: var(--anno);
++  font-weight: 650;
++  letter-spacing: 0.2px;
++}
++.gugu-anno-brand em {
++  font-style: normal;
++  color: var(--anno-dim);
++  font-variant-numeric: tabular-nums;
++}
++
++.gugu-anno-seg {
++  display: flex;
++  gap: 2px;
++  padding: 3px;
++  border-radius: 9px;
++  background: rgba(0, 0, 0, 0.35);
++}
++.gugu-anno-seg button {
++  border: none;
++  background: transparent;
++  color: var(--anno-dim);
++  padding: 4px 11px;
++  border-radius: 6px;
++  cursor: pointer;
++  transition: all 0.14s var(--ease);
++}
++.gugu-anno-seg button:hover {
++  color: var(--anno-text);
++}
++.gugu-anno-seg button.on {
++  background: var(--anno);
++  color: #241704;
++  font-weight: 600;
++}
++
++.gugu-anno-btn {
++  border: 1px solid var(--anno-border);
++  background: rgba(255, 255, 255, 0.04);
++  color: var(--anno-text);
++  padding: 6px 12px;
++  border-radius: 8px;
++  cursor: pointer;
++  transition: all 0.14s var(--ease);
++  white-space: nowrap;
++}
++.gugu-anno-btn:hover:not(:disabled) {
++  background: rgba(255, 255, 255, 0.1);
++}
++.gugu-anno-btn:disabled {
++  opacity: 0.4;
++  cursor: not-allowed;
++}
++.gugu-anno-btn.on {
++  background: var(--anno-soft);
++  border-color: var(--anno-line);
++  color: var(--anno);
++}
++.gugu-anno-btn.primary {
++  background: linear-gradient(135deg, #ffb35c, #ff8a2b);
++  border-color: transparent;
++  color: #241704;
++  font-weight: 600;
++}
++.gugu-anno-btn.primary:hover:not(:disabled) {
++  filter: brightness(1.08);
++}
++.gugu-anno-btn.danger {
++  color: #ff9b8a;
++  border-color: rgba(255, 120, 100, 0.3);
++}
++
++.gugu-anno-hint {
++  position: absolute;
++  top: 66px;
++  left: 50%;
++  transform: translateX(-50%);
++  pointer-events: none;
++  padding: 5px 13px;
++  border-radius: 99px;
++  background: color-mix(in srgb, var(--anno-panel) 88%, transparent);
++  border: 1px solid var(--anno-border);
++  color: var(--anno-dim);
++  font-size: 11.5px;
++  white-space: nowrap;
++}
++
++/* ------------------------------------------------------------------ 高亮 */
++
++.gugu-anno-hover {
++  position: absolute;
++  pointer-events: none;
++  outline: 2px solid var(--anno-line);
++  outline-offset: 1px;
++  background: var(--anno-soft);
++  border-radius: 3px;
++}
++
++.gugu-anno-hover-label {
++  position: absolute;
++  top: -23px;
++  left: -2px;
++  padding: 2px 8px;
++  border-radius: 5px;
++  background: var(--anno);
++  color: #241704;
++  font-size: 11px;
++  font-weight: 600;
++  white-space: nowrap;
++}
++
++.gugu-anno-drag {
++  position: absolute;
++  pointer-events: none;
++  border: 2px dashed var(--anno);
++  background: var(--anno-soft);
++  border-radius: 4px;
++}
++
++/* ------------------------------------------------------------------ 图钉 */
++
++.gugu-anno-pin {
++  position: absolute;
++  pointer-events: auto;
++  cursor: pointer;
++  border: 2px solid var(--anno);
++  border-radius: 5px;
++  background: var(--anno-soft);
++  transition: box-shadow 0.15s var(--ease);
++}
++.gugu-anno-pin:hover {
++  box-shadow: 0 0 0 3px rgba(255, 159, 69, 0.28);
++}
++
++.gugu-anno-pin.gugu-anno-layout {
++  border-color: #6fd3ff;
++  background: rgba(111, 211, 255, 0.14);
++}
++.gugu-anno-pin.gugu-anno-content {
++  border-color: #b39bff;
++  background: rgba(179, 155, 255, 0.14);
++}
++.gugu-anno-pin.gugu-anno-behavior {
++  border-color: #6ee7a8;
++  background: rgba(110, 231, 168, 0.14);
++}
++.gugu-anno-pin.gugu-anno-bug {
++  border-color: #ff7676;
++  background: rgba(255, 118, 118, 0.16);
++}
++.gugu-anno-pin.gugu-anno-other {
++  border-color: #b9bec9;
++  background: rgba(185, 190, 201, 0.14);
++}
++
++.gugu-anno-index {
++  position: absolute;
++  top: -11px;
++  left: -11px;
++  width: 21px;
++  height: 21px;
++  border-radius: 50%;
++  background: var(--anno);
++  color: #241704;
++  font-size: 11px;
++  font-weight: 700;
++  display: grid;
++  place-items: center;
++  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
++}
++.gugu-anno-pin.gugu-anno-layout .gugu-anno-index {
++  background: #6fd3ff;
++}
++.gugu-anno-pin.gugu-anno-content .gugu-anno-index {
++  background: #b39bff;
++}
++.gugu-anno-pin.gugu-anno-behavior .gugu-anno-index {
++  background: #6ee7a8;
++}
++.gugu-anno-pin.gugu-anno-bug .gugu-anno-index {
++  background: #ff7676;
++}
++.gugu-anno-pin.gugu-anno-other .gugu-anno-index {
++  background: #b9bec9;
++}
++
++/* ------------------------------------------------------------------ 编辑框 */
++
++.gugu-anno-editor {
++  position: absolute;
++  pointer-events: auto;
++  width: 360px;
++  padding: 13px 14px 11px;
++  border-radius: 13px;
++  background: var(--anno-panel);
++  border: 1px solid var(--anno-border);
++  box-shadow: 0 22px 50px -16px rgba(0, 0, 0, 0.85);
++}
++
++.gugu-anno-editor-head {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  font-weight: 620;
++  color: var(--anno);
++  margin-bottom: 9px;
++}
++
++.gugu-anno-x {
++  border: none;
++  background: transparent;
++  color: var(--anno-dim);
++  font-size: 17px;
++  line-height: 1;
++  cursor: pointer;
++  padding: 0 3px;
++}
++.gugu-anno-x:hover {
++  color: var(--anno-text);
++}
++
++.gugu-anno-target {
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  padding: 8px 10px;
++  margin-bottom: 9px;
++  border-radius: 8px;
++  background: rgba(0, 0, 0, 0.32);
++  border: 1px solid rgba(255, 255, 255, 0.06);
++  max-height: 118px;
++  overflow: auto;
++  user-select: text;
++}
++.gugu-anno-target > div {
++  display: grid;
++  grid-template-columns: 44px 1fr;
++  gap: 7px;
++  font-size: 11px;
++  align-items: baseline;
++}
++.gugu-anno-target span {
++  color: var(--anno-dim);
++}
++.gugu-anno-target code {
++  font-family: var(--mono);
++  font-size: 10.5px;
++  color: #ffd9ac;
++  word-break: break-all;
++}
++.gugu-anno-target em {
++  font-style: normal;
++  color: #d9cfc2;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.gugu-anno-editor textarea,
++.gugu-anno-modal textarea {
++  width: 100%;
++  padding: 9px 10px;
++  border-radius: 9px;
++  border: 1px solid rgba(255, 255, 255, 0.1);
++  background: rgba(0, 0, 0, 0.35);
++  color: var(--anno-text);
++  resize: vertical;
++  outline: none;
++  font-family: inherit;
++  font-size: 12.5px;
++  line-height: 1.6;
++  user-select: text;
++}
++.gugu-anno-editor textarea:focus,
++.gugu-anno-modal textarea:focus {
++  border-color: var(--anno-line);
++}
++
++.gugu-anno-editor-row {
++  display: flex;
++  gap: 7px;
++  margin-top: 8px;
++}
++.gugu-anno-editor-row select {
++  flex: 1;
++  height: 30px;
++  padding: 0 8px;
++  border-radius: 8px;
++  border: 1px solid rgba(255, 255, 255, 0.1);
++  background: var(--anno-panel-2);
++  color: var(--anno-text);
++  outline: none;
++  cursor: pointer;
++}
++
++.gugu-anno-editor-actions {
++  display: flex;
++  align-items: center;
++  gap: 7px;
++  margin-top: 9px;
++}
++.gugu-anno-spacer {
++  flex: 1;
++}
++.gugu-anno-editor-tip {
++  margin-top: 6px;
++  color: var(--anno-dim);
++  font-size: 10.5px;
++  text-align: right;
++}
++
++/* ------------------------------------------------------------------ 清单 */
++
++.gugu-anno-panel {
++  position: absolute;
++  right: 14px;
++  bottom: 14px;
++  width: 306px;
++  max-height: 46vh;
++  pointer-events: auto;
++  display: flex;
++  flex-direction: column;
++  border-radius: 13px;
++  background: color-mix(in srgb, var(--anno-panel) 94%, transparent);
++  border: 1px solid var(--anno-border);
++  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.8);
++  backdrop-filter: blur(14px);
++  overflow: hidden;
++}
++
++.gugu-anno-panel-head {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  padding: 9px 12px;
++  border-bottom: 1px solid var(--anno-border);
++  color: var(--anno);
++}
++.gugu-anno-panel-head span {
++  color: var(--anno-dim);
++  font-size: 11.5px;
++}
++
++.gugu-anno-panel-list {
++  overflow-y: auto;
++  padding: 6px;
++}
++
++.gugu-anno-item {
++  display: flex;
++  gap: 9px;
++  width: 100%;
++  text-align: left;
++  border: none;
++  background: transparent;
++  color: inherit;
++  padding: 7px 8px;
++  border-radius: 8px;
++  cursor: pointer;
++}
++.gugu-anno-item:hover {
++  background: rgba(255, 255, 255, 0.06);
++}
++
++.gugu-anno-dot {
++  flex: none;
++  width: 19px;
++  height: 19px;
++  border-radius: 50%;
++  background: var(--anno);
++  color: #241704;
++  font-size: 10.5px;
++  font-weight: 700;
++  display: grid;
++  place-items: center;
++  margin-top: 1px;
++}
++.gugu-anno-dot.gugu-anno-layout {
++  background: #6fd3ff;
++}
++.gugu-anno-dot.gugu-anno-content {
++  background: #b39bff;
++}
++.gugu-anno-dot.gugu-anno-behavior {
++  background: #6ee7a8;
++}
++.gugu-anno-dot.gugu-anno-bug {
++  background: #ff7676;
++}
++.gugu-anno-dot.gugu-anno-other {
++  background: #b9bec9;
++}
++
++.gugu-anno-item-body {
++  display: flex;
++  flex-direction: column;
++  gap: 2px;
++  min-width: 0;
++}
++.gugu-anno-item-title {
++  color: var(--anno-text);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++.gugu-anno-item-meta {
++  color: var(--anno-dim);
++  font-size: 10.5px;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++/* ------------------------------------------------------------------ 弹窗 */
++
++.gugu-anno-modal-mask {
++  position: absolute;
++  inset: 0;
++  pointer-events: auto;
++  background: rgba(0, 0, 0, 0.62);
++  display: grid;
++  place-items: center;
++  backdrop-filter: blur(3px);
++}
++
++.gugu-anno-modal {
++  width: 460px;
++  padding: 20px 22px;
++  border-radius: 15px;
++  background: var(--anno-panel);
++  border: 1px solid var(--anno-border);
++  box-shadow: 0 26px 60px -18px rgba(0, 0, 0, 0.85);
++}
++.gugu-anno-modal h3 {
++  font-size: 15px;
++  color: var(--anno);
++  margin-bottom: 8px;
++}
++.gugu-anno-modal p {
++  color: var(--anno-dim);
++  line-height: 1.7;
++  margin-bottom: 14px;
++}
++.gugu-anno-modal code {
++  font-family: var(--mono);
++  font-size: 11px;
++  color: #ffd9ac;
++  background: rgba(0, 0, 0, 0.35);
++  padding: 1px 5px;
++  border-radius: 4px;
++}
++.gugu-anno-modal label {
++  display: block;
++  color: var(--anno-dim);
++  font-size: 11.5px;
++  margin-bottom: 5px;
++}
++.gugu-anno-modal-meta {
++  margin-top: 9px;
++  color: var(--anno-dim);
++  font-size: 11px;
++}
++.gugu-anno-modal-actions {
++  display: flex;
++  justify-content: flex-end;
++  gap: 8px;
++  margin-top: 16px;
++}
+diff --git a/src/renderer/src/devtools/inspect.ts b/src/renderer/src/devtools/inspect.ts
+new file mode 100644
+index 0000000..041e04c
+--- /dev/null
++++ b/src/renderer/src/devtools/inspect.ts
+@@ -0,0 +1,215 @@
++/**
++ * 元素自省：把一个 DOM 元素翻译成一段「可以脱离截图理解」的描述。
++ *
++ * 之所以这么啰嗦：审阅者标注完只会说「去看 devlog/rounds/xxx」，
++ * 执行改动的人（或模型）很可能看不到图，只能靠这些文字 + 截图裁片定位问题。
++ * 所以选择器、父级链、组件名、关键样式、对比度都要一并记录下来。
++ */
++import type { AnnotationRect, AnnotationTarget } from './types'
++
++/** 只挑和视觉/布局判断相关的属性，避免把几百行计算样式灌进去 */
++const STYLE_KEYS = [
++  'display',
++  'position',
++  'flex-direction',
++  'justify-content',
++  'align-items',
++  'gap',
++  'grid-template-columns',
++  'width',
++  'height',
++  'min-width',
++  'max-width',
++  'padding',
++  'margin',
++  'font-size',
++  'font-weight',
++  'line-height',
++  'letter-spacing',
++  'color',
++  'background-color',
++  'background-image',
++  'border',
++  'border-radius',
++  'box-shadow',
++  'opacity',
++  'overflow',
++  'text-overflow',
++  'white-space',
++  'z-index',
++  'transition',
++  'aspect-ratio',
++  'object-fit'
++]
++
++const ATTR_KEYS = ['type', 'placeholder', 'title', 'href', 'src', 'value', 'role', 'aria-label', 'disabled']
++
++export function rectOf(el: Element): AnnotationRect {
++  const r = el.getBoundingClientRect()
++  return { x: r.x, y: r.y, width: r.width, height: r.height }
++}
++
++/** 生成一条尽量唯一、又保持可读的 CSS 路径 */
++export function cssPath(el: Element, maxDepth = 5): string {
++  const parts: string[] = []
++  let current: Element | null = el
++
++  while (current && parts.length < maxDepth) {
++    const tag = current.tagName.toLowerCase()
++    if (tag === 'html') {
++      parts.unshift('html')
++      break
++    }
++    let part = tag
++    // 标注工具自己加的类名不参与定位
++    const classes = [...current.classList].filter((c) => !c.startsWith('gugu-anno')).slice(0, 2)
++    if (classes.length > 0) part += `.${classes.join('.')}`
++
++    const parent: Element | null = current.parentElement
++    if (parent) {
++      const sameTag = [...parent.children].filter((c) => c.tagName === current!.tagName)
++      if (sameTag.length > 1) part += `:nth-of-type(${sameTag.indexOf(current) + 1})`
++    }
++    parts.unshift(part)
++    current = parent
++  }
++  return parts.join(' > ')
++}
++
++/** 父级链，用来快速判断这段 UI 属于哪个区域 */
++export function parentChain(el: Element, maxDepth = 5): string[] {
++  const chain: string[] = []
++  let current = el.parentElement
++  while (current && chain.length < maxDepth) {
++    const tag = current.tagName.toLowerCase()
++    if (tag === 'html') break
++    const cls = [...current.classList].filter((c) => !c.startsWith('gugu-anno')).slice(0, 2)
++    chain.push(cls.length > 0 ? `${tag}.${cls.join('.')}` : tag)
++    current = current.parentElement
++  }
++  return chain
++}
++
++/** 就近取 data-component，方便一步定位到源码文件 */
++export function componentOf(el: Element): string | null {
++  const owner = el.closest('[data-component]')
++  if (!owner) return null
++  const name = owner.getAttribute('data-component')
++  if (!name) return null
++  if (owner === el) return name
++  const tag = el.tagName.toLowerCase()
++  const cls = [...el.classList].filter((c) => !c.startsWith('gugu-anno'))[0]
++  return `${name} › ${cls ? `${tag}.${cls}` : tag}`
++}
++
++export function describeElement(el: Element): AnnotationTarget {
++  const computed = window.getComputedStyle(el)
++  const styles: Record<string, string> = {}
++  for (const key of STYLE_KEYS) {
++    const value = computed.getPropertyValue(key)
++    if (!value) continue
++    if (isNeutral(key, value)) continue
++    styles[key] = value
++  }
++
++  const contrast = contrastOf(computed.color, computed.backgroundColor)
++  if (contrast) styles['── 对比度'] = contrast
++
++  const attributes: Record<string, string> = {}
++  for (const key of ATTR_KEYS) {
++    const value = el.getAttribute(key)
++    if (value) attributes[key] = value
++  }
++
++  return {
++    selector: cssPath(el),
++    component: componentOf(el),
++    tag: el.tagName.toLowerCase(),
++    classes: [...el.classList].filter((c) => !c.startsWith('gugu-anno')).join(' '),
++    text: (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 400),
++    parentChain: parentChain(el),
++    styles,
++    attributes
++  }
++}
++
++/** 纯区域标注没有具体元素，给一个基于坐标的占位描述 */
++export function describeRegion(rect: AnnotationRect, viewport: { width: number; height: number }): AnnotationTarget {
++  const center = document.elementFromPoint(
++    Math.min(viewport.width - 1, Math.max(0, rect.x + rect.width / 2)),
++    Math.min(viewport.height - 1, Math.max(0, rect.y + rect.height / 2))
++  )
++  const base: AnnotationTarget = {
++    selector: `(区域) x=${Math.round(rect.x)} y=${Math.round(rect.y)} ${Math.round(rect.width)}×${Math.round(
++      rect.height
++    )}`,
++    component: null,
++    tag: '',
++    classes: '',
++    text: '',
++    parentChain: [],
++    styles: {},
++    attributes: {}
++  }
++  if (!center) return base
++  const info = describeElement(center)
++  return {
++    ...info,
++    selector: `区域中心命中 → ${info.selector}`,
++    text: `[区域中心元素] ${info.text}`.slice(0, 400)
++  }
++}
++
++function isNeutral(key: string, value: string): boolean {
++  const neutral: Record<string, string[]> = {
++    position: ['static'],
++    display: ['block'],
++    'background-image': ['none'],
++    'box-shadow': ['none'],
++    'text-overflow': ['clip'],
++    'letter-spacing': ['normal'],
++    overflow: ['visible'],
++    'aspect-ratio': ['auto'],
++    'object-fit': ['fill'],
++    opacity: ['1'],
++    'z-index': ['auto'],
++    transform: ['none'],
++    transition: ['all 0s ease 0s', 'none']
++  }
++  return neutral[key]?.includes(value) ?? false
++}
++
++/**
++ * 文本与背景的 WCAG 对比度。审阅者要的是「好看」，而好看里最硬的一条指标就是可读性，
++ * 所以顺手算出来放进标注里，省得来回问。
++ */
++function contrastOf(color: string, background: string): string | null {
++  const fg = parseColor(color)
++  const bg = parseColor(background)
++  if (!fg || !bg) return null
++  if (fg.a < 0.95 || bg.a < 0.95) return null
++  const l1 = luminance(fg)
++  const l2 = luminance(bg)
++  const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
++  const grade = ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : ratio >= 3 ? 'AA Large' : '不足'
++  return `${ratio.toFixed(2)}:1（${grade}）`
++}
++
++function parseColor(value: string): { r: number; g: number; b: number; a: number } | null {
++  const m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)/i.exec(value)
++  if (!m) return null
++  return {
++    r: Number.parseFloat(m[1]),
++    g: Number.parseFloat(m[2]),
++    b: Number.parseFloat(m[3]),
++    a: m[4] === undefined ? 1 : Number.parseFloat(m[4])
++  }
++}
++
++function luminance(c: { r: number; g: number; b: number }): number {
++  const channel = (v: number): number => {
++    const s = v / 255
++    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
++  }
++  return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b)
++}
+diff --git a/src/renderer/src/devtools/types.ts b/src/renderer/src/devtools/types.ts
+new file mode 100644
+index 0000000..7e6db4e
+--- /dev/null
++++ b/src/renderer/src/devtools/types.ts
+@@ -0,0 +1,63 @@
++/** 标注工具的共享类型（渲染进程侧）。主进程有一份对应的镜像定义。 */
++
++export interface AnnotationRect {
++  x: number
++  y: number
++  width: number
++  height: number
++}
++
++export interface AnnotationTarget {
++  selector: string
++  component: string | null
++  tag: string
++  classes: string
++  text: string
++  parentChain: string[]
++  styles: Record<string, string>
++  attributes: Record<string, string>
++}
++
++export type AnnotationCategory = 'style' | 'layout' | 'content' | 'behavior' | 'bug' | 'other'
++export type AnnotationSeverity = 'must' | 'should' | 'nice'
++
++export interface Annotation {
++  id: string
++  index: number
++  comment: string
++  category: AnnotationCategory
++  severity: AnnotationSeverity
++  kind: 'element' | 'region'
++  createdAt: number
++  /** 记录时的视口坐标，供截图裁切参照 */
++  rect: AnnotationRect
++  /** 文档坐标：滚动之后靠它把标注钉在原地 */
++  pageRect: AnnotationRect
++  /** 记录时的滚动偏移 */
++  scroll: { x: number; y: number }
++  viewport: { width: number; height: number }
++  target: AnnotationTarget
++}
++
++export interface DevlogRound {
++  id: string
++  dir: string
++  createdAt: string
++  annotationCount: number
++  hasScreenshot: boolean
++}
++
++export const CATEGORY_OPTIONS: { value: AnnotationCategory; label: string }[] = [
++  { value: 'style', label: '视觉样式' },
++  { value: 'layout', label: '布局结构' },
++  { value: 'content', label: '文案内容' },
++  { value: 'behavior', label: '交互行为' },
++  { value: 'bug', label: '缺陷' },
++  { value: 'other', label: '其它' }
++]
++
++export const SEVERITY_OPTIONS: { value: AnnotationSeverity; label: string }[] = [
++  { value: 'must', label: '必须改' },
++  { value: 'should', label: '建议改' },
++  { value: 'nice', label: '锦上添花' }
++]
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index 2ad0227..2644e52 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -1266,3 +1266,10 @@ textarea {
+   box-shadow: var(--shadow);
+   animation: fade 0.18s var(--ease);
+ }
++
++/* 标注模式开启时高亮顶栏按钮，避免忘记自己还开着工具 */
++.btn.ghost.annotate-on {
++  background: rgba(255, 159, 69, 0.16);
++  color: #ff9f45;
++  box-shadow: inset 0 0 0 1px rgba(255, 159, 69, 0.4);
++}
