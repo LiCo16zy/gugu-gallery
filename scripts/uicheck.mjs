@@ -254,8 +254,11 @@ const SCRIPT = `(async () => {
       const cap = document.querySelector('.lb-caption')
       out.captionShown = Boolean(cap)
       out.captionText = cap ? (cap.textContent || '').trim() : null
-      // 2.6s 后应当自行滑出（先 out 再 hidden）
-      await sleep(3400)
+      // 2s 保持 + 0.6s 滑出，留足余量地轮询等待它自己消失
+      for (let i = 0; i < 20; i += 1) {
+        if (!document.querySelector('.lb-caption')) break
+        await sleep(300)
+      }
       out.captionGoneLater = !document.querySelector('.lb-caption')
     }
     out.immersiveOpacityBefore = before
@@ -280,6 +283,36 @@ const SCRIPT = `(async () => {
     const clearPill = qa('.filter-bar .pill').find((b) => b.textContent.trim() === '清空筛选')
     clearPill?.click()
     await sleep(900)
+  }
+
+  // 7.9) 灯箱打开时禁用窗口拖动；侧栏开合不触发重排动画
+  {
+    const card = document.querySelector('.card')
+    card?.click()
+    await sleep(1000)
+    const appEl = document.querySelector('.app')
+    out.lightboxOpenClass = appEl?.classList.contains('lightbox-open') === true
+    const topbarEl = document.querySelector('.topbar')
+    out.topbarRegionInLightbox = topbarEl ? getComputedStyle(topbarEl).webkitAppRegion : null
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await sleep(700)
+    out.topbarRegionNormal = getComputedStyle(document.querySelector('.topbar')).webkitAppRegion
+
+    // 侧栏开合：不应出现 reflowing
+    document.querySelector('.brand-mark')?.click()
+    await sleep(70)
+    out.reflowOnSidebar = document.querySelector('.main')?.classList.contains('reflowing') === true
+    await sleep(500)
+    document.querySelector('.brand-mark')?.click()
+    await sleep(500)
+
+    // 视图密度切换：应当出现 reflowing
+    document.querySelector('.view-toggle')?.click()
+    await sleep(70)
+    out.reflowOnDensity = document.querySelector('.main')?.classList.contains('reflowing') === true
+    await sleep(400)
+    document.querySelector('.view-toggle')?.click()
+    await sleep(400)
   }
 
   // 8) 视图密度：合并成了一个按钮
@@ -377,6 +410,11 @@ const checks = [
   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
   ['切换排序生效', result.sortValue === 'views'],
   ['内容页无横向溢出', result.mainOverflowX === 0],
+  ['灯箱打开时根节点有 lightbox-open', result.lightboxOpenClass === true],
+  ['灯箱打开时顶栏不可拖动窗口', result.topbarRegionInLightbox === 'no-drag'],
+  ['关闭灯箱后顶栏恢复可拖动', result.topbarRegionNormal === 'drag'],
+  ['侧栏开合不触发重排动画', result.reflowOnSidebar === false],
+  ['视图密度切换才触发重排动画', result.reflowOnDensity === true],
   ['灯箱有沉浸模式开关', result.immersiveToggle === true],
   ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
   ['沉浸模式下仍可退出（舞台内有出口）', result.immersiveExitHittable === true],

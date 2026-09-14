@@ -1,0 +1,144 @@
+{
+  "roundId": "0008-20260914-2255",
+  "exportedAt": "2026-09-14T14:55:16.918Z",
+  "view": "gallery",
+  "note": "细节动画调整，顶部边框在灯箱时不可拖动",
+  "viewport": {
+    "width": 1348,
+    "height": 716
+  },
+  "devicePixelRatio": 1.4249999523162842,
+  "appVersion": "0.5.0",
+  "annotations": [
+    {
+      "id": "eqsz8q0d",
+      "index": 1,
+      "comment": "问题没有解决，这里的隐藏式边框依旧在灯箱模式下应用窗口可以被拖动，点击按钮位置倒是没有触发拖动，我希望在灯箱模式下不会触发拖动戳你港口",
+      "category": "style",
+      "severity": "should",
+      "kind": "region",
+      "createdAt": 1789397522365,
+      "rect": {
+        "x": 184,
+        "y": 0,
+        "width": 1162,
+        "height": 60
+      },
+      "pageRect": {
+        "x": 184,
+        "y": 0,
+        "width": 1162,
+        "height": 60
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "区域中心命中 → html > body > div > div.app > header.topbar",
+        "component": "App/TopBar",
+        "tag": "header",
+        "classes": "topbar",
+        "text": "[区域中心元素] ",
+        "parentChain": [
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "10px",
+          "grid-template-columns": "none",
+          "width": "1168.07px",
+          "height": "57.9934px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 10px 0px 14px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "color(srgb 0.0588235 0.0745098 0.105882 / 0.82)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "sdtog8kk",
+      "index": 2,
+      "comment": "左侧栏展开和折叠不应该触发重排动画，回退对重排动画的速度修改，现在重排动画太慢了，其他地方的重排动画速度倒是很合适。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789397544754,
+      "rect": {
+        "x": 180,
+        "y": 106.6885986328125,
+        "width": 1158.24560546875,
+        "height": 3991.392578125
+      },
+      "pageRect": {
+        "x": 180,
+        "y": 106.6885986328125,
+        "width": 1158.24560546875,
+        "height": 3991.392578125
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app > main.main > div.grid:nth-of-type(2)",
+        "component": "GalleryGrid",
+        "tag": "div",
+        "classes": "grid",
+        "text": "2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（明日方舟）pid 118816127 · 13 浏览3584×6368·2026-09-14白发 · 女仆pid 119512232 · 17 浏览2160×3456·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 14 浏览1600×2000·2026-09-14女孩子 · 插画pid 118770165 · 17 浏览4144×9000·2026-09-13碧蓝档案pid 114882512 · 13 浏览1856×1280·2026-09-13脚底 · 白裤袜pid 117507782 · 18 浏览1158×1637·20",
+        "parentChain": [
+          "main.main",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "start",
+          "gap": "0px 14px",
+          "grid-template-columns": "175.329px 175.329px 175.329px 175.329px 175.329px 175.329px",
+          "width": "1158.25px",
+          "height": "3991.39px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "16px 18px 60px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    }
+  ]
+}

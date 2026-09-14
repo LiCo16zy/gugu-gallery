@@ -399,7 +399,7 @@ export default function App(): JSX.Element {
     requestAnimationFrame(() => {
       setReflowing(true)
       if (reflowTimer.current) clearTimeout(reflowTimer.current)
-      reflowTimer.current = setTimeout(() => setReflowing(false), 1250)
+      reflowTimer.current = setTimeout(() => setReflowing(false), 180)
     })
   }, [])
 
@@ -494,7 +494,9 @@ export default function App(): JSX.Element {
 
   return (
     <div
-      className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
+      className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}${
+        openId != null ? ' lightbox-open' : ''
+      }`}
       style={{
         // 收起时交给 .sidebar-collapsed 的 64px。
         // 之前无条件写内联值，内联优先级更高，侧栏就永远收不起来了。
@@ -506,7 +508,8 @@ export default function App(): JSX.Element {
         <button
           className="brand-mark"
           onClick={() => {
-            triggerReflow()
+            // 刻意不触发重排变暗动画：侧栏自己有 grid-template-columns 的宽度过渡，
+            // 再叠一层压暗会显得拖沓
             void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed }, { silent: true })
           }}
           title={settings.sidebarCollapsed ? '展开侧栏' : '收起侧栏'}

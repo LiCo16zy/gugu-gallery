@@ -330,6 +330,16 @@ body.resizing * {
 .topbar {
   -webkit-app-region: drag;
 }
+
+/*
+ * 灯箱是全屏覆盖层，顶栏虽然被盖住了，但拖动区是按元素算的 ——
+ * 不做处理的话，抓屏幕顶部依然能拖动整个窗口。
+ * 灯箱打开时把这两个区域的拖动整个关掉。
+ */
+.app.lightbox-open .brand,
+.app.lightbox-open .topbar {
+  -webkit-app-region: no-drag;
+}
 .topbar button,
 .topbar input,
 .topbar .search,
@@ -1936,15 +1946,25 @@ body.resizing * {
  * 总时长 0.16s，其中透明度低于 30% 的区间控制在 40ms 左右（要求不超过 60ms）。
  */
 /*
- * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
- * 变暗 0.6s + 变亮 0.6s，全程线性，透明度低于 30% 的区间合计约 0.36s（要求 ≤ 0.6s）。
+ * 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
+ * 总时长 0.16s，其中透明度低于 30% 的区间约 40ms。
+ *
+ * 0.6s + 0.6s 那版太慢了（试过，手感发滞），已回退到 0.16s。
+ * 另外侧栏开合**不再**触发这个动画 —— 那条有 grid-template-columns 的
+ * 宽度过渡就够了，再叠一层压暗反而显得拖沓。
  */
 @keyframes contentReflow {
   0% {
     opacity: 1;
   }
-  50% {
+  12.5% {
+    opacity: 0.3;
+  }
+  25% {
     opacity: 0;
+  }
+  37.5% {
+    opacity: 0.3;
   }
   100% {
     opacity: 1;
@@ -1952,7 +1972,7 @@ body.resizing * {
 }
 
 .main.reflowing {
-  animation: contentReflow 1.2s linear both;
+  animation: contentReflow 0.16s linear both;
 }
 
 /* ------------------------------------------------------------ 右键菜单 */
