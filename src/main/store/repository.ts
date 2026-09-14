@@ -414,7 +414,7 @@ export class Repository {
 
   /* --------------------------------------------------------------- 汇总 */
 
-  facets(): { plates: PlateFacet[]; topTags: Facet[] } {
+  facets(): { plates: PlateFacet[]; topTags: Facet[]; words: Facet[] } {
     // 一次查询拿全「一级分类 -> 二级分类」树，避免侧栏展开时串味
     const rows = this.db.all<Row>(
       `SELECT plate AS plate, word AS word, COUNT(*) AS count
@@ -441,7 +441,12 @@ export class Repository {
          GROUP BY t.id ORDER BY count DESC, t.name LIMIT 120`
       )
       .map((r) => ({ name: String(r.name), count: Number(r.count) }))
-    return { plates, topTags }
+    // 关键词搜索类目标没有一级分类（plate 为 NULL），
+    // 所以另给一份「摊平到 word」的计数，界面用它给分类挂数量
+    const words = this.db
+      .all<Row>('SELECT word AS name, COUNT(*) AS count FROM items WHERE word IS NOT NULL GROUP BY word')
+      .map((r) => ({ name: String(r.name), count: Number(r.count) }))
+    return { plates, topTags, words }
   }
 
   stats(libraryRoot: string): LibraryStats {
@@ -571,6 +576,16 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] } 
     clauses.push('COALESCE(i.height, 0) >= ?')
     params.push(query.minHeight)
   }
+  if (query.dateFrom) {
+    // published_at 存的是 'YYYY-MM-DD HH:mm'，按字典序比较即可
+    clauses.push("COALESCE(i.published_at, '') >= ?")
+    params.push(`${query.dateFrom} 00:00`)
+  }
+  if (query.dateTo) {
+    // 上界用「次日 00:00」而不是当天 23:59，避免把当天的内容漏掉
+    clauses.push("COALESCE(i.published_at, '') < ?")
+    params.push(`${nextDay(query.dateTo)} 00:00`)
+  }
   if (query.pageFrom != null) {
     clauses.push('i.page IS NOT NULL AND i.page >= ?')
     params.push(query.pageFrom)
@@ -624,6 +639,15 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] } 
   }
 
   return { where: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '', params }
+}
+
+/** 'YYYY-MM-DD' -> 次日；用于日期上界的开区间比较 */
+function nextDay(date: string): string {
+  const d = new Date(`${date}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return date
+  d.setDate(d.getDate() + 1)
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 function buildOrder(sort: NonNullable<GalleryQuery['sort']>): string {

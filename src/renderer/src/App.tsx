@@ -6,7 +6,6 @@ import type {
   CrawlProgress,
   Facet,
   GalleryQuery,
-  PlateFacet,
   ItemSummary,
   LibraryStats,
   Orientation,
@@ -50,6 +49,9 @@ export interface Filters {
   sort: SortKey
   orientation: Orientation
   minWidth: number
+  /** 发布日期闭区间（YYYY-MM-DD），空串表示不限 */
+  dateFrom: string
+  dateTo: string
 }
 
 const INITIAL_FILTERS: Filters = {
@@ -62,7 +64,9 @@ const INITIAL_FILTERS: Filters = {
   downloaded: 'any',
   sort: 'newest',
   orientation: 'any',
-  minWidth: 0
+  minWidth: 0,
+  dateFrom: '',
+  dateTo: ''
 }
 
 /** 主题：dark / light / system，system 跟随操作系统配色 */
@@ -115,20 +119,24 @@ function IconViewToggle({ dense }: { dense: boolean }): JSX.Element {
 export default function App(): JSX.Element {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [info, setInfo] = useState<AppInfo | null>(null)
+  /** 登录态：只保存站点会话 cookie，账号密码不经过本应用 */
+  const [session, setSession] = useState<SessionStatus | null>(null)
+  const [cookieDraft, setCookieDraft] = useState('')
+  const [sessionBusy, setSessionBusy] = useState(false)
+  const [sessionMsg, setSessionMsg] = useState<string | null>(null)
   const [stats, setStats] = useState<LibraryStats | null>(null)
-  const [plates, setPlates] = useState<PlateFacet[]>([])
+  /** 关键词维度的分类计数（电脑壁纸这类有 plate，泳装分享这类没有） */
+  const [wordFacets, setWordFacets] = useState<Facet[]>([])
   const [topTags, setTopTags] = useState<Facet[]>([])
 
   /** 摊平分类：只保留应用定义的几栏，并挂上各自的条目数 */
   const categories = useMemo(() => {
-    const counts = new Map<number | string, number>()
-    for (const plate of plates) {
-      for (const word of plate.words) counts.set(word.name, word.count)
-    }
-    return visibleCategories(false)
-      .map((c) => ({ name: c.name, count: counts.get(c.name) ?? 0 }))
+    const counts = new Map<string, number>()
+    for (const word of wordFacets) counts.set(word.name, word.count)
+    return visibleCategories(session?.loggedIn === true)
+      .map((c) => ({ id: c.id, name: c.name, word: c.word, count: counts.get(c.word) ?? 0 }))
       .filter((c) => c.count > 0)
-  }, [plates])
+  }, [wordFacets, session?.loggedIn])
 
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
   const [debouncedText, setDebouncedText] = useState('')
@@ -151,11 +159,6 @@ export default function App(): JSX.Element {
   /** 自绘标题栏：最大化状态与窗口按钮联动 */
   const [maximized, setMaximized] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  /** 登录态：只保存站点会话 cookie，账号密码不经过本应用 */
-  const [session, setSession] = useState<SessionStatus | null>(null)
-  const [cookieDraft, setCookieDraft] = useState('')
-  const [sessionBusy, setSessionBusy] = useState(false)
-  const [sessionMsg, setSessionMsg] = useState<string | null>(null)
   /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
   const [reflowing, setReflowing] = useState(false)
   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
@@ -172,6 +175,8 @@ export default function App(): JSX.Element {
   /** 每换一批结果就 +1：给网格做 key，让它整体重挂载并重播进场动画 */
   const [listEpoch, setListEpoch] = useState(0)
   const [sortOpen, setSortOpen] = useState(false)
+  /** 日期面板开合 */
+  const [dateOpen, setDateOpen] = useState(false)
 
   const lastScrollTop = useRef(0)
   const reflowTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -209,7 +214,7 @@ export default function App(): JSX.Element {
     try {
       const [s, f] = await Promise.all([api.library.stats(), api.library.facets()])
       setStats(s)
-      setPlates(f.plates)
+      setWordFacets(f.words ?? [])
       setTopTags(f.topTags)
     } catch {
       /* 图库目录刚切换时可能短暂读不到，忽略 */
@@ -243,6 +248,8 @@ export default function App(): JSX.Element {
       favorite: filters.favorite,
       downloaded: filters.downloaded,
       orientation: filters.orientation,
+      dateFrom: filters.dateFrom || undefined,
+      dateTo: filters.dateTo || undefined,
       sort: filters.sort,
       minWidth: filters.minWidth > 0 ? filters.minWidth : undefined,
       cursor: cursorValue,
@@ -280,7 +287,7 @@ export default function App(): JSX.Element {
     setListEpoch((e) => e + 1)
     void loadPage('reset')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth])
+  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.dateFrom, filters.dateTo])
 
   // 滚动到底自动追加
   /**
@@ -335,15 +342,17 @@ export default function App(): JSX.Element {
     setSidebarWidth(settings.sidebarWidth || DEFAULT_SETTINGS.sidebarWidth)
   }, [settings.sidebarWidth])
 
-  // 排序菜单点空白处关闭
+  // 排序菜单 / 日期面板：点空白处关闭
   useEffect(() => {
-    if (!sortOpen) return
+    if (!sortOpen && !dateOpen) return
     const onDown = (e: MouseEvent): void => {
-      if (!(e.target as Element).closest('.sort-picker')) setSortOpen(false)
+      const target = e.target as Element
+      if (sortOpen && !target.closest('.sort-picker')) setSortOpen(false)
+      if (dateOpen && !target.closest('.date-picker')) setDateOpen(false)
     }
     document.addEventListener('mousedown', onDown, true)
     return () => document.removeEventListener('mousedown', onDown, true)
-  }, [sortOpen])
+  }, [sortOpen, dateOpen])
 
   // 自绘标题栏要跟着窗口状态走（比如用户双击标题栏最大化）
   useEffect(() => {
@@ -397,7 +406,9 @@ export default function App(): JSX.Element {
     !filters.plate &&
     filters.tags.length === 0 &&
     filters.orientation === 'any' &&
-    filters.minWidth === 0
+    filters.minWidth === 0 &&
+    filters.dateFrom === '' &&
+    filters.dateTo === ''
 
   const quickFavorite = useCallback(async (item: ItemSummary) => {
     const value = await api.library.favorite(item.id, !item.favorite)
@@ -471,6 +482,7 @@ export default function App(): JSX.Element {
     if (filters.downloaded !== 'any') n += 1
     if (filters.orientation !== 'any') n += 1
     if (filters.minWidth > 0) n += 1
+    if (filters.dateFrom || filters.dateTo) n += 1
     return n
   }, [filters])
 
@@ -693,7 +705,9 @@ export default function App(): JSX.Element {
                     word: null,
                     tags: [],
                     orientation: 'any',
-                    minWidth: 0
+                    minWidth: 0,
+                    dateFrom: '',
+                    dateTo: ''
                   })
                 }
               >
@@ -734,6 +748,52 @@ export default function App(): JSX.Element {
               >
                 竖图
               </button>
+
+              <div className="date-picker">
+                <button
+                  className={`pill${filters.dateFrom || filters.dateTo ? ' active' : ''}`}
+                  onClick={() => setDateOpen((v) => !v)}
+                  title="按发布日期筛选（可与排序叠加）"
+                >
+                  日期
+                  {filters.dateFrom || filters.dateTo
+                    ? `：${filters.dateFrom || '…'} ~ ${filters.dateTo || '…'}`
+                    : ''}
+                  <span className={`caret-inline${dateOpen ? ' open' : ''}`}>▾</span>
+                </button>
+                {dateOpen && (
+                  <div className="date-menu">
+                    <label>
+                      <span>从</span>
+                      <input
+                        type="date"
+                        value={filters.dateFrom}
+                        max={filters.dateTo || undefined}
+                        onChange={(e) => patchFilters({ dateFrom: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      <span>到</span>
+                      <input
+                        type="date"
+                        value={filters.dateTo}
+                        min={filters.dateFrom || undefined}
+                        onChange={(e) => patchFilters({ dateTo: e.target.value })}
+                      />
+                    </label>
+                    <div className="date-actions">
+                      <button
+                        className="btn sm ghost"
+                        disabled={!filters.dateFrom && !filters.dateTo}
+                        onClick={() => patchFilters({ dateFrom: '', dateTo: '' })}
+                      >
+                        清空日期
+                      </button>
+                    </div>
+                    <p className="dim">按站点发布/上传时间筛，留空即不限</p>
+                  </div>
+                )}
+              </div>
 
               {filters.plate && (
                 <span className="pill active">
@@ -787,6 +847,7 @@ export default function App(): JSX.Element {
         {view === 'crawl' && (
           <CrawlPanel
             settings={settings}
+            loggedIn={session?.loggedIn === true}
             progress={progress}
             logs={logs}
             onClearLogs={() => setLogs([])}

@@ -118,6 +118,15 @@
       "summary": "补齐安装包体验：自绘应用与安装程序图标、安装时可选位置、首次启动向导选择图库目录（默认安装目录下）。",
       "hasAnnotations": false,
       "finishedAt": "2026-09-14 23:50"
+    },
+    {
+      "id": "0010-categories-login-and-range",
+      "slug": "categories-login-and-range",
+      "createdAt": "2026-09-15 01:53",
+      "baseCommit": "1a363cc",
+      "branch": "master",
+      "summary": "",
+      "status": "open"
     }
   ]
 }

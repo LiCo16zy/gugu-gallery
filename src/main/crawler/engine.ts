@@ -331,8 +331,11 @@ export class CrawlEngine {
         id: raw.id,
         detailUrl: raw.detailUrl,
         sourceUrl,
-        plate: raw.plate ?? target.plate ?? null,
-        word: raw.word ?? target.word ?? null,
+        // 关键词搜索页里返回的详情链接仍然带着图片原本的 plate / word，
+        // 但那不是「用户从哪儿找到它们的」。搜索类目标统一按目标本身归类，
+        // 否则「泳装分享」抓回来的图会散进别的分类，它的计数永远是 0。
+        plate: target.kind === 'search' ? null : raw.plate ?? target.plate ?? null,
+        word: (target.kind === 'search' ? target.word : raw.word ?? target.word) ?? null,
         title: raw.title,
         width: raw.width,
         height: raw.height,

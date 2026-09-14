@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CrawlLogLine, CrawlProgress, CrawlRequest, TargetInput } from '@shared/types'
-import { visibleCategories } from '@shared/categories'
+import { toTarget, visibleCategories } from '@shared/categories'
 import type { AppSettings } from '@shared/types'
 import { api, formatBytes, formatDuration, formatSpeed } from '../api'
 import type { CrawlSiteInfo } from '../api'
 import { IconPause, IconPlay, IconRadar, IconRefresh, IconStop, IconTrash } from './Icons'
 interface Props {
   settings: AppSettings
+  /** 登录态决定「泳装分享」这类目标要不要出现 */
+  loggedIn: boolean
   progress: CrawlProgress | null
   logs: CrawlLogLine[]
   onClearLogs: () => void
@@ -15,6 +17,7 @@ interface Props {
 }
 export default function CrawlPanel({
   settings,
+  loggedIn,
   progress,
   logs,
   onClearLogs,
@@ -56,7 +59,7 @@ export default function CrawlPanel({
       const info = await api.crawl.siteInfo()
       setSite(info)
       if (selected.size === 0) {
-        const firstCategory = visibleCategories(false)[0]
+        const firstCategory = visibleCategories(loggedIn)[0]
         if (firstCategory) setSelected(new Set([firstCategory.id]))
       }
     } catch (err) {
@@ -73,10 +76,10 @@ export default function CrawlPanel({
   // 既不会再被导航里的「示例模板」污染，也不需要先展开一级分类
   const targets: TargetInput[] = useMemo(
     () =>
-      visibleCategories(false)
+      visibleCategories(loggedIn)
         .filter((c) => selected.has(c.id))
-        .map((c) => ({ kind: 'category' as const, plate: c.plate, word: c.word })),
-    [selected]
+        .map((c) => toTarget(c)),
+    [selected, loggedIn]
   )
   const firstTargetKey =
     targets.length > 0 ? [targets[0].kind, targets[0].plate, targets[0].word].join('|') : ''
@@ -177,7 +180,7 @@ export default function CrawlPanel({
         )}
         {/* 分类只有一层：站点原本是 ACG图片 > Pixiv萌图，这里只留下面那层 */}
         <div className="target-list">
-          {visibleCategories(false).map((category) => {
+          {visibleCategories(loggedIn).map((category) => {
             const on = selected.has(category.id)
             return (
               <button
@@ -194,7 +197,11 @@ export default function CrawlPanel({
                 aria-pressed={on}
               >
                 <span className="target-name">{category.name}</span>
-                <span className="target-path">{category.plate} / {category.word}</span>
+                <span className="target-path">
+                  {category.kind === 'search'
+                    ? '关键词搜索 · ' + category.word
+                    : category.plate + ' / ' + category.word}
+                </span>
               </button>
             )
           })}

@@ -103,6 +103,9 @@ export interface GalleryQuery {
   /** 只取来源页落在该区间的条目（下载阶段按页码范围过滤用） */
   pageFrom?: number
   pageTo?: number
+  /** 发布日期闭区间，格式 YYYY-MM-DD */
+  dateFrom?: string
+  dateTo?: string
   sort?: SortKey
   cursor?: string | null
   limit?: number

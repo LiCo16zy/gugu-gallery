@@ -188,6 +188,18 @@ const SCRIPT = `(async () => {
     }
   }
 
+  // 6.6) 未登录时「泳装分享」这类登录专属分类不应出现（侧栏 + 抓取目标）
+  {
+    out.swimsuitHiddenInSidebar = !(out.categoryNames || []).includes('泳装分享')
+    window.dispatchEvent(new CustomEvent('gugu:navigate', { detail: 'crawl' }))
+    await sleep(800)
+    const targetNames = qa('.target-list .target-name').map((el) => (el.textContent || '').trim())
+    out.crawlTargetNames = targetNames
+    out.swimsuitHiddenInCrawl = targetNames.length > 0 && !targetNames.includes('泳装分享')
+    window.dispatchEvent(new CustomEvent('gugu:navigate', { detail: 'gallery' }))
+    await sleep(800)
+  }
+
   // 7) 排序切换（排序已从顶栏挪到过滤栏，改成折叠菜单）
   const sortPill = document.querySelector('.sort-picker .pill')
   if (sortPill) {
@@ -203,6 +215,43 @@ const SCRIPT = `(async () => {
       ? 'views'
       : 'other'
     out.sortMeta = meta()
+  }
+
+  // 7.2) 日期范围：可折叠面板 + 起止两个日期，和排序叠加使用
+  {
+    const pill = () => document.querySelector('.date-picker .pill')
+    out.datePillExists = Boolean(pill())
+    pill()?.click()
+    await sleep(250)
+    out.dateMenuOpen = Boolean(document.querySelector('.date-menu'))
+    const inputs = Array.from(document.querySelectorAll('.date-menu input[type="date"]'))
+    out.dateInputCount = inputs.length
+    // React 自己维护 value 影子值，直接赋值不会触发 onChange，得走原生 setter
+    const setDate = (el, v) => {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(el, v)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    if (inputs.length === 2) {
+      setDate(inputs[0], '2026-09-01')
+      await sleep(1200)
+      setDate(inputs[1], '2026-09-14')
+      await sleep(1400)
+      const m = meta()
+      out.dateMeta = m
+      out.dateFiltered = Number(((m.match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
+      out.datePillActive = (pill()?.className || '').includes('active')
+      const clear = Array.from(document.querySelectorAll('.date-menu .btn')).find((b) =>
+        b.textContent.includes('清空日期')
+      )
+      clear?.click()
+      await sleep(1200)
+      out.dateMetaAfterClear = meta()
+      out.dateClearedCount = Number(((meta().match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
+    }
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await sleep(250)
+    out.dateMenuClosedOnOutside = !document.querySelector('.date-menu')
   }
 
   // 7.5) 横向溢出
@@ -406,7 +455,15 @@ const checks = [
   ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
   ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
   ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '')],
+  ['未登录时侧栏不出现登录专属分类', result.swimsuitHiddenInSidebar === true],
+  ['未登录时抓取目标不出现登录专属分类', result.swimsuitHiddenInCrawl === true],
   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
+  ['过滤栏有日期范围入口', result.datePillExists === true],
+  ['日期面板可展开且有起止两个输入', result.dateMenuOpen === true && result.dateInputCount === 2],
+  ['日期范围能缩小结果集', (result.dateFiltered ?? -1) > 0 && result.dateFiltered < 2120],
+  ['日期生效时按钮高亮', result.datePillActive === true],
+  ['清空日期后恢复全量', result.dateClearedCount === 2120],
+  ['点空白处关闭日期面板', result.dateMenuClosedOnOutside === true],
   ['切换排序生效', result.sortValue === 'views'],
   ['内容页无横向溢出', result.mainOverflowX === 0],
   ['灯箱打开时根节点有 lightbox-open', result.lightboxOpenClass === true],

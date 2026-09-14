@@ -7,8 +7,8 @@ import { IconFolder, IconHeart, IconImage, IconRadar, IconInfo, IconSettings, Ic
 interface Props {
   collapsed: boolean
   stats: LibraryStats | null
-  /** 摊平后的分类（名字 + 条目数） */
-  categories: { name: string; count: number }[]
+  /** 摊平后的分类（名字 + 数据库里的 word + 条目数） */
+  categories: { id: string; name: string; word: string; count: number }[]
   topTags: Facet[]
   filters: Filters
   view: View
@@ -119,10 +119,10 @@ export default function Sidebar({
             </div>
             {categories.map((category) => (
               <button
-                key={category.name}
+                key={category.id}
                 data-component="Sidebar/Category"
-                className={`side-item${filters.word === category.name && !filters.plate ? ' active' : ''}`}
-                onClick={() => go(() => onFilters({ plate: null, word: category.name }))}
+                className={`side-item${filters.word === category.word && !filters.plate ? ' active' : ''}`}
+                onClick={() => go(() => onFilters({ plate: null, word: category.word }))}
               >
                 <IconFolder />
                 <span className="label">{category.name}</span>
