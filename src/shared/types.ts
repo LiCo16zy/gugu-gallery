@@ -226,8 +226,6 @@ export interface AppSettings {
   downloadConcurrency: number
   delayMs: number
   retries: number
-  minWidth: number
-  minBytes: number
   thumbSize: number
   theme: 'dark' | 'light' | 'system'
   accent: string
@@ -235,8 +233,6 @@ export interface AppSettings {
   naming: 'id-slug' | 'id' | 'pixiv' | 'hash'
   /** 代理，例如 http://127.0.0.1:7890 ；留空表示直连 */
   proxy: string
-  /** 关闭时使用系统证书校验（部分代理环境需要） */
-  strictTls: boolean
   sidebarCollapsed: boolean
   pageSize: number
 }
@@ -248,14 +244,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   downloadConcurrency: 3,
   delayMs: 220,
   retries: 4,
-  minWidth: 0,
-  minBytes: 0,
   thumbSize: 512,
   theme: 'dark',
   accent: '#7c9cff',
   naming: 'id-slug',
   proxy: '',
-  strictTls: true,
   sidebarCollapsed: false,
   pageSize: 60
 }

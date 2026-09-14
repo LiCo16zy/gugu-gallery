@@ -63,7 +63,6 @@ export default function App(): JSX.Element {
   const [cursor, setCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [dense, setDense] = useState(false)
-  const pageSize = 60
 
   const [view, setView] = useState<View>('gallery')
   const [openId, setOpenId] = useState<number | null>(null)
@@ -103,6 +102,8 @@ export default function App(): JSX.Element {
   }, [refreshMeta])
 
   /* ---------------------------------------------------------- 渐进式加载 */
+
+  const pageSize = Math.max(20, Math.min(200, settings.pageSize || 60))
 
   const buildQuery = useCallback(
     (cursorValue: string | null): GalleryQuery => ({

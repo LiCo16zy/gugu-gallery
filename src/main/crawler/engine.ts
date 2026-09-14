@@ -33,7 +33,9 @@ export interface EngineDeps {
   library: Library
   getSettings: () => AppSettings
   onProgress: (progress: CrawlProgress, newLogs: CrawlProgress['logs']) => void
+  /** 由上层决定用哪个 fetch 实现：直连走全局 fetch，配了代理则交给 Electron 网络栈 */
   fetchImpl?: typeof fetch
+  resolveFetch?: (proxy: string) => typeof fetch | undefined
 }
 
 interface EngineState {
@@ -99,7 +101,8 @@ export class CrawlEngine {
     this.http.configure({
       delayMs: settings.delayMs,
       retries: settings.retries,
-      concurrency: Math.max(settings.listConcurrency, settings.downloadConcurrency)
+      concurrency: Math.max(settings.listConcurrency, settings.downloadConcurrency),
+      fetchImpl: this.deps.resolveFetch?.(settings.proxy) ?? this.deps.fetchImpl
     })
   }
 

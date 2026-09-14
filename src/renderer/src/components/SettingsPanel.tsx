@@ -111,7 +111,13 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
           </div>
           <div className="field">
             <label>每页加载数量</label>
-            <input type="number" min={20} max={200} value={settings.pageSize} readOnly />
+            <input
+              type="number"
+              min={20}
+              max={200}
+              value={settings.pageSize}
+              onChange={(e) => void onChange({ pageSize: Number(e.target.value) })}
+            />
             <span className="help">滚动到底自动加载下一页</span>
           </div>
         </div>
@@ -170,7 +176,7 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
               value={settings.proxy}
               onChange={(e) => void onChange({ proxy: e.target.value })}
             />
-            <span className="help">留空表示直连</span>
+            <span className="help">留空表示直连；填了会走 Chromium 网络栈（支持 PAC / 系统代理）</span>
           </div>
         </div>
       </section>
