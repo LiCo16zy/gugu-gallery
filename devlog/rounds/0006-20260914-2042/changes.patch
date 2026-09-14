@@ -1,0 +1,1589 @@
+# 轮次 0006-20260914-2042 代码差异
+# 基线提交 56156aa -> 95743c4
+
+diff --git a/devlog/rounds/0006-20260914-2042/README.md b/devlog/rounds/0006-20260914-2042/README.md
+new file mode 100644
+index 0000000..cb69cd9
+--- /dev/null
++++ b/devlog/rounds/0006-20260914-2042/README.md
+@@ -0,0 +1,29 @@
++# 轮次 0006-20260914-2042
++
++> 由页面标注工具自动生成，请在完成本轮改动后补全下面的小节。
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++沉浸模式调整
++文本内容调整
++细节调整
++
++## 反馈标注
++
++共 10 条，详见 [`annotations.md`](annotations.md) 与 [`annotations.json`](annotations.json)。
++
++导出时视口 1348×716，界面 crawl，应用版本 0.1.0。
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
+diff --git a/devlog/rounds/0006-20260914-2042/annotations.json b/devlog/rounds/0006-20260914-2042/annotations.json
+new file mode 100644
+index 0000000..0b7c7d4
+--- /dev/null
++++ b/devlog/rounds/0006-20260914-2042/annotations.json
+@@ -0,0 +1,688 @@
++{
++  "roundId": "0006-20260914-2042",
++  "exportedAt": "2026-09-14T12:42:41.956Z",
++  "view": "crawl",
++  "note": "沉浸模式调整\n文本内容调整\n细节调整",
++  "viewport": {
++    "width": 1348,
++    "height": 716
++  },
++  "devicePixelRatio": 1.4249999523162842,
++  "appVersion": "0.1.0",
++  "annotations": [
++    {
++      "id": "io34x3de",
++      "index": 1,
++      "comment": "这里的折叠子项由于中间存在空的间隔，在鼠标移动较慢时，处于空的间隔处时子项会折叠，交互要宽松一点。右键菜单打开后当鼠标移到此项上时，打开折叠项，当鼠标离开此项后2s，且不处于子项中时，子项重新折叠",
++      "category": "behavior",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789384771817,
++      "rect": {
++        "x": 675.6907958984375,
++        "y": 336.7653503417969,
++        "width": 160.59210205078125,
++        "height": 31.53508758544922
++      },
++      "pageRect": {
++        "x": 675.6907958984375,
++        "y": 336.7653503417969,
++        "width": 160.59210205078125,
++        "height": 31.53508758544922
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.ctx-menu:nth-of-type(4) > div:nth-of-type(3) > button.ctx-item.open",
++        "component": "ContextMenu › button.ctx-item",
++        "tag": "button",
++        "classes": "ctx-item open",
++        "text": "打开于…",
++        "parentChain": [
++          "div",
++          "div.ctx-menu",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "9px",
++          "grid-template-columns": "none",
++          "width": "160.592px",
++          "height": "31.5351px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "7px 10px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(34, 42, 58)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "7px",
++          "white-space": "normal",
++          "transition": "background 0.12s cubic-bezier(0.22, 0.61, 0.36, 1), color 0.12s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "12.04:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "w2ez8n30",
++      "index": 2,
++      "comment": "右上角切换沉浸模式按钮不见了，我没法点击退出沉浸模式。",
++      "category": "behavior",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789384971032,
++      "rect": {
++        "x": 0,
++        "y": 0,
++        "width": 1348.0701904296875,
++        "height": 716.4912109375
++      },
++      "pageRect": {
++        "x": 0,
++        "y": 0,
++        "width": 1348.0701904296875,
++        "height": 716.4912109375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1)",
++        "component": "Lightbox/Stage",
++        "tag": "div",
++        "classes": "lightbox-stage",
++        "text": "",
++        "parentChain": [
++          "div.lightbox.immersive",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "position": "relative",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "1348.07px",
++          "height": "716.491px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "24px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "overflow": "hidden",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "mtwbjk70",
++      "index": 3,
++      "comment": "取消卡片左上角的 \"横图/竖图\" 说明",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385134129,
++      "rect": {
++        "x": 441.10009765625,
++        "y": 118.8946304321289,
++        "width": 349.0498352050781,
++        "height": 136.4365234375
++      },
++      "pageRect": {
++        "x": 441.10009765625,
++        "y": 118.8946304321289,
++        "width": 349.0498352050781,
++        "height": 136.4365234375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "main.main > div.grid:nth-of-type(2) > div.card:nth-of-type(2) > div.card-media:nth-of-type(1) > img",
++        "component": "GalleryGrid/Card › img",
++        "tag": "img",
++        "classes": "",
++        "text": "",
++        "parentChain": [
++          "div.card-media",
++          "div.card",
++          "div.grid",
++          "main.main",
++          "div.app"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "340.241px",
++          "height": "132.993px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "overflow": "clip",
++          "white-space": "normal",
++          "transition": "transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "object-fit": "cover"
++        },
++        "attributes": {
++          "src": "gugu://thumb/19523"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "f9ypqcnm",
++      "index": 4,
++      "comment": "这个按钮的鼠标悬浮时的说明，修改成\"沉浸模式\"",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385230833,
++      "rect": {
++        "x": 952.006591796875,
++        "y": 15.997807502746582,
++        "width": 30,
++        "height": 30
++      },
++      "pageRect": {
++        "x": 952.006591796875,
++        "y": 15.997807502746582,
++        "width": 30,
++        "height": 30
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-head:nth-of-type(1) > button.lb-immersive:nth-of-type(1)",
++        "component": "Lightbox/SidePanel › button.lb-immersive",
++        "tag": "button",
++        "classes": "lb-immersive",
++        "text": "",
++        "parentChain": [
++          "div.lb-head",
++          "div.lightbox-side",
++          "div.lightbox",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "grid",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "28.5965px",
++          "width": "30px",
++          "height": "30px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(20, 25, 36)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "8px",
++          "white-space": "normal",
++          "transition": "0.16s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "14.72:1（AAA）"
++        },
++        "attributes": {
++          "title": "沉浸模式：隐藏右侧信息栏"
++        }
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    },
++    {
++      "id": "xumk5e7v",
++      "index": 5,
++      "comment": "调整文本：\n左键拖动 · 滚轮缩放 · ← → 翻页 · Esc 关闭",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385341702,
++      "rect": {
++        "x": 722.6973876953125,
++        "y": 446.28289794921875,
++        "width": 299.3092041015625,
++        "height": 17.039474487304688
++      },
++      "pageRect": {
++        "x": 722.6973876953125,
++        "y": 446.28289794921875,
++        "width": 299.3092041015625,
++        "height": 17.039474487304688
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > p.lb-tip",
++        "component": "Lightbox/SidePanel › p.lb-tip",
++        "tag": "p",
++        "classes": "lb-tip",
++        "text": "滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭",
++        "parentChain": [
++          "div.lightbox-side",
++          "div.lightbox",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "299.309px",
++          "height": "17.0395px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px 0px 16px",
++          "font-size": "11px",
++          "font-weight": "400",
++          "line-height": "17.05px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    },
++    {
++      "id": "u2eattpv",
++      "index": 6,
++      "comment": "调整文本:\n左键拖动，滚轮缩放，← → 翻页，Esc 关闭",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385447064,
++      "rect": {
++        "x": 376.6885986328125,
++        "y": 329.0789489746094,
++        "width": 400.6140441894531,
++        "height": 18.585525512695312
++      },
++      "pageRect": {
++        "x": 376.6885986328125,
++        "y": 329.0789489746094,
++        "width": 400.6140441894531,
++        "height": 18.585525512695312
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dd:nth-of-type(3)",
++        "component": "App/Help › dd",
++        "tag": "dd",
++        "classes": "",
++        "text": "← → 翻页，Esc 关闭，滚轮缩放，左键拖动",
++        "parentChain": [
++          "dl.kv",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "400.614px",
++          "height": "18.5855px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "18.6px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    },
++    {
++      "id": "163g61mi",
++      "index": 7,
++      "comment": "标题、标签、Pixiv ID 都能搜",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385518019,
++      "rect": {
++        "x": 376.6885986328125,
++        "y": 279.91229248046875,
++        "width": 400.6140441894531,
++        "height": 18.585525512695312
++      },
++      "pageRect": {
++        "x": 376.6885986328125,
++        "y": 279.91229248046875,
++        "width": 400.6140441894531,
++        "height": 18.585525512695312
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dd:nth-of-type(1)",
++        "component": "App/Help › dd",
++        "tag": "dd",
++        "classes": "",
++        "text": "标题、标签、分类、Pixiv ID 都能搜",
++        "parentChain": [
++          "dl.kv",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "400.614px",
++          "height": "18.5855px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "18.6px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    },
++    {
++      "id": "80q7tjuq",
++      "index": 8,
++      "comment": "调整文本:\n卡片",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385537323,
++      "rect": {
++        "x": 262.6973571777344,
++        "y": 304.49560546875,
++        "width": 103.99122619628906,
++        "height": 18.585525512695312
++      },
++      "pageRect": {
++        "x": 262.6973571777344,
++        "y": 304.49560546875,
++        "width": 103.99122619628906,
++        "height": 18.585525512695312
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dt:nth-of-type(2)",
++        "component": "App/Help › dt",
++        "tag": "dt",
++        "classes": "",
++        "text": "卡片右键",
++        "parentChain": [
++          "dl.kv",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "103.991px",
++          "height": "18.5855px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "18.6px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    },
++    {
++      "id": "egeik1b1",
++      "index": 9,
++      "comment": "这里的目前约 1430 页的数字对用户还是比较有参考价值，能否在“抓取目标”的”重新读取分类“的时候获取一次总页数，然后写到这里",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385874097,
++      "rect": {
++        "x": 731.0855102539062,
++        "y": 311.40350341796875,
++        "width": 258.3991394042969,
++        "height": 17.039474487304688
++      },
++      "pageRect": {
++        "x": 731.0855102539062,
++        "y": 311.40350341796875,
++        "width": 258.3991394042969,
++        "height": 17.039474487304688
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.page > section.card-panel:nth-of-type(2) > div.field-grid:nth-of-type(2) > div.field:nth-of-type(2) > span.help",
++        "component": "CrawlPanel › span.help",
++        "tag": "span",
++        "classes": "help",
++        "text": "Pixiv萌图 目前约 1430 页",
++        "parentChain": [
++          "div.field",
++          "div.field-grid",
++          "section.card-panel",
++          "div.page",
++          "main.main"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "258.399px",
++          "height": "17.0395px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "11px",
++          "font-weight": "400",
++          "line-height": "17.05px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    },
++    {
++      "id": "ut1508tn",
++      "index": 10,
++      "comment": "在重新读取分类的时候能否获取一次页面的总页数，然后写道下面抓取范围与内容过滤的小字里。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789385922936,
++      "rect": {
++        "x": 876.12939453125,
++        "y": 186.4364013671875,
++        "width": 113.35526275634766,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 876.12939453125,
++        "y": 186.4364013671875,
++        "width": 113.35526275634766,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "main.main > div.page > section.card-panel:nth-of-type(1) > div.panel-title:nth-of-type(1) > button.btn.sm",
++        "component": "CrawlPanel › button.btn",
++        "tag": "button",
++        "classes": "btn sm ghost",
++        "text": "重新读取分类",
++        "parentChain": [
++          "div.panel-title",
++          "section.card-panel",
++          "div.page",
++          "main.main",
++          "div.app"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "113.355px",
++          "height": "27.9934px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(20, 25, 36)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "7px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "14.72:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1040,
++        "height": 716
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/devlog/rounds/0006-20260914-2042/annotations.md b/devlog/rounds/0006-20260914-2042/annotations.md
+new file mode 100644
+index 0000000..d69b1fe
+--- /dev/null
++++ b/devlog/rounds/0006-20260914-2042/annotations.md
+@@ -0,0 +1,137 @@
++# 界面标注 · 轮次 0006-20260914-2042
++
++- 导出时间：2026-09-14T12:42:41.956Z
++- 所在界面：crawl
++- 视口：1348×716（DPR 1.4249999523162842）
++- 应用版本：0.1.0
++- 标注条数：10
++
++## 总体说明
++
++沉浸模式调整
++文本内容调整
++细节调整
++
++## 逐条标注
++
++### 1. 这里的折叠子项由于中间存在空的间隔，在鼠标移动较慢时，处于空的间隔处时子项会折叠，交互要宽松一点。右键菜单打开后当鼠标移
++
++- **类别**：交互行为 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`ContextMenu › button.ctx-item`
++- **选择器**：`div > div.app > div.ctx-menu:nth-of-type(4) > div:nth-of-type(3) > button.ctx-item.open`
++- **父级链**：`div` ← `div.ctx-menu` ← `div.app` ← `div` ← `body`
++- **元素文本**：打开于…
++- **位置尺寸**：x=676 y=337 161×32
++- **关键样式**：display: flex; flex-direction: row; justify-content: normal; align-items: center; gap: 9px; grid-template-columns: none; width: 160.592px; height: 31.5351px; min-width: 0px; max-width: none; padding: 7px 10px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(34, 42, 58); border: 0px none rgb(231, 235, 243); border-radius: 7px; white-space: normal; transition: background 0.12s cubic-bezier(0.22, 0.61, 0.36, 1), color 0.12s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 12.04:1（AAA）
++
++> 这里的折叠子项由于中间存在空的间隔，在鼠标移动较慢时，处于空的间隔处时子项会折叠，交互要宽松一点。右键菜单打开后当鼠标移到此项上时，打开折叠项，当鼠标离开此项后2s，且不处于子项中时，子项重新折叠
++
++### 2. 右上角切换沉浸模式按钮不见了，我没法点击退出沉浸模式。
++
++- **类别**：交互行为 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Stage`
++- **选择器**：`body > div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1)`
++- **父级链**：`div.lightbox.immersive` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **位置尺寸**：x=0 y=0 1348×716
++- **关键样式**：display: grid; position: relative; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: none; width: 1348.07px; height: 716.491px; min-width: 0px; max-width: none; padding: 24px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; overflow: hidden; white-space: normal; transition: all
++
++> 右上角切换沉浸模式按钮不见了，我没法点击退出沉浸模式。
++
++### 3. 取消卡片左上角的 "横图/竖图" 说明
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid/Card › img`
++- **选择器**：`main.main > div.grid:nth-of-type(2) > div.card:nth-of-type(2) > div.card-media:nth-of-type(1) > img`
++- **父级链**：`div.card-media` ← `div.card` ← `div.grid` ← `main.main` ← `div.app`
++- **位置尺寸**：x=441 y=119 349×136
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 340.241px; height: 132.993px; min-width: 0px; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; overflow: clip; white-space: normal; transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s cubic-bezier(0.22, 0.61, 0.36, 1); object-fit: cover
++- **属性**：src="gugu://thumb/19523"
++
++> 取消卡片左上角的 "横图/竖图" 说明
++
++### 4. 这个按钮的鼠标悬浮时的说明，修改成"沉浸模式"
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/SidePanel › button.lb-immersive`
++- **选择器**：`div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-head:nth-of-type(1) > button.lb-immersive:nth-of-type(1)`
++- **父级链**：`div.lb-head` ← `div.lightbox-side` ← `div.lightbox` ← `div.app` ← `div`
++- **位置尺寸**：x=952 y=16 30×30
++- **关键样式**：display: grid; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: 28.5965px; width: 30px; height: 30px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(20, 25, 36); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 8px; white-space: normal; transition: 0.16s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 14.72:1（AAA）
++- **属性**：title="沉浸模式：隐藏右侧信息栏"
++
++> 这个按钮的鼠标悬浮时的说明，修改成"沉浸模式"
++
++### 5. 调整文本：
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/SidePanel › p.lb-tip`
++- **选择器**：`div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > p.lb-tip`
++- **父级链**：`div.lightbox-side` ← `div.lightbox` ← `div.app` ← `div` ← `body`
++- **元素文本**：滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭
++- **位置尺寸**：x=723 y=446 299×17
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 299.309px; height: 17.0395px; min-width: 0px; max-width: none; padding: 0px; margin: 0px 0px 16px; font-size: 11px; font-weight: 400; line-height: 17.05px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 调整文本：
++> 左键拖动 · 滚轮缩放 · ← → 翻页 · Esc 关闭
++
++### 6. 调整文本:
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › dd`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dd:nth-of-type(3)`
++- **父级链**：`dl.kv` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：← → 翻页，Esc 关闭，滚轮缩放，左键拖动
++- **位置尺寸**：x=377 y=329 401×19
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 400.614px; height: 18.5855px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 12px; font-weight: 400; line-height: 18.6px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 调整文本:
++> 左键拖动，滚轮缩放，← → 翻页，Esc 关闭
++
++### 7. 标题、标签、Pixiv ID 都能搜
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › dd`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dd:nth-of-type(1)`
++- **父级链**：`dl.kv` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：标题、标签、分类、Pixiv ID 都能搜
++- **位置尺寸**：x=377 y=280 401×19
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 400.614px; height: 18.5855px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 12px; font-weight: 400; line-height: 18.6px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 标题、标签、Pixiv ID 都能搜
++
++### 8. 调整文本:
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › dt`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dt:nth-of-type(2)`
++- **父级链**：`dl.kv` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：卡片右键
++- **位置尺寸**：x=263 y=304 104×19
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 103.991px; height: 18.5855px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 12px; font-weight: 400; line-height: 18.6px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 调整文本:
++> 卡片
++
++### 9. 这里的目前约 1430 页的数字对用户还是比较有参考价值，能否在“抓取目标”的”重新读取分类“的时候获取一次总页数，然后
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`CrawlPanel › span.help`
++- **选择器**：`div.page > section.card-panel:nth-of-type(2) > div.field-grid:nth-of-type(2) > div.field:nth-of-type(2) > span.help`
++- **父级链**：`div.field` ← `div.field-grid` ← `section.card-panel` ← `div.page` ← `main.main`
++- **元素文本**：Pixiv萌图 目前约 1430 页
++- **位置尺寸**：x=731 y=311 258×17
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 258.399px; height: 17.0395px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 11px; font-weight: 400; line-height: 17.05px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 这里的目前约 1430 页的数字对用户还是比较有参考价值，能否在“抓取目标”的”重新读取分类“的时候获取一次总页数，然后写到这里
++
++### 10. 在重新读取分类的时候能否获取一次页面的总页数，然后写道下面抓取范围与内容过滤的小字里。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`CrawlPanel › button.btn`
++- **选择器**：`main.main > div.page > section.card-panel:nth-of-type(1) > div.panel-title:nth-of-type(1) > button.btn.sm`
++- **父级链**：`div.panel-title` ← `section.card-panel` ← `div.page` ← `main.main` ← `div.app`
++- **元素文本**：重新读取分类
++- **位置尺寸**：x=876 y=186 113×28
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 113.355px; height: 27.9934px; min-width: auto; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(20, 25, 36); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 7px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 14.72:1（AAA）
++
++> 在重新读取分类的时候能否获取一次页面的总页数，然后写道下面抓取范围与内容过滤的小字里。
+diff --git a/devlog/rounds/0006-20260914-2042/screenshots/00-full.png b/devlog/rounds/0006-20260914-2042/screenshots/00-full.png
+new file mode 100644
+index 0000000..38b42d2
+Binary files /dev/null and b/devlog/rounds/0006-20260914-2042/screenshots/00-full.png differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/001-\350\277\231\351\207\214\347\232\204\346\212\230\345\217\240\345\255\220\351\241\271\347\224\261\344\272\216\344\270\255\351\227\264\345\255\230\345\234\250\347\251\272\347\232\204\351\227\264\351\232\224\345\234\250\351\274\240\346\240\207\347\247\273\345\212\250\350\276\203\346\205\242\346\227\266\345\244\204\344\272\216\347\251\272.png" "b/devlog/rounds/0006-20260914-2042/screenshots/001-\350\277\231\351\207\214\347\232\204\346\212\230\345\217\240\345\255\220\351\241\271\347\224\261\344\272\216\344\270\255\351\227\264\345\255\230\345\234\250\347\251\272\347\232\204\351\227\264\351\232\224\345\234\250\351\274\240\346\240\207\347\247\273\345\212\250\350\276\203\346\205\242\346\227\266\345\244\204\344\272\216\347\251\272.png"
+new file mode 100644
+index 0000000..9b605d4
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/001-\350\277\231\351\207\214\347\232\204\346\212\230\345\217\240\345\255\220\351\241\271\347\224\261\344\272\216\344\270\255\351\227\264\345\255\230\345\234\250\347\251\272\347\232\204\351\227\264\351\232\224\345\234\250\351\274\240\346\240\207\347\247\273\345\212\250\350\276\203\346\205\242\346\227\266\345\244\204\344\272\216\347\251\272.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/002-\345\217\263\344\270\212\350\247\222\345\210\207\346\215\242\346\262\211\346\265\270\346\250\241\345\274\217\346\214\211\351\222\256\344\270\215\350\247\201\344\272\206\346\210\221\346\262\241\346\263\225\347\202\271\345\207\273\351\200\200\345\207\272\346\262\211\346\265\270\346\250\241\345\274\217.png" "b/devlog/rounds/0006-20260914-2042/screenshots/002-\345\217\263\344\270\212\350\247\222\345\210\207\346\215\242\346\262\211\346\265\270\346\250\241\345\274\217\346\214\211\351\222\256\344\270\215\350\247\201\344\272\206\346\210\221\346\262\241\346\263\225\347\202\271\345\207\273\351\200\200\345\207\272\346\262\211\346\265\270\346\250\241\345\274\217.png"
+new file mode 100644
+index 0000000..38b42d2
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/002-\345\217\263\344\270\212\350\247\222\345\210\207\346\215\242\346\262\211\346\265\270\346\250\241\345\274\217\346\214\211\351\222\256\344\270\215\350\247\201\344\272\206\346\210\221\346\262\241\346\263\225\347\202\271\345\207\273\351\200\200\345\207\272\346\262\211\346\265\270\346\250\241\345\274\217.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/003-\345\217\226\346\266\210\345\215\241\347\211\207\345\267\246\344\270\212\350\247\222\347\232\204-\346\250\252\345\233\276\347\253\226\345\233\276-\350\257\264\346\230\216.png" "b/devlog/rounds/0006-20260914-2042/screenshots/003-\345\217\226\346\266\210\345\215\241\347\211\207\345\267\246\344\270\212\350\247\222\347\232\204-\346\250\252\345\233\276\347\253\226\345\233\276-\350\257\264\346\230\216.png"
+new file mode 100644
+index 0000000..1356a03
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/003-\345\217\226\346\266\210\345\215\241\347\211\207\345\267\246\344\270\212\350\247\222\347\232\204-\346\250\252\345\233\276\347\253\226\345\233\276-\350\257\264\346\230\216.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/004-\350\277\231\344\270\252\346\214\211\351\222\256\347\232\204\351\274\240\346\240\207\346\202\254\346\265\256\346\227\266\347\232\204\350\257\264\346\230\216\344\277\256\346\224\271\346\210\220\346\262\211\346\265\270\346\250\241\345\274\217.png" "b/devlog/rounds/0006-20260914-2042/screenshots/004-\350\277\231\344\270\252\346\214\211\351\222\256\347\232\204\351\274\240\346\240\207\346\202\254\346\265\256\346\227\266\347\232\204\350\257\264\346\230\216\344\277\256\346\224\271\346\210\220\346\262\211\346\265\270\346\250\241\345\274\217.png"
+new file mode 100644
+index 0000000..20ae72e
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/004-\350\277\231\344\270\252\346\214\211\351\222\256\347\232\204\351\274\240\346\240\207\346\202\254\346\265\256\346\227\266\347\232\204\350\257\264\346\230\216\344\277\256\346\224\271\346\210\220\346\262\211\346\265\270\346\250\241\345\274\217.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/005-\350\260\203\346\225\264\346\226\207\346\234\254.png" "b/devlog/rounds/0006-20260914-2042/screenshots/005-\350\260\203\346\225\264\346\226\207\346\234\254.png"
+new file mode 100644
+index 0000000..eb947cf
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/005-\350\260\203\346\225\264\346\226\207\346\234\254.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/006-\350\260\203\346\225\264\346\226\207\346\234\254.png" "b/devlog/rounds/0006-20260914-2042/screenshots/006-\350\260\203\346\225\264\346\226\207\346\234\254.png"
+new file mode 100644
+index 0000000..7c078a8
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/006-\350\260\203\346\225\264\346\226\207\346\234\254.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/007-\346\240\207\351\242\230\346\240\207\347\255\276Pixiv-ID-\351\203\275\350\203\275\346\220\234.png" "b/devlog/rounds/0006-20260914-2042/screenshots/007-\346\240\207\351\242\230\346\240\207\347\255\276Pixiv-ID-\351\203\275\350\203\275\346\220\234.png"
+new file mode 100644
+index 0000000..c961b28
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/007-\346\240\207\351\242\230\346\240\207\347\255\276Pixiv-ID-\351\203\275\350\203\275\346\220\234.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/008-\350\260\203\346\225\264\346\226\207\346\234\254.png" "b/devlog/rounds/0006-20260914-2042/screenshots/008-\350\260\203\346\225\264\346\226\207\346\234\254.png"
+new file mode 100644
+index 0000000..e1d8788
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/008-\350\260\203\346\225\264\346\226\207\346\234\254.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/009-\350\277\231\351\207\214\347\232\204\347\233\256\345\211\215\347\272\246-1430-\351\241\265\347\232\204\346\225\260\345\255\227\345\257\271\347\224\250\346\210\267\350\277\230\346\230\257\346\257\224\350\276\203\346\234\211\345\217\202\350\200\203\344\273\267\345\200\274.png" "b/devlog/rounds/0006-20260914-2042/screenshots/009-\350\277\231\351\207\214\347\232\204\347\233\256\345\211\215\347\272\246-1430-\351\241\265\347\232\204\346\225\260\345\255\227\345\257\271\347\224\250\346\210\267\350\277\230\346\230\257\346\257\224\350\276\203\346\234\211\345\217\202\350\200\203\344\273\267\345\200\274.png"
+new file mode 100644
+index 0000000..3283ccd
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/009-\350\277\231\351\207\214\347\232\204\347\233\256\345\211\215\347\272\246-1430-\351\241\265\347\232\204\346\225\260\345\255\227\345\257\271\347\224\250\346\210\267\350\277\230\346\230\257\346\257\224\350\276\203\346\234\211\345\217\202\350\200\203\344\273\267\345\200\274.png" differ
+diff --git "a/devlog/rounds/0006-20260914-2042/screenshots/010-\345\234\250\351\207\215\346\226\260\350\257\273\345\217\226\345\210\206\347\261\273\347\232\204\346\227\266\345\200\231\350\203\275\345\220\246\350\216\267\345\217\226\344\270\200\346\254\241\351\241\265\351\235\242\347\232\204\346\200\273\351\241\265\346\225\260\347\204\266\345\220\216\345\206\231\351\201\223\344\270\213\351\235\242.png" "b/devlog/rounds/0006-20260914-2042/screenshots/010-\345\234\250\351\207\215\346\226\260\350\257\273\345\217\226\345\210\206\347\261\273\347\232\204\346\227\266\345\200\231\350\203\275\345\220\246\350\216\267\345\217\226\344\270\200\346\254\241\351\241\265\351\235\242\347\232\204\346\200\273\351\241\265\346\225\260\347\204\266\345\220\216\345\206\231\351\201\223\344\270\213\351\235\242.png"
+new file mode 100644
+index 0000000..358716e
+Binary files /dev/null and "b/devlog/rounds/0006-20260914-2042/screenshots/010-\345\234\250\351\207\215\346\226\260\350\257\273\345\217\226\345\210\206\347\261\273\347\232\204\346\227\266\345\200\231\350\203\275\345\220\246\350\216\267\345\217\226\344\270\200\346\254\241\351\241\265\351\235\242\347\232\204\346\200\273\351\241\265\346\225\260\347\204\266\345\220\216\345\206\231\351\201\223\344\270\213\351\235\242.png" differ
+diff --git a/plugins/annotator/bin/check.mjs b/plugins/annotator/bin/check.mjs
+index 7e8c40b..a0bda8d 100644
+--- a/plugins/annotator/bin/check.mjs
++++ b/plugins/annotator/bin/check.mjs
+@@ -115,6 +115,65 @@ const SCRIPT = `(async () => {
+   await sleep(2200)
+   out.toastAfterExport = document.querySelector('.toast')?.textContent ?? null
+ 
++  // 6.5) 批注框必须完整落在视口内，且「添加」够得着
++  //      挑一个贴右下角的元素，旧实现（按固定高度硬算）会把它顶到屏幕外
++  btn('点选')?.click()
++  await sleep(200)
++  {
++    // 侧栏底部按钮正好贴在视口下沿，最能暴露「批注框被顶到屏幕外」的问题
++    const target = document.querySelector('.sidebar-foot .side-item') || document.querySelector('.card')
++    if (!target) return { error: 'no target for corner test' }
++    const r = target.getBoundingClientRect()
++    fire(target, 'mousedown', r.x + r.width / 2, r.y + r.height / 2)
++    fire(target, 'mouseup', r.x + r.width / 2, r.y + r.height / 2)
++    await sleep(450)
++    const box = document.querySelector('.gugu-anno-editor')
++    out.cornerEditorOpen = Boolean(box)
++    if (box) {
++      const br = box.getBoundingClientRect()
++      out.editorRect = [Math.round(br.left), Math.round(br.top), Math.round(br.width), Math.round(br.height)]
++      out.editorInViewport =
++        br.left >= -1 && br.top >= -1 && br.right <= window.innerWidth + 1 && br.bottom <= window.innerHeight + 1
++      const addBtn = Array.from(box.querySelectorAll('button')).find((b) => b.textContent.trim() === '添加')
++      if (addBtn) {
++        const ar = addBtn.getBoundingClientRect()
++        const hit = document.elementFromPoint(ar.left + ar.width / 2, ar.top + ar.height / 2)
++        out.addButtonHittable = hit === addBtn
++      }
++    }
++    // 顺手验证：保存后仍然停在「点选」，可以直接继续标注
++    const ta3 = box ? box.querySelector('textarea') : null
++    if (ta3) {
++      setTextarea(ta3, '连续标注第一笔')
++      await sleep(150)
++      Array.from(box.querySelectorAll('button')).find((b) => b.textContent.trim() === '添加')?.click()
++      await sleep(450)
++      out.modeAfterSave = [...document.querySelectorAll('.gugu-anno-seg button')].find((b) => b.className === 'on')?.textContent
++      const pinsBefore = document.querySelectorAll('.gugu-anno-pin').length
++      // 不点任何模式按钮，直接再点一次元素
++      const chip2 = document.querySelector('.tag-chip')
++      const cr = chip2.getBoundingClientRect()
++      fire(chip2, 'mousedown', cr.x + cr.width / 2, cr.y + cr.height / 2)
++      fire(chip2, 'mouseup', cr.x + cr.width / 2, cr.y + cr.height / 2)
++      await sleep(450)
++      out.continuedWithoutReclick = Boolean(document.querySelector('.gugu-anno-editor'))
++      const ta4 = document.querySelector('.gugu-anno-editor textarea')
++      if (ta4) {
++        setTextarea(ta4, '连续标注第二笔')
++        await sleep(150)
++        Array.from(document.querySelectorAll('.gugu-anno-editor button'))
++          .find((b) => b.textContent.trim() === '添加')
++          ?.click()
++        await sleep(400)
++      }
++      out.pinsAfterChain = document.querySelectorAll('.gugu-anno-pin').length
++      out.pinsBeforeChain = pinsBefore
++    }
++    // 恢复浏览模式
++    btn('浏览')?.click()
++    await sleep(200)
++  }
++
+   // 7) 工具栏层级：标注记号不能盖住工具栏
+   // 前面的流程耗时已经超过 5s，工具栏此时多半已自动收起，先点把手展开
+   const handleEarly = document.querySelector('.gugu-anno-handle')
+@@ -151,6 +210,19 @@ const SCRIPT = `(async () => {
+     return true
+   })()
+ 
++  // 7.8) 标注清单跟随「显示标注」一起显隐
++  {
++    btn('浏览')?.click()
++    await sleep(250)
++    out.panelVisibleBefore = Boolean(document.querySelector('.gugu-anno-panel'))
++    btn('隐藏标注')?.click()
++    await sleep(350)
++    out.panelVisibleWhenPinsHidden = Boolean(document.querySelector('.gugu-anno-panel'))
++    btn('显示标注')?.click()
++    await sleep(350)
++    out.panelVisibleAfter = Boolean(document.querySelector('.gugu-anno-panel'))
++  }
++
+   // 8) 说明气泡：点击选项后出现，5s 后消失
+   btn('点选')?.click()
+   await sleep(250)
+@@ -249,7 +321,7 @@ const checks = [
+   ['提交后生成图钉', result.pinsAfterFirst === 1],
+   ['框选区域也能弹出批注框', result.regionEditorOpen === true],
+   ['第二条标注生成', result.pinsAfterSecond === 2],
+-  ['提交后自动回到浏览模式', result.modeAfterSubmit === '浏览'],
++  ['框选保存后仍停留在框选模式', result.modeAfterSubmit === '框选'],
+   ['标注清单列出两条', result.panelItems === 2],
+   ['导出弹窗能打开', result.modalOpen === true],
+   ['导出后给出轮次提示', /devlog\/rounds/.test(result.toastAfterExport ?? '')],
+@@ -261,6 +333,13 @@ const checks = [
+   ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
+   ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
+   ['工具栏整体位于窗口拖动区下方', result.toolbarBelowDragZone === true],
++  ['贴边元素的批注框完整落在视口内', result.editorInViewport === true],
++  ['批注框的「添加」按钮点得到', result.addButtonHittable === true],
++  ['保存后仍停留在点选模式', result.modeAfterSave === '点选'],
++  ['无需重新点模式即可连续标注', result.continuedWithoutReclick === true],
++  ['标注清单默认可见', result.panelVisibleBefore === true],
++  ['隐藏标注时清单一起隐藏', result.panelVisibleWhenPinsHidden === false],
++  ['恢复显示后清单回来', result.panelVisibleAfter === true],
+   ['工具栏层级高于标注记号', result.toolbarAbovePins === true],
+   ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
+   ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],
+diff --git a/plugins/annotator/renderer/annotator.css b/plugins/annotator/renderer/annotator.css
+index 2fca9de..60ca324 100644
+--- a/plugins/annotator/renderer/annotator.css
++++ b/plugins/annotator/renderer/annotator.css
+@@ -244,6 +244,9 @@
+   position: absolute;
+   pointer-events: auto;
+   width: 360px;
++  /* 兜底：极端情况下也保证��框在视口内且可滚动，「添加」永远点得到 */
++  max-height: calc(100vh - 24px);
++  overflow-y: auto;
+   padding: 13px 14px 11px;
+   border-radius: 13px;
+   background: var(--anno-panel);
+diff --git a/plugins/annotator/renderer/index.tsx b/plugins/annotator/renderer/index.tsx
+index 984ccba..9a1818f 100644
+--- a/plugins/annotator/renderer/index.tsx
++++ b/plugins/annotator/renderer/index.tsx
+@@ -11,7 +11,7 @@
+  *    这样可以直接用 e.target 拿到真实元素，也避免遮罩挡住自己的工具栏。
+  *  - 位置同时记「视口坐标」和「文档坐标」：前者用于截图裁切，后者保证滚动后标注还在原地。
+  */
+-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
++import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+ import type { PluginOverlayProps, PluginTopBarActionProps, RendererPluginModule } from '@shared/plugin'
+ import {
+   CATEGORY_OPTIONS,
+@@ -333,7 +333,8 @@ function AnnotatorOverlay({
+         }
+       ])
+       setDraft(null)
+-      setMode('browse')
++      // 刻意不回到浏览模式：连续标注时不该每次都重新点一遍「点选 / 框选」
++      setMode((current) => (current === 'browse' ? 'browse' : current))
+     },
+     [draft]
+   )
+@@ -553,7 +554,8 @@ function AnnotatorOverlay({
+       )}
+ 
+       {/* ------------------------------------------------------------ 标注列表 */}
+-      {annotations.length > 0 && mode === 'browse' && (
++      {/* 清单与标注记号同生共死：隐藏标注时清单也一起收起来 */}
++      {showPins && annotations.length > 0 && (
+         <div className="gugu-anno-panel">
+           <div className="gugu-anno-panel-head">
+             <b>标注清单</b>
+@@ -639,6 +641,8 @@ function CommentEditor({
+   const [category, setCategory] = useState<AnnotationCategory>(editing?.category ?? 'style')
+   const [severity, setSeverity] = useState<AnnotationSeverity>(editing?.severity ?? 'should')
+   const ref = useRef<HTMLTextAreaElement | null>(null)
++  const boxRef = useRef<HTMLDivElement | null>(null)
++  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+ 
+   useEffect(() => {
+     ref.current?.focus()
+@@ -647,13 +651,47 @@ function CommentEditor({
+   const target = editing?.target ?? draft?.target ?? null
+   const rect = editing?.rect ?? draft?.rect ?? null
+ 
+-  // 面板贴着标注框放，超出视口就挪回来
+-  const style: React.CSSProperties = rect
+-    ? {
+-        left: Math.min(Math.max(12, rect.x), window.innerWidth - 372),
+-        top: Math.min(Math.max(12, rect.y + rect.height + 10), window.innerHeight - 300)
++  /**
++   * 批注框不能跑到视口外面 —— 之前是按「面板高 300px」硬算的，
++   * 内容一多（标签长、批注长）就会把「添加」按钮顶到屏幕外点不到。
++   * 改成先渲染再量实际尺寸，然后：优先贴在标注框下方，下方放不下就翻到上方，
++   * 最后统一夹进视口内。
++   */
++  useLayoutEffect(() => {
++    const el = boxRef.current
++    if (!el) return
++    const place = (): void => {
++      const width = el.offsetWidth || 360
++      const height = el.offsetHeight || 260
++      const margin = 12
++      const gap = 10
++      if (!rect) {
++        setPos({ left: margin, top: 78 })
++        return
++      }
++      let top = rect.y + rect.height + gap
++      if (top + height > window.innerHeight - margin) {
++        const above = rect.y - gap - height
++        top = above >= margin ? above : window.innerHeight - height - margin
+       }
+-    : { left: 12, top: 90 }
++      let left = rect.x
++      if (left + width > window.innerWidth - margin) left = rect.x + rect.width - width
++      left = Math.min(Math.max(margin, left), Math.max(margin, window.innerWidth - width - margin))
++      top = Math.min(Math.max(margin, top), Math.max(margin, window.innerHeight - height - margin))
++      setPos({ left, top })
++    }
++    place()
++    const observer = new ResizeObserver(place)
++    observer.observe(el)
++    window.addEventListener('resize', place)
++    return () => {
++      observer.disconnect()
++      window.removeEventListener('resize', place)
++    }
++  }, [rect])
++
++  // 还没量出尺寸前先藏在屏幕外，避免闪一下再跳位
++  const style: React.CSSProperties = pos ? { left: pos.left, top: pos.top } : { left: -9999, top: -9999 }
+ 
+   const submit = (): void => {
+     const comment = text.trim()
+@@ -663,7 +701,7 @@ function CommentEditor({
+   }
+ 
+   return (
+-    <div className="gugu-anno-editor" style={style}>
++    <div ref={boxRef} className="gugu-anno-editor" style={style}>
+       <div className="gugu-anno-editor-head">
+         {editing ? `编辑标注 #${editing.index}` : draft?.kind === 'region' ? '新增区域标注' : '新增元素标注'}
+         <button className="gugu-anno-x" onClick={onCancel} title="取消 (Esc)">
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index 8f31c2a..140ce10 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -226,6 +226,18 @@ const SCRIPT = `(async () => {
+     toggle?.click()
+     await sleep(700)
+     out.immersiveHidesPanel = lb?.classList.contains('immersive') === true && side ? Number(getComputedStyle(side).opacity) < 0.5 : false
++    // 右栏滑走后必须还有别的出口，否则用户退不出沉浸模式
++    const exitBtn = document.querySelector('.lb-exit-immersive')
++    out.immersiveExitVisible = Boolean(exitBtn)
++    if (exitBtn) {
++      const er = exitBtn.getBoundingClientRect()
++      out.immersiveExitHittable = document.elementFromPoint(er.left + er.width / 2, er.top + er.height / 2) === exitBtn
++      exitBtn.click()
++      await sleep(600)
++      out.immersiveExitedByStageBtn = !lb?.classList.contains('immersive')
++      toggle?.click()
++      await sleep(600)
++    }
+     out.immersiveOpacityBefore = before
+     toggle?.click()
+     await sleep(700)
+@@ -346,6 +358,8 @@ const checks = [
+   ['内容页无横向溢出', result.mainOverflowX === 0],
+   ['灯箱有沉浸模式开关', result.immersiveToggle === true],
+   ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
++  ['沉浸模式下仍可退出（舞台内有出口）', result.immersiveExitHittable === true],
++  ['舞台出口能真正退出沉浸模式', result.immersiveExitedByStageBtn === true],
+   ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
+   ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
+   ['视图密度只剩一个按钮', result.viewToggleCount === 1],
+diff --git a/src/main/crawler/engine.ts b/src/main/crawler/engine.ts
+index 036d705..9967c5d 100644
+--- a/src/main/crawler/engine.ts
++++ b/src/main/crawler/engine.ts
+@@ -143,6 +143,15 @@ export class CrawlEngine {
+     return info
+   }
+ 
++  /**
++   * 查某个抓取目标的总页数 / 总条数。
++   * 只请求第 1 页，解析底部的「共 N 页 M 条数据」，用于界面上给个规模预期。
++   */
++  async fetchPageInfo(target: SiteTarget): Promise<{ totalPages: number | null; totalItems: number | null }> {
++    const { html } = await this.http.getHtml(listUrl(target, 1))
++    return parsePagination(html)
++  }
++
+   /**
+    * 启动一次抓取。立即返回 jobId，实际工作在后台推进。
+    */
+diff --git a/src/main/crawler/parser.ts b/src/main/crawler/parser.ts
+index 7f2a17f..92e6ffd 100644
+--- a/src/main/crawler/parser.ts
++++ b/src/main/crawler/parser.ts
+@@ -124,6 +124,20 @@ export function parsePagination(html: string): { totalPages: number | null; tota
+ 
+ /* -------------------------------------------------------------- 导航分类 */
+ 
++/**
++ * 导航里的「示例模板」占位名。
++ *
++ * 站点在 <nav> 里留了一段注释掉的格式说明：
++ *   <a class="nav_one">...一级分类名</a>
++ *   <a href=".../plate/一级分类名/wd/二级分类名1.html">二级分类名1</a>
++ * 注释里同样有大段**真实**分类（例如搞笑图片，URL 至今可用）需要采集，
++ * 所以不能简单跳过注释，而要把这段模板单独识别出来丢掉 ——
++ * 否则它会变成列表里的第一个分类，���取时默认就选中一个不存在的目标。
++ */
++function isTemplatePlaceholder(name: string): boolean {
++  return name.includes('分类名')
++}
++
+ /**
+  * 解析顶部导航，得到「一级分类 -> 二级分类」树。
+  * 导航里有大段被注释掉的分类（例如搞笑图片），它们对应的 URL 依然可用，因此一并采集。
+@@ -144,6 +158,7 @@ export function parseNav(html: string): RawNavPlate[] {
+     const nameHtml = firstMatch(source, /<\/span>([\s\S]*?)<\/p>/)
+     const name = nameHtml ? stripTags(nameHtml) : ''
+     if (!name || name.length > 20) continue
++    if (isTemplatePlaceholder(name)) continue
+ 
+     // 二级分类：优先看 nav_two 区块里的链接，没有则退化为整个片段里的链接
+     const sectionStart = source.indexOf('nav_two')
+@@ -153,7 +168,7 @@ export function parseNav(html: string): RawNavPlate[] {
+     let lm: RegExpExecArray | null
+     while ((lm = linkRe.exec(scope))) {
+       const w = decodeURIComponent(lm[1])
+-      if (w && w !== '排行' && !words.includes(w)) words.push(w)
++      if (w && w !== '排行' && !isTemplatePlaceholder(w) && !words.includes(w)) words.push(w)
+     }
+     const existing = plates.find((p) => p.name === name)
+     if (existing) {
+diff --git a/src/main/ipc.ts b/src/main/ipc.ts
+index 2252bb3..1b887e1 100644
+--- a/src/main/ipc.ts
++++ b/src/main/ipc.ts
+@@ -38,6 +38,7 @@ export const IPC = {
+   windowClose: 'window:close',
+   windowState: 'window:state',
+   siteInfo: 'crawl:siteInfo',
++  crawlTargetInfo: 'crawl:targetInfo',
+   crawlStart: 'crawl:start',
+   crawlPause: 'crawl:pause',
+   crawlResume: 'crawl:resume',
+@@ -156,6 +157,15 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
+ 
+   handle(IPC.siteInfo, () => ctx.crawler.fetchSiteInfo(false))
+ 
++  handle(IPC.crawlTargetInfo, (target: { kind: string; plate?: string | null; word?: string | null; url?: string | null }) =>
++    ctx.crawler.fetchPageInfo({
++      kind: target.kind as 'home' | 'category' | 'search' | 'ranking' | 'custom',
++      plate: target.plate ?? null,
++      word: target.word ?? null,
++      url: target.url ?? null
++    })
++  )
++
+   handle(IPC.crawlStart, async (request: CrawlRequest): Promise<number> => {
+     const jobId = await ctx.crawler.start(request)
+     const progress = ctx.crawler.currentProgress()
+diff --git a/src/preload/index.ts b/src/preload/index.ts
+index e65df4a..c00e7be 100644
+--- a/src/preload/index.ts
++++ b/src/preload/index.ts
+@@ -27,6 +27,7 @@ const IPC = {
+   windowClose: 'window:close',
+   windowState: 'window:state',
+   siteInfo: 'crawl:siteInfo',
++  crawlTargetInfo: 'crawl:targetInfo',
+   crawlStart: 'crawl:start',
+   crawlPause: 'crawl:pause',
+   crawlResume: 'crawl:resume',
+@@ -64,6 +65,7 @@ const api = {
+   },
+   crawl: {
+     siteInfo: () => ipcRenderer.invoke(IPC.siteInfo),
++    targetInfo: (target: unknown) => ipcRenderer.invoke(IPC.crawlTargetInfo, target),
+     start: (request: unknown) => ipcRenderer.invoke(IPC.crawlStart, request),
+     pause: () => ipcRenderer.invoke(IPC.crawlPause),
+     resume: () => ipcRenderer.invoke(IPC.crawlResume),
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index 10ea430..fc0e00a 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -851,11 +851,11 @@ export default function App(): JSX.Element {
+             <h3>帮助</h3>
+             <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
+               <dt>搜索</dt>
+-              <dd>标题、标签、分类、Pixiv ID 都能搜</dd>
+-              <dt>卡片右键</dt>
++              <dd>标题、标签、Pixiv ID 都能搜</dd>
++              <dt>卡片</dt>
+               <dd>收藏 / 复制 pid / 打开于（文件管理器、Pixiv）</dd>
+               <dt>灯箱</dt>
+-              <dd>← → 翻页，Esc 关闭，滚轮缩放，左键拖动</dd>
++              <dd>左键拖动，滚轮缩放，← → 翻页，Esc 关闭</dd>
+             </dl>
+             <div className="sep" />
+             <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
+diff --git a/src/renderer/src/components/ContextMenu.tsx b/src/renderer/src/components/ContextMenu.tsx
+index 9b51f7c..fa7f9ce 100644
+--- a/src/renderer/src/components/ContextMenu.tsx
++++ b/src/renderer/src/components/ContextMenu.tsx
+@@ -25,6 +25,26 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
+   const ref = useRef<HTMLDivElement | null>(null)
+   const [pos, setPos] = useState({ left: x, top: y })
+   const [openKey, setOpenKey] = useState<string | null>(null)
++  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
++
++  /**
++   * 折叠子项的收起刻意做得「迟钝」一些：
++   * 菜单项和子菜单之间有一道视觉间隙，鼠标慢速移过去时会经过空白，
++   * 立刻收起的话子项根本点不到。所以改成离开 2s 后才收，
++   * 中途只要回到父项或进入子项就取消。
++   */
++  const cancelCollapse = (): void => {
++    if (collapseTimer.current) {
++      clearTimeout(collapseTimer.current)
++      collapseTimer.current = null
++    }
++  }
++  const scheduleCollapse = (key: string): void => {
++    cancelCollapse()
++    collapseTimer.current = setTimeout(() => setOpenKey((k) => (k === key ? null : k)), 2000)
++  }
++
++  useEffect(() => cancelCollapse, [])
+ 
+   // 贴边时把菜单收进视口
+   useLayoutEffect(() => {
+@@ -65,12 +85,19 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
+       onContextMenu={(e) => e.preventDefault()}
+     >
+       {entries.map((entry) => (
+-        <div key={entry.key}>
++        <div
++          key={entry.key}
++          onMouseEnter={() => {
++            cancelCollapse()
++            if (entry.children?.length) setOpenKey(entry.key)
++          }}
++          onMouseLeave={() => {
++            if (entry.children?.length) scheduleCollapse(entry.key)
++          }}
++        >
+           <button
+             className={'ctx-item' + (entry.danger ? ' danger' : '') + (openKey === entry.key ? ' open' : '')}
+             disabled={entry.disabled}
+-            onMouseEnter={() => setOpenKey((k) => (entry.children?.length ? entry.key : k))}
+-            onMouseLeave={() => setOpenKey((k) => (k === entry.key && entry.children?.length ? null : k))}
+             onClick={() => {
+               if (entry.children?.length) return
+               entry.onSelect?.()
+@@ -88,11 +115,7 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
+             ) : null}
+           </button>
+           {entry.children?.length && openKey === entry.key ? (
+-            <div
+-              className="ctx-sub"
+-              onMouseEnter={() => setOpenKey(entry.key)}
+-              onMouseLeave={() => setOpenKey((k) => (k === entry.key ? null : k))}
+-            >
++            <div className="ctx-sub" onMouseEnter={() => cancelCollapse()}>
+               {entry.children.map((child) => (
+                 <button
+                   key={child.key}
+diff --git a/src/renderer/src/components/CrawlPanel.tsx b/src/renderer/src/components/CrawlPanel.tsx
+index b77c186..20b6ae1 100644
+--- a/src/renderer/src/components/CrawlPanel.tsx
++++ b/src/renderer/src/components/CrawlPanel.tsx
+@@ -45,6 +45,8 @@ export default function CrawlPanel({
+   const [retries, setRetries] = useState(settings.retries)
+   const [resumeFromMarks, setResumeFromMarks] = useState(false)
+   const [starting, setStarting] = useState(false)
++  /** 当前首个目标的规模，用于给「结束页」之类的输入一个参照 */
++  const [pageInfo, setPageInfo] = useState<{ totalPages: number | null; totalItems: number | null } | null>(null)
+ 
+   useEffect(() => {
+     setListConcurrency(settings.listConcurrency)
+@@ -85,6 +87,30 @@ export default function CrawlPanel({
+     return list
+   }, [site, selected])
+ 
++  const firstTargetKey =
++    targets.length > 0 ? [targets[0].kind, targets[0].plate, targets[0].word].join('|') : ''
++
++  /** 目标一变就顺手问一次规模，界面上的「约 N 页」就是从这里来的 */
++  useEffect(() => {
++    if (!firstTargetKey) {
++      setPageInfo(null)
++      return
++    }
++    let alive = true
++    void api.crawl
++      .targetInfo(targets[0])
++      .then((info) => {
++        if (alive) setPageInfo(info)
++      })
++      .catch(() => {
++        if (alive) setPageInfo(null)
++      })
++    return () => {
++      alive = false
++    }
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [firstTargetKey])
++
+   const active = progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
+ 
+   const start = async (): Promise<void> => {
+@@ -149,7 +175,9 @@ export default function CrawlPanel({
+           <IconRadar width={14} height={14} />
+           抓取目标
+           <span className="hint">
+-            已选 {targets.length} 个{site ? ` · 站点分类读取于 ${new Date(site.fetchedAt).toLocaleTimeString()}` : ''}
++            已选 {targets.length} 个
++            {site ? ` · 站点分类读取于 ${new Date(site.fetchedAt).toLocaleTimeString()}` : ''}
++            {pageInfo?.totalPages ? ` · 当前目标共 ${pageInfo.totalPages} 页` : ''}
+           </span>
+           <div className="spacer" />
+           <button className="btn sm ghost" onClick={() => void loadSite()} disabled={loadingSite || active}>
+@@ -231,7 +259,11 @@ export default function CrawlPanel({
+               value={pageTo}
+               onChange={(e) => setPageTo(e.target.value)}
+             />
+-            <span className="help">Pixiv萌图 目前约 1430 页</span>
++            <span className="help">
++              {pageInfo?.totalPages
++                ? `当前目标共 ${pageInfo.totalPages} 页${pageInfo.totalItems ? ` · ${pageInfo.totalItems} 条` : ''}`
++                : '每页 10 条'}
++            </span>
+           </div>
+           <div className="field">
+             <label>最多处理条目</label>
+diff --git a/src/renderer/src/components/GalleryGrid.tsx b/src/renderer/src/components/GalleryGrid.tsx
+index 4cf4209..7f7962d 100644
+--- a/src/renderer/src/components/GalleryGrid.tsx
++++ b/src/renderer/src/components/GalleryGrid.tsx
+@@ -220,7 +220,6 @@ function Card({
+     if (img?.complete && img.naturalWidth > 0) setLoaded(true)
+   }, [])
+ 
+-  const ratio = item.width && item.height ? item.width / item.height : 0.75
+   const imgHeight = placement?.imgHeight ?? 260
+   const geometry: React.CSSProperties | undefined = placement
+     ? {
+@@ -263,7 +262,6 @@ function Card({
+ 
+         <div className="card-badges">
+           {item.fileStatus !== 'ready' && <span className="badge">仅索引</span>}
+-          {item.width != null && ratio >= SPAN2_RATIO && <span className="badge">横图</span>}
+         </div>
+ 
+         <div className="card-overlay">
+diff --git a/src/renderer/src/components/Lightbox.tsx b/src/renderer/src/components/Lightbox.tsx
+index e9500e7..fbcda31 100644
+--- a/src/renderer/src/components/Lightbox.tsx
++++ b/src/renderer/src/components/Lightbox.tsx
+@@ -235,6 +235,24 @@ export default function Lightbox({
+           </div>
+         )}
+ 
++        {/* 沉浸模式把右栏整块滑走了，连开关一起没了出口，所以舞台里要留一个 */}
++        {immersive && (
++          <button
++            className="lb-exit-immersive"
++            onClick={(e) => {
++              e.stopPropagation()
++              setImmersive(false)
++            }}
++            title="退出沉浸模式"
++          >
++            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
++              <rect x="3" y="4" width="18" height="16" rx="2" />
++              <path d="M15 4v16" />
++            </svg>
++            退出沉浸
++          </button>
++        )}
++
+         <button className="lb-nav prev" onClick={() => step(-1)} disabled={!prev} title="上一张 (←)">
+           <IconChevronLeft width={20} height={20} />
+         </button>
+@@ -249,7 +267,7 @@ export default function Lightbox({
+           <button
+             className={'lb-immersive' + (immersive ? ' on' : '')}
+             onClick={() => setImmersive((v) => !v)}
+-            title={immersive ? '退出沉浸模式' : '沉浸模式：隐藏右侧信息栏'}
++            title="沉浸模式"
+             aria-pressed={immersive}
+           >
+             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+@@ -417,7 +435,7 @@ export default function Lightbox({
+           </button>
+         </div>
+ 
+-        <p className="lb-tip">滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭</p>
++        <p className="lb-tip">左键拖动 · 滚轮缩放 · ← → 翻页 · Esc 关闭</p>
+ 
+         {detail && detail.tags.length > 0 && (
+           <>
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index f6b7854..1041bbf 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -1342,6 +1342,29 @@ body.resizing * {
+   pointer-events: none;
+ }
+ 
++.lb-exit-immersive {
++  position: absolute;
++  top: 14px;
++  right: 14px;
++  z-index: 5;
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  height: 34px;
++  padding: 0 14px;
++  border-radius: 9px;
++  border: 1px solid rgba(255, 255, 255, 0.14);
++  background: rgba(12, 16, 24, 0.66);
++  color: #e7ebf3;
++  cursor: pointer;
++  backdrop-filter: blur(10px);
++  transition: all 0.16s var(--ease);
++}
++.lb-exit-immersive:hover {
++  background: rgba(124, 156, 255, 0.24);
++  border-color: rgba(124, 156, 255, 0.5);
++}
++
+ .lb-immersive {
+   flex: none;
+   width: 30px;
+@@ -1943,11 +1966,11 @@ body.resizing * {
+   place-items: center;
+   color: var(--text-faint);
+ }
++/* 去掉上下外边距，父项与子项之间不留「空白陷阱」 */
+ .ctx-sub {
+   padding-left: 14px;
+-  margin: 2px 0 4px;
++  margin: 0 0 2px 16px;
+   border-left: 1px solid var(--border);
+-  margin-left: 16px;
+ }
+ 
+ /* 标注模式开启时高亮顶栏按钮，避免忘记自己还开着工具 */
+diff --git a/src/shared/bridge.ts b/src/shared/bridge.ts
+index 65d482b..0eb9321 100644
+--- a/src/shared/bridge.ts
++++ b/src/shared/bridge.ts
+@@ -47,6 +47,8 @@ export interface GuguBridge {
+   }
+   crawl: {
+     siteInfo(): Promise<CrawlSiteInfo>
++    /** 某个目标的总页数 / 总条数，用于在界面上给个规模预期 */
++    targetInfo(target: unknown): Promise<{ totalPages: number | null; totalItems: number | null }>
+     start(request: unknown): Promise<number>
+     pause(): Promise<boolean>
+     resume(): Promise<boolean>
+diff --git a/tests/parser.test.ts b/tests/parser.test.ts
+index e10b8b4..40a52c7 100644
+--- a/tests/parser.test.ts
++++ b/tests/parser.test.ts
+@@ -124,6 +124,9 @@ describe('导航解析', () => {
+     expect(acg!.words).toContain('电脑壁纸')
+     // 被注释掉的搞笑图片分类也应被采集到
+     expect(plates.some((p) => p.name === '搞笑图片')).toBe(true)
++    // 但注释里的「示例模板」必须被丢掉，否则它会变成默认选中的第一个分类
++    expect(plates.some((p) => p.name.includes('分类名'))).toBe(false)
++    expect(plates.every((p) => p.words.every((w) => !w.includes('分类名')))).toBe(true)
+   })
+ })
