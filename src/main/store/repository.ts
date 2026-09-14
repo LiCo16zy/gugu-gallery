@@ -32,6 +32,8 @@ export interface ItemUpsert {
   remoteExt: string | null
   previewUrl: string | null
   downloadUrl: string | null
+  /** 发现该条目的列表页码 */
+  page: number | null
   tags: string[]
 }
 
@@ -115,8 +117,8 @@ export class Repository {
         this.db.run(
           `INSERT INTO items (id, detail_url, source_url, plate, word, title, width, height, bytes,
                               uploader, views, published_at, remote_path, remote_ext,
-                              preview_url, download_url, indexed_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                              preview_url, download_url, page, indexed_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
            ON CONFLICT(id) DO UPDATE SET
              detail_url   = excluded.detail_url,
              source_url   = COALESCE(excluded.source_url, items.source_url),
@@ -133,6 +135,7 @@ export class Repository {
              remote_ext   = COALESCE(excluded.remote_ext, items.remote_ext),
              preview_url  = COALESCE(excluded.preview_url, items.preview_url),
              download_url = COALESCE(excluded.download_url, items.download_url),
+             page         = COALESCE(excluded.page, items.page),
              updated_at   = excluded.updated_at`,
           [
             it.id,
@@ -151,6 +154,7 @@ export class Repository {
             it.remoteExt,
             it.previewUrl,
             it.downloadUrl,
+            it.page,
             ts,
             ts
           ]
@@ -566,6 +570,14 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] } 
   if (query.minHeight && query.minHeight > 0) {
     clauses.push('COALESCE(i.height, 0) >= ?')
     params.push(query.minHeight)
+  }
+  if (query.pageFrom != null) {
+    clauses.push('i.page IS NOT NULL AND i.page >= ?')
+    params.push(query.pageFrom)
+  }
+  if (query.pageTo != null) {
+    clauses.push('i.page IS NOT NULL AND i.page <= ?')
+    params.push(query.pageTo)
   }
   if (query.orientation && query.orientation !== 'any') {
     if (query.orientation === 'landscape') clauses.push('i.width > i.height')

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Facet, LibraryStats, PlateFacet } from '@shared/types'
+import type { Facet, LibraryStats } from '@shared/types'
 import { formatBytes } from '../api'
 import type { Filters, View } from '../App'
 import { IconFolder, IconHeart, IconImage, IconRadar, IconInfo, IconSettings, IconDownload } from './Icons'
@@ -7,7 +7,8 @@ import { IconFolder, IconHeart, IconImage, IconRadar, IconInfo, IconSettings, Ic
 interface Props {
   collapsed: boolean
   stats: LibraryStats | null
-  plates: PlateFacet[]
+  /** 摊平后的分类（名字 + 条目数） */
+  categories: { name: string; count: number }[]
   topTags: Facet[]
   filters: Filters
   view: View
@@ -26,7 +27,7 @@ const isWeakTag = (name: string): boolean => /^[0-9A-Za-z]$/.test(name)
 export default function Sidebar({
   collapsed,
   stats,
-  plates,
+  categories,
   topTags,
   filters,
   view,
@@ -38,7 +39,6 @@ export default function Sidebar({
   onFilters,
   onToggleTag
 }: Props): JSX.Element {
-  const [expanded, setExpanded] = useState<string | null>(null)
   const [tagsOpen, setTagsOpen] = useState(true)
 
   const isLibraryAll =
@@ -108,48 +108,27 @@ export default function Sidebar({
           </button>
         </div>
 
-        {!collapsed && plates.length > 0 && (
+        {!collapsed && categories.length > 0 && (
           <div className="side-section">
-            {/* 分类不再需要「全部收起」按钮，展开状态挂在每个一级分类自己身上 */}
+            {/*
+              分类只有一层：站点原来是「ACG图片 > Pixiv萌图」，
+              但真正有价值的就那几栏，摊平之后界面更短，也不用先展开再点。
+            */}
             <div className="side-title">
               <span>分类</span>
             </div>
-            {plates.map((plate) => {
-              const open = expanded === plate.name
-              const activePlate = filters.plate === plate.name && !filters.word
-              return (
-                <div key={plate.name}>
-                  <button
-                    data-component="Sidebar/Plate"
-                    className={`side-item${activePlate ? ' active' : ''}`}
-                    onClick={() => {
-                      setExpanded(open ? null : plate.name)
-                      go(() => onFilters({ plate: plate.name, word: null }))
-                    }}
-                    aria-expanded={open}
-                  >
-                    <Caret open={open} />
-                    <span className="label">{plate.name}</span>
-                    <span className="count">{plate.count}</span>
-                  </button>
-                  <div className={`side-collapsible${open ? ' open' : ''}`}>
-                    {plate.words.map((word) => (
-                      <button
-                        data-component="Sidebar/Word"
-                        key={word.name}
-                        className={`side-item sub${
-                          filters.plate === plate.name && filters.word === word.name ? ' active' : ''
-                        }`}
-                        onClick={() => go(() => onFilters({ plate: plate.name, word: word.name }))}
-                      >
-                        <span className="label">{word.name}</span>
-                        <span className="count">{word.count}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
+            {categories.map((category) => (
+              <button
+                key={category.name}
+                data-component="Sidebar/Category"
+                className={`side-item${filters.word === category.name && !filters.plate ? ' active' : ''}`}
+                onClick={() => go(() => onFilters({ plate: null, word: category.name }))}
+              >
+                <IconFolder />
+                <span className="label">{category.name}</span>
+                <span className="count">{category.count}</span>
+              </button>
+            ))}
           </div>
         )}
 

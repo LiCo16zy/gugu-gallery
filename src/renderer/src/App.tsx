@@ -23,6 +23,7 @@ import ContextMenu, { type MenuEntry } from './components/ContextMenu'
 import Toast, { type ToastPayload } from './components/Toast'
 import SetupWizard from './components/SetupWizard'
 import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
+import { visibleCategories } from '@shared/categories'
 import { loadedPlugins } from './plugins'
 import {
   IconArrowUp,
@@ -116,6 +117,17 @@ export default function App(): JSX.Element {
   const [stats, setStats] = useState<LibraryStats | null>(null)
   const [plates, setPlates] = useState<PlateFacet[]>([])
   const [topTags, setTopTags] = useState<Facet[]>([])
+
+  /** 摊平分类：只保留应用定义的几栏，并挂上各自的条目数 */
+  const categories = useMemo(() => {
+    const counts = new Map<number | string, number>()
+    for (const plate of plates) {
+      for (const word of plate.words) counts.set(word.name, word.count)
+    }
+    return visibleCategories(false)
+      .map((c) => ({ name: c.name, count: counts.get(c.name) ?? 0 }))
+      .filter((c) => c.count > 0)
+  }, [plates])
 
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
   const [debouncedText, setDebouncedText] = useState('')
@@ -608,7 +620,7 @@ export default function App(): JSX.Element {
       <Sidebar
         collapsed={settings.sidebarCollapsed}
         stats={stats}
-        plates={plates}
+        categories={categories}
         topTags={topTags}
         filters={filters}
         view={view}

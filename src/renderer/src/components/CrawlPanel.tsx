@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CrawlLogLine, CrawlProgress, CrawlRequest, TargetInput } from '@shared/types'
+import { visibleCategories } from '@shared/categories'
 import type { AppSettings } from '@shared/types'
 import { api, formatBytes, formatDuration, formatSpeed } from '../api'
 import type { CrawlSiteInfo } from '../api'
 import { IconPause, IconPlay, IconRadar, IconRefresh, IconStop, IconTrash } from './Icons'
-
 interface Props {
   settings: AppSettings
   progress: CrawlProgress | null
@@ -13,9 +13,6 @@ interface Props {
   onFinished: () => Promise<void> | void
   onToast: (message: string) => void
 }
-
-const key = (plate: string, word: string): string => `${plate}\u0000${word}`
-
 export default function CrawlPanel({
   settings,
   progress,
@@ -28,7 +25,6 @@ export default function CrawlPanel({
   const [siteError, setSiteError] = useState<string | null>(null)
   const [loadingSite, setLoadingSite] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-
   const [pageFrom, setPageFrom] = useState(1)
   const [pageTo, setPageTo] = useState<string>('')
   const [maxItems, setMaxItems] = useState<string>('')
@@ -47,23 +43,21 @@ export default function CrawlPanel({
   const [starting, setStarting] = useState(false)
   /** 当前首个目标的规模，用于给「结束页」之类的输入一个参照 */
   const [pageInfo, setPageInfo] = useState<{ totalPages: number | null; totalItems: number | null } | null>(null)
-
   useEffect(() => {
     setListConcurrency(settings.listConcurrency)
     setDownloadConcurrency(settings.downloadConcurrency)
     setDelayMs(settings.delayMs)
     setRetries(settings.retries)
   }, [settings])
-
   const loadSite = async (): Promise<void> => {
     setLoadingSite(true)
     setSiteError(null)
     try {
       const info = await api.crawl.siteInfo()
       setSite(info)
-      const first = info.plates[0]
-      if (first && first.words[0] && selected.size === 0) {
-        setSelected(new Set([key(first.name, first.words[0])]))
+      if (selected.size === 0) {
+        const firstCategory = visibleCategories(false)[0]
+        if (firstCategory) setSelected(new Set([firstCategory.id]))
       }
     } catch (err) {
       setSiteError(err instanceof Error ? err.message : '读取站点导航失败')
@@ -71,25 +65,21 @@ export default function CrawlPanel({
       setLoadingSite(false)
     }
   }
-
   useEffect(() => {
     void loadSite()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const targets: TargetInput[] = useMemo(() => {
-    const list: TargetInput[] = []
-    for (const plate of site?.plates ?? []) {
-      for (const word of plate.words) {
-        if (selected.has(key(plate.name, word))) list.push({ kind: 'category', plate: plate.name, word })
-      }
-    }
-    return list
-  }, [site, selected])
-
+  // 目标直接来自应用分类表，不再从站点导航推导 ——
+  // 既不会再被导航里的「示例模板」污染，也不需要先展开一级分类
+  const targets: TargetInput[] = useMemo(
+    () =>
+      visibleCategories(false)
+        .filter((c) => selected.has(c.id))
+        .map((c) => ({ kind: 'category' as const, plate: c.plate, word: c.word })),
+    [selected]
+  )
   const firstTargetKey =
     targets.length > 0 ? [targets[0].kind, targets[0].plate, targets[0].word].join('|') : ''
-
   /** 目标一变就顺手问一次规模，界面上的「约 N 页」就是从这里来的 */
   useEffect(() => {
     if (!firstTargetKey) {
@@ -110,9 +100,7 @@ export default function CrawlPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstTargetKey])
-
   const active = progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
-
   const start = async (): Promise<void> => {
     if (targets.length === 0) {
       onToast('请至少选择一个抓取目标')
@@ -147,7 +135,6 @@ export default function CrawlPanel({
       setStarting(false)
     }
   }
-
   const percent = useMemo(() => {
     if (!progress) return 0
     if (progress.downloadTotal && progress.downloadTotal > 0) {
@@ -158,7 +145,6 @@ export default function CrawlPanel({
     }
     return 0
   }, [progress])
-
   return (
     <div className="page" data-component="CrawlPanel">
       <div className="page-head">
@@ -168,7 +154,6 @@ export default function CrawlPanel({
           建议保持 2–3 的并发与 200ms 以上的间隔，既能跑满带宽也不至于被封。
         </p>
       </div>
-
       {/* ------------------------------------------------------------ 目标 */}
       <section className="card-panel">
         <div className="panel-title">
@@ -185,62 +170,36 @@ export default function CrawlPanel({
             {loadingSite ? '读取中…' : '重新读取分类'}
           </button>
         </div>
-
         {siteError && (
           <p className="dim" style={{ marginBottom: 10 }}>
             读取站点分类失败：{siteError}（可以稍后重试，不影响已保存的抓取源）
           </p>
         )}
-
+        {/* 分类只有一层：站点原本是 ACG图片 > Pixiv萌图，这里只留下面那层 */}
         <div className="target-list">
-          {(site?.plates ?? []).map((plate) => (
-            <div className="target-group" key={plate.name}>
-              <h4>
-                {plate.name}
-                <button
-                  className="collapse-all"
-                  onClick={() => {
-                    setSelected((prev) => {
-                      const next = new Set(prev)
-                      const allOn = plate.words.every((w) => next.has(key(plate.name, w)))
-                      for (const w of plate.words) {
-                        if (allOn) next.delete(key(plate.name, w))
-                        else next.add(key(plate.name, w))
-                      }
-                      return next
-                    })
-                  }}
-                >
-                  {plate.words.every((w) => selected.has(key(plate.name, w))) ? '全不选' : '全选'}
-                </button>
-              </h4>
-              <div className="words">
-                {plate.words.map((word) => {
-                  const k = key(plate.name, word)
-                  return (
-                    <button
-                      key={word}
-                      className={selected.has(k) ? 'active' : ''}
-                      onClick={() =>
-                        setSelected((prev) => {
-                          const next = new Set(prev)
-                          if (next.has(k)) next.delete(k)
-                          else next.add(k)
-                          return next
-                        })
-                      }
-                    >
-                      {word}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-          {!site && !loadingSite && !siteError && <p className="muted">尚未读取到分类。</p>}
+          {visibleCategories(false).map((category) => {
+            const on = selected.has(category.id)
+            return (
+              <button
+                key={category.id}
+                className={'target-card' + (on ? ' on' : '')}
+                onClick={() =>
+                  setSelected((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(category.id)) next.delete(category.id)
+                    else next.add(category.id)
+                    return next
+                  })
+                }
+                aria-pressed={on}
+              >
+                <span className="target-name">{category.name}</span>
+                <span className="target-path">{category.plate} / {category.word}</span>
+              </button>
+            )
+          })}
         </div>
       </section>
-
       {/* ------------------------------------------------------------ 范围 */}
       <section className="card-panel">
         <div className="panel-title">抓取范围与内容过滤</div>
@@ -312,9 +271,7 @@ export default function CrawlPanel({
             <span className="help">下载完成后再校验</span>
           </div>
         </div>
-
         <div className="sep" />
-
         <div className="row wrap" style={{ gap: 20 }}>
           <label className="switch">
             <input type="checkbox" checked={indexOnly} onChange={(e) => setIndexOnly(e.target.checked)} />
@@ -347,7 +304,6 @@ export default function CrawlPanel({
           </label>
         </div>
       </section>
-
       {/* ---------------------------------------------------------- 限速 */}
       <section className="card-panel">
         <div className="panel-title">
@@ -385,7 +341,6 @@ export default function CrawlPanel({
           </div>
         </div>
       </section>
-
       {/* ---------------------------------------------------------- 控制 */}
       <section className="card-panel">
         <div className="row" style={{ gap: 9 }}>
@@ -411,7 +366,6 @@ export default function CrawlPanel({
             清空日志
           </button>
         </div>
-
         {progress && (
           <>
             <div className="sep" />
@@ -427,7 +381,6 @@ export default function CrawlPanel({
                 </div>
                 <span className="mono muted">{percent.toFixed(1)}%</span>
               </div>
-
               <div className="stat-grid">
                 <Stat k="索引页数" v={`${progress.pagesDone}${progress.pagesTotal ? ` / ${progress.pagesTotal}` : ''}`} />
                 <Stat k="发现条目" v={progress.itemsFound.toLocaleString()} />
@@ -445,7 +398,6 @@ export default function CrawlPanel({
           </>
         )}
       </section>
-
       {/* ---------------------------------------------------------- 日志 */}
       {logs.length > 0 && (
         <section className="card-panel">
@@ -475,7 +427,6 @@ export default function CrawlPanel({
     </div>
   )
 }
-
 function Stat({ k, v }: { k: string; v: string }): JSX.Element {
   return (
     <div className="stat">
@@ -484,7 +435,6 @@ function Stat({ k, v }: { k: string; v: string }): JSX.Element {
     </div>
   )
 }
-
 function phaseLabel(phase: CrawlProgress['phase']): string {
   switch (phase) {
     case 'queued':
@@ -505,7 +455,6 @@ function phaseLabel(phase: CrawlProgress['phase']): string {
       return phase
   }
 }
-
 function splitTags(text: string): string[] {
   return text
     .split(/[,，\s]+/)

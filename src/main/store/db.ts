@@ -45,8 +45,18 @@ export class Database_ {
     return self
   }
 
+  /** 轻量迁移：老库缺列时补上，避免用户升级后被要求重建索引 */
+  private addMissingColumns(): void {
+    const columns = new Set(this.all<{ name: string }>('PRAGMA table_info(items)').map((r) => String(r.name)))
+    if (!columns.has('page')) {
+      this.db.run('ALTER TABLE items ADD COLUMN page INTEGER')
+    }
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_items_page ON items (page)')
+  }
+
   private migrate(): void {
     this.db.run(SCHEMA_SQL)
+    this.addMissingColumns()
     const current = this.get<{ value: string }>('SELECT value FROM meta WHERE key = ?', ['schema_version'])
     if (!current) {
       this.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', ['schema_version', String(SCHEMA_VERSION)])

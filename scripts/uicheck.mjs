@@ -120,7 +120,8 @@ const SCRIPT = `(async () => {
   }
 
   // 4) 打开灯箱
-  const firstCard = document.querySelector('.card')
+  // 挑一张本地真有文件的卡片（带「仅索引」徽标的就是没下载的）
+  const firstCard = qa('.card').find((c) => !c.querySelector('.badge')) || document.querySelector('.card')
   if (firstCard) {
     firstCard.click()
     await sleep(1200)
@@ -170,23 +171,20 @@ const SCRIPT = `(async () => {
     out.lightboxClosed = !document.querySelector('.lightbox')
   }
 
-  // 6.5) 侧栏分类树：展开某个一级分类，点它的二级分类
-  const topLevel = qa('.side-item').filter((el) => !el.classList.contains('sub'))
-  const firstPlate = topLevel[5]
-  if (firstPlate) {
-    out.plateName = (firstPlate.querySelector('.label') || {}).textContent || null
-    firstPlate.click()
-    await sleep(700)
-    out.subItems = qa('.side-item.sub').length
-    out.subNames = qa('.side-item.sub .label').slice(0, 4).map((el) => el.textContent)
-    const sub = qa('.side-item.sub')[0]
-    if (sub) {
-      sub.click()
-      await sleep(1000)
-      out.plateMeta = meta()
-      out.plateChip = (document.querySelector('.filter-bar .pill.active') || {}).textContent || null
+  // 6.5) 侧栏分类：摊平后只有一层，点一下直接筛选
+  {
+    const cats = qa('[data-component="Sidebar/Category"]')
+    out.categoryCount = cats.length
+    out.categoryNames = cats.map((el) => (el.querySelector('.label') || {}).textContent || '')
+    out.noNestedTree = qa('.side-item.sub').length === 0
+    const first = cats[0]
+    if (first) {
+      first.click()
+      await sleep(1100)
+      out.categoryMeta = meta()
+      out.categoryActive = first.className.includes('active')
       const reset = byText('.filter-bar .pill', '清空筛选')
-      if (reset) { reset.click(); await sleep(800) }
+      if (reset) { reset.click(); await sleep(900) }
     }
   }
 
@@ -393,7 +391,7 @@ const checks = [
   ['瀑布流：卡片宽度与跨栏数一致', result.masonryWidthOk === true],
   ['瀑布流：横图占到两栏', (result.masonrySpan2 ?? 0) > 0],
   ['进场动画不隐藏首屏卡片', result.firstScreenVisible === true],
-  ['顶部统计与实际数据一致', /共 \d+ 条/.test(result.initialMeta || '')],
+  ['顶部统计与实际数据一致', /共 [\d,]+ 条/.test(result.initialMeta || '')],
   ['点击标签后筛选条件生效', (result.afterTagChips ?? 0) >= 1],
   ['清空筛选后恢复', (result.afterClearMeta || '').startsWith('共')],
   ['搜索能命中标签', /共 \d+ 条/.test(result.searchMeta || '')],
@@ -405,8 +403,9 @@ const checks = [
   ['灯箱缩放下限为 25%', result.zoomFloor === '25%'],
   ['方向键能翻页', result.arrowChangedImage === true],
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
-  ['分类树能展开出二级分类', (result.subItems ?? 0) > 0],
-  ['二级分类筛选生效', /共 \d+ 条/.test(result.plateMeta || '')],
+  ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
+  ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
+  ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '')],
   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
   ['切换排序生效', result.sortValue === 'views'],
   ['内容页无横向溢出', result.mainOverflowX === 0],

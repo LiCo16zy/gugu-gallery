@@ -100,6 +100,9 @@ export interface GalleryQuery {
   minWidth?: number
   minHeight?: number
   orientation?: Orientation
+  /** 只取来源页落在该区间的条目（下载阶段按页码范围过滤用） */
+  pageFrom?: number
+  pageTo?: number
   sort?: SortKey
   cursor?: string | null
   limit?: number

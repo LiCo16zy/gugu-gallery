@@ -291,8 +291,10 @@ export class CrawlEngine {
 
       if (page === req.pageFrom) {
         const pager = parsePagination(html)
+        // 分母用「本次要抓的范围」而不是站点总数：
+        // 用户设了 100~200 页却看到 1430 的分母，会以为设置没生效
+        st.pagesTotal = req.pageTo != null ? Math.max(1, req.pageTo - req.pageFrom + 1) : pager.totalPages
         if (pager.totalPages) {
-          st.pagesTotal = pager.totalPages
           this.deps.repo.updateSourceStats(sourceUrl, pager.totalPages, pager.totalItems)
         }
       }
@@ -320,6 +322,7 @@ export class CrawlEngine {
         remoteExt: raw.remotePath ? pathExt(raw.remotePath) : null,
         previewUrl: raw.remotePath ? previewUrl(raw.remotePath) : null,
         downloadUrl: raw.remotePath ? originalUrl(raw.remotePath) : null,
+        page,
         tags: raw.tags
       }))
 
@@ -341,11 +344,15 @@ export class CrawlEngine {
     const st = this.state!
     const req = st.request
 
+    // 页码范围同样作用于下载：只下「在这段页里发现的」条目，
+    // 否则设了 100~200 页、下载却会把整库都翻出来
     const filter: GalleryQuery = {
       tags: req.includeTags,
       tagMode: 'any',
       excludeTags: req.excludeTags,
-      minWidth: req.minWidth > 0 ? req.minWidth : undefined
+      minWidth: req.minWidth > 0 ? req.minWidth : undefined,
+      pageFrom: req.pageFrom,
+      pageTo: req.pageTo ?? undefined
     }
 
     const limit = req.maxItems && req.maxItems > 0 ? req.maxItems : 1_000_000

@@ -1,6 +1,6 @@
 /** 数据库结构定义。改结构时同步 +1 SCHEMA_VERSION 并补充迁移逻辑。 */
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export const SCHEMA_SQL = /* sql */ `
 PRAGMA journal_mode = MEMORY;
@@ -52,11 +52,16 @@ CREATE TABLE IF NOT EXISTS items (
   favorite         INTEGER NOT NULL DEFAULT 0,
   rating           INTEGER NOT NULL DEFAULT 0,
   indexed_at       TEXT    NOT NULL,
-  updated_at       TEXT    NOT NULL
+  updated_at       TEXT    NOT NULL,
+  -- 这条记录是在列表第几页被发现的。下载阶段按页码范围筛选时要用，
+  -- 否则「从第 100 页抓到第 200 页」在下载时会退化成「全库任意条目」。
+  page             INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_items_published ON items (published_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_items_plate     ON items (plate, word);
+-- idx_items_page 不在这里建：老库可能还没有 page 列，
+-- 建索引会先于补列执行并直接报错。放到 db.ts 的迁移里，补完列再建。
 CREATE INDEX IF NOT EXISTS idx_items_favorite  ON items (favorite) WHERE favorite = 1;
 
 CREATE TABLE IF NOT EXISTS tags (
