@@ -63,6 +63,7 @@ export interface GuguBridge {
   }
   plugins: PluginBridge
   openExternal(url: string): Promise<void>
+  copyText(text: string): Promise<boolean>
 }
 
 declare global {

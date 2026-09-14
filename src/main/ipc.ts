@@ -2,7 +2,7 @@
  * 渲染进程 <-> 主进程的 IPC 契约实现。
  * 所有能力都通过 contextBridge 暴露，渲染进程不直接碰 Node / fs。
  */
-import { ipcMain, shell, dialog, BrowserWindow } from 'electron'
+import { clipboard, ipcMain, shell, dialog, BrowserWindow } from 'electron'
 import { existsSync } from 'node:fs'
 import type {
   AppInfo,
@@ -32,6 +32,7 @@ export const IPC = {
   libraryReveal: 'library:reveal',
   libraryPickRoot: 'library:pickRoot',
   openExternal: 'app:openExternal',
+  copyText: 'app:copyText',
   siteInfo: 'crawl:siteInfo',
   crawlStart: 'crawl:start',
   crawlPause: 'crawl:pause',
@@ -117,6 +118,12 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
 
   handle(IPC.openExternal, async (url: string): Promise<void> => {
     if (/^https?:\/\//i.test(url)) await shell.openExternal(url)
+  })
+
+  // 渲染进程里 navigator.clipboard 在 file:// 下不可靠，统一交给主进程
+  handle(IPC.copyText, (text: string): boolean => {
+    clipboard.writeText(String(text ?? ''))
+    return true
   })
 
   handle(IPC.siteInfo, () => ctx.crawler.fetchSiteInfo(false))

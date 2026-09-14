@@ -114,6 +114,13 @@ export const IconTrash = (p: P) => (
   </svg>
 )
 
+export const IconCopy = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+  </svg>
+)
+
 export const IconExternal = (p: P) => (
   <svg {...base(p)}>
     <path d="M14 4h6v6" />
@@ -150,6 +157,13 @@ export const IconRefresh = (p: P) => (
 export const IconCheck = (p: P) => (
   <svg {...base(p)}>
     <path d="m5 12.5 4.5 4.5L19 7" />
+  </svg>
+)
+
+/** 爱心：filled 为 false 时是空心描边，true 时实心 */
+export const IconHeart = ({ filled, ...p }: P & { filled?: boolean }) => (
+  <svg {...base(p)} fill={filled ? 'currentColor' : 'none'}>
+    <path d="M12 20.3 4.9 13.1a4.7 4.7 0 0 1 .1-6.6 4.7 4.7 0 0 1 6.6 0l.4.5.4-.5a4.7 4.7 0 0 1 6.6 0 4.7 4.7 0 0 1 .1 6.6z" />
   </svg>
 )
 

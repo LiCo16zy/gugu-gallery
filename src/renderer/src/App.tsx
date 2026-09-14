@@ -19,6 +19,9 @@ import GalleryGrid from './components/GalleryGrid'
 import Lightbox from './components/Lightbox'
 import CrawlPanel from './components/CrawlPanel'
 import SettingsPanel from './components/SettingsPanel'
+import ContextMenu, { type MenuEntry } from './components/ContextMenu'
+import Toast, { type ToastPayload } from './components/Toast'
+import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
 import { loadedPlugins } from './plugins'
 import { IconGrid, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
 
@@ -72,8 +75,11 @@ export default function App(): JSX.Element {
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [progress, setProgress] = useState<CrawlProgress | null>(null)
   const [logs, setLogs] = useState<CrawlLogLine[]>([])
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastPayload | null>(null)
+  /** 右键菜单：卡片 + 弹出位置 */
+  const [contextMenu, setContextMenu] = useState<{ item: ItemSummary; x: number; y: number } | null>(null)
 
+  const toastSeq = useRef(0)
   const requestId = useRef(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
@@ -193,11 +199,11 @@ export default function App(): JSX.Element {
     return () => window.removeEventListener('gugu:navigate', handler)
   }, [items])
 
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(null), 2400)
-    return () => clearTimeout(timer)
-  }, [toast])
+  /** 轻提示：同一时刻只留一条，重复触发会重播动画 */
+  const showToast = useCallback((text: string, duration = 1600, kind: ToastPayload['kind'] = 'info') => {
+    toastSeq.current += 1
+    setToast({ id: toastSeq.current, text, duration, kind })
+  }, [])
 
   /* ---------------------------------------------------------------- 交互 */
 
@@ -208,6 +214,11 @@ export default function App(): JSX.Element {
       if (patch.plate !== undefined) next.word = null
       return next
     })
+  }, [])
+
+  const quickFavorite = useCallback(async (item: ItemSummary) => {
+    const value = await api.library.favorite(item.id, !item.favorite)
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, favorite: value } : i)))
   }, [])
 
   const toggleTag = useCallback((name: string) => {
@@ -230,7 +241,7 @@ export default function App(): JSX.Element {
         await refreshMeta()
         await loadPage('reset')
       }
-      setToast('设置已保存')
+      showToast('设置已保存', 1600, 'success')
     },
     [refreshMeta, loadPage]
   )
@@ -250,7 +261,56 @@ export default function App(): JSX.Element {
   const jobActive =
     progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
 
-  const cardMin = dense ? '160px' : '212px'
+  /* 右键菜单项：收藏 / 复制 pid / 打开于…（折叠子项） */
+  const contextEntries: MenuEntry[] = contextMenu
+    ? [
+        {
+          key: 'fav',
+          label: contextMenu.item.favorite ? '取消收藏' : '收藏',
+          icon: <IconHeart width={13} height={13} filled={contextMenu.item.favorite} />,
+          onSelect: () => void quickFavorite(contextMenu.item)
+        },
+        {
+          key: 'copy',
+          label: '复制 pid',
+          icon: <IconCopy width={13} height={13} />,
+          disabled: !contextMenu.item.pixivId,
+          onSelect: () => {
+            const pid = contextMenu.item.pixivId
+            if (!pid) return
+            void api.copyText(pid).then(() => showToast('已复制 pid', 800))
+          }
+        },
+        {
+          key: 'open',
+          label: '打开于…',
+          icon: <IconExternal width={13} height={13} />,
+          children: [
+            {
+              key: 'folder',
+              label: '文件管理器',
+              icon: <IconFolder width={13} height={13} />,
+              disabled: contextMenu.item.fileStatus !== 'ready',
+              onSelect: () => {
+                void api.library.reveal(contextMenu.item.id).then((ok) => {
+                  if (!ok) showToast('本地还没有这张图')
+                })
+              }
+            },
+            {
+              key: 'pixiv',
+              label: 'Pixiv',
+              icon: <IconExternal width={13} height={13} />,
+              disabled: !contextMenu.item.pixivId,
+              onSelect: () => {
+                const pid = contextMenu.item.pixivId
+                if (pid) void api.openExternal('https://www.pixiv.net/artworks/' + pid)
+              }
+            }
+          ]
+        }
+      ]
+    : []
 
   return (
     <div className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -434,19 +494,15 @@ export default function App(): JSX.Element {
             <GalleryGrid
               items={items}
               loading={loading}
-              cardMin={cardMin}
+              dense={dense}
+              onContextMenu={(item, x, y) => setContextMenu({ item, x, y })}
               emptyHint={
                 stats && stats.items === 0
                   ? '图库还是空的 —— 去「抓取」页面选一个分类开始吧'
                   : '没有符合条件的图片，试试放宽筛选条件'
               }
               onOpen={setOpenId}
-              onQuickFavorite={async (item) => {
-                await api.library.favorite(item.id, !item.favorite)
-                setItems((prev) =>
-                  prev.map((i) => (i.id === item.id ? { ...i, favorite: !i.favorite } : i))
-                )
-              }}
+              onQuickFavorite={(item) => void quickFavorite(item)}
             />
           </>
         )}
@@ -461,7 +517,7 @@ export default function App(): JSX.Element {
               await refreshMeta()
               await loadPage('reset')
             }}
-            onToast={setToast}
+            onToast={showToast}
           />
         )}
 
@@ -471,7 +527,7 @@ export default function App(): JSX.Element {
             info={info}
             stats={stats}
             onChange={onSettingsChange}
-            onToast={setToast}
+            onToast={showToast}
           />
         )}
       </main>
@@ -517,7 +573,7 @@ export default function App(): JSX.Element {
           onChanged={(id, patch) =>
             setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)))
           }
-          onToast={setToast}
+          onToast={showToast}
         />
       )}
 
@@ -529,12 +585,21 @@ export default function App(): JSX.Element {
             onActiveChange={(active) => setActiveTool(active ? plugin.manifest.id : null)}
             view={openId != null ? 'lightbox' : view}
             appVersion={info?.version ?? ''}
-            onToast={setToast}
+            onToast={showToast}
           />
         ) : null
       )}
 
-      {toast && <div className="toast">{toast}</div>}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          entries={contextEntries}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   )
 }

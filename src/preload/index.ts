@@ -21,6 +21,7 @@ const IPC = {
   libraryReveal: 'library:reveal',
   libraryPickRoot: 'library:pickRoot',
   openExternal: 'app:openExternal',
+  copyText: 'app:copyText',
   siteInfo: 'crawl:siteInfo',
   crawlStart: 'crawl:start',
   crawlPause: 'crawl:pause',
@@ -82,7 +83,8 @@ const api = {
     invoke: (pluginId: string, method: string, payload?: unknown) =>
       ipcRenderer.invoke(pluginIpc.invoke, pluginId, method, payload)
   },
-  openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url)
+  openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url),
+  copyText: (text: string) => ipcRenderer.invoke(IPC.copyText, text)
 }
 
 contextBridge.exposeInMainWorld('gugu', api)

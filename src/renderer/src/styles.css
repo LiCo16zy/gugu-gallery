@@ -502,8 +502,17 @@ textarea {
 .card-media img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
   transition: transform 0.35s var(--ease), opacity 0.25s var(--ease);
+}
+
+.card-media-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-faint);
 }
 .card:hover .card-media img {
   transform: scale(1.035);
@@ -589,8 +598,53 @@ textarea {
   color: #fff;
 }
 
+/* 新卡片逐张渐显：每张卡各自播放，0.06s */
+@keyframes cardIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.card {
+  animation: cardIn 0.06s var(--ease) both;
+}
+
 .card-body {
-  padding: 9px 11px 11px;
+  height: 50px;
+  padding: 8px 11px 10px;
+  overflow: hidden;
+}
+
+/* 收藏按钮：只在鼠标移入卡片时出现；已收藏时爱心常驻 */
+.card-fav {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.16s var(--ease), color 0.16s var(--ease), background 0.16s var(--ease);
+}
+.card:hover .card-fav {
+  opacity: 1;
+}
+.card-fav:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.card-fav.on {
+  opacity: 1;
+  color: var(--danger);
 }
 .card-title {
   font-size: 12.5px;
@@ -1257,14 +1311,113 @@ textarea {
   position: fixed;
   bottom: 62px;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 90;
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   padding: 9px 16px;
   box-shadow: var(--shadow);
-  animation: fade 0.18s var(--ease);
+  pointer-events: none;
+  /* 淡入淡出各 80ms，中间停留时长由调用方决定 */
+  animation: toastIn 80ms var(--ease) both;
+}
+.toast.leaving {
+  animation: toastOut 80ms var(--ease) both;
+}
+.toast.success {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+}
+.toast.warn {
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}
+
+/* ------------------------------------------------------------ 右键菜单 */
+
+.ctx-menu {
+  position: fixed;
+  z-index: 95;
+  min-width: 172px;
+  padding: 5px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(14px);
+  animation: ctxIn 0.1s var(--ease) both;
+}
+@keyframes ctxIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+.ctx-item:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+.ctx-item:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.ctx-item.danger {
+  color: var(--danger);
+}
+.ctx-item svg {
+  flex: none;
+  color: var(--text-faint);
+}
+.ctx-item.danger svg {
+  color: currentColor;
+}
+.ctx-caret {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 10px;
+}
+.ctx-sub {
+  padding-left: 14px;
+  margin: 2px 0 4px;
+  border-left: 1px solid var(--border);
+  margin-left: 16px;
 }
 
 /* 标注模式开启时高亮顶栏按钮，避免忘记自己还开着工具 */

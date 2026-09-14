@@ -44,6 +44,40 @@ const SCRIPT = `(async () => {
   out.initialCards = qa('.card').length
   out.initialMeta = meta()
 
+  // 1.1) 瀑布流几何：同列不重叠、列宽一致、横图真的占到两栏
+  {
+    const grid = document.querySelector('.grid')
+    const cs = grid ? getComputedStyle(grid) : null
+    const colW = cs ? cs.gridTemplateColumns.split(' ').map((s) => Math.round(parseFloat(s))) : []
+    const cards = grid ? Array.from(grid.querySelectorAll(':scope > .card')) : []
+    const areas = []
+    for (const c of cards) {
+      const m = /^(\\d+) \\/ span (\\d+)$/.exec(c.style.gridColumn)
+      const r = /^(\\d+) \\/ span (\\d+)$/.exec(c.style.gridRow)
+      if (!m || !r) continue
+      areas.push({ col: +m[1], span: +m[2], row: +r[1], rows: +r[2], w: Math.round(c.getBoundingClientRect().width), id: c.querySelector('.card-title')?.textContent || '' })
+    }
+    out.masonryColumns = Number(grid?.dataset.columns)
+    out.masonryCards = areas.length
+    out.masonryEqualColumns = new Set(colW).size === 1
+    out.masonrySpan2 = areas.filter((a) => a.span === 2).length
+    out.masonryWidthOk = areas.every((a) => Math.abs(a.w - (colW.slice(a.col - 1, a.col - 1 + a.span).reduce((s, v) => s + v, 0) + 14 * (a.span - 1))) <= 3)
+    const perCol = new Map()
+    for (const a of areas) for (let c = a.col; c < a.col + a.span; c++) {
+      if (!perCol.has(c)) perCol.set(c, [])
+      perCol.get(c).push(a)
+    }
+    let overlap = 0
+    for (const list of perCol.values()) {
+      list.sort((x, y) => x.row - y.row)
+      for (let i = 1; i < list.length; i++) {
+        if (list[i].id === list[i - 1].id) continue
+        if (list[i].row < list[i - 1].row + list[i - 1].rows) overlap++
+      }
+    }
+    out.masonryOverlaps = overlap
+  }
+
   // 2) 点第一个标签，筛选应生效
   const chip = qa('.tag-chip')[0]
   out.firstTag = chip ? chip.textContent.trim() : null
@@ -201,6 +235,10 @@ if (!ok) {
 
 const checks = [
   ['首页渲染出卡片', result.initialCards > 0],
+  ['瀑布流：列宽一致', result.masonryEqualColumns === true],
+  ['瀑布流：同列卡片不重叠', result.masonryOverlaps === 0],
+  ['瀑布流：卡片宽度与跨栏数一致', result.masonryWidthOk === true],
+  ['瀑布流：横图占到两栏', (result.masonrySpan2 ?? 0) > 0],
   ['顶部统计与实际数据一致', /共 \d+ 条/.test(result.initialMeta || '')],
   ['点击标签后筛选条件生效', (result.afterTagChips ?? 0) >= 1],
   ['清空筛选后恢复', (result.afterClearMeta || '').startsWith('共')],
