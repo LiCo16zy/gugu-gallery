@@ -14,6 +14,9 @@ import {
   IconZoomOut
 } from './Icons'
 
+const MIN_ZOOM = 0.25
+const MAX_ZOOM = 6
+
 interface Props {
   id: number
   items: ItemSummary[]
@@ -36,7 +39,9 @@ export default function Lightbox({
   const [detail, setDetail] = useState<ItemDetail | null>(null)
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const dragging = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
+  const [dragState, setDragState] = useState<{ active: boolean }>({ active: false })
+  const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
+  const stageRef = useRef<HTMLDivElement | null>(null)
 
   const index = items.findIndex((i) => i.id === id)
   const prev = index > 0 ? items[index - 1] : null
@@ -68,8 +73,8 @@ export default function Lightbox({
       if (event.key === 'Escape') onClose()
       else if (event.key === 'ArrowLeft') step(-1)
       else if (event.key === 'ArrowRight') step(1)
-      else if (event.key === '+' || event.key === '=') setZoom((z) => Math.min(6, z * 1.25))
-      else if (event.key === '-') setZoom((z) => Math.max(1, z / 1.25))
+      else if (event.key === '+' || event.key === '=') setZoom((z) => Math.min(MAX_ZOOM, z * 1.25))
+      else if (event.key === '-') setZoom((z) => Math.max(MIN_ZOOM, z / 1.25))
       else if (event.key === '0') {
         setZoom(1)
         setOffset({ x: 0, y: 0 })
@@ -89,11 +94,58 @@ export default function Lightbox({
     onChanged(detail.id, { favorite: value })
   }, [detail, onChanged])
 
-  const onWheel = useCallback((event: React.WheelEvent) => {
-    if (!event.ctrlKey && !event.metaKey) return
+  /**
+   * 滚轮缩放：以光标为锚点，保证指针下的那个像素不动。
+   * 设容器中心为原点、指针位置 p、图片偏移 offset、缩放 z，
+   * 指针指向的图片坐标 q = (p - offset) / z；要让 q 落到新缩放 z2 的同一位置，
+   * 需要 offset2 = p - q * z2。
+   */
+  const onWheel = useCallback((event: WheelEvent) => {
+    const stage = stageRef.current
+    if (!stage) return
     event.preventDefault()
-    setZoom((z) => Math.min(6, Math.max(1, z * (event.deltaY < 0 ? 1.12 : 0.9))))
+    const rect = stage.getBoundingClientRect()
+    const px = event.clientX - (rect.left + rect.width / 2)
+    const py = event.clientY - (rect.top + rect.height / 2)
+    setZoom((z) => {
+      const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12
+      const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z * factor))
+      if (nextZoom === z) return z
+      setOffset((o) => ({
+        x: px - ((px - o.x) / z) * nextZoom,
+        y: py - ((py - o.y) / z) * nextZoom
+      }))
+      return nextZoom
+    })
   }, [])
+
+  // 滚轮要 preventDefault，React 合成事件挂在 passive 监听上拦不住
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    stage.addEventListener('wheel', onWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', onWheel)
+  }, [onWheel, detail])
+
+  // 拖动改为挂在 window 上：鼠标移出舞台也不会丢事件
+  useEffect(() => {
+    if (!dragState.active) return
+    const onMove = (event: MouseEvent): void => {
+      const d = drag.current
+      if (!d) return
+      setOffset({ x: d.ox + (event.clientX - d.x), y: d.oy + (event.clientY - d.y) })
+    }
+    const onUp = (): void => {
+      drag.current = null
+      setDragState({ active: false })
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [dragState.active])
 
   const strip = useMemo(() => {
     const from = Math.max(0, index - 12)
@@ -102,25 +154,34 @@ export default function Lightbox({
 
   const summary = items.find((i) => i.id === id) ?? null
 
+  /**
+   * 上传者：站点把所有来源都标成「匿名-分享」，没有信息量。
+   * 真正有用的是详情页里的 Pixiv 用户链接 —— 它就是转载/上传者本人，
+   * 所以优先显示它，并且不再额外宣称对方是「画师」（那只是上传者，未必是作者）。
+   */
+  const uploaderLabel = (() => {
+    const url = detail?.pixivArtistUrl
+    if (url) {
+      return {
+        text: url.replace('https://www.pixiv.net/users/', 'users/'),
+        href: url
+      }
+    }
+    const raw = detail?.uploader?.trim()
+    if (raw && !/匿名|分享/.test(raw)) return { text: raw, href: null }
+    return { text: '未知', href: null }
+  })()
+
   return (
-    <div className="lightbox" data-component="Lightbox" onWheel={onWheel}>
+    <div className="lightbox" data-component="Lightbox">
       <div
         data-component="Lightbox/Stage"
-        className="lightbox-stage"
+        className={'lightbox-stage' + (dragState.active ? ' dragging' : '')}
         onMouseDown={(e) => {
-          if (zoom <= 1) return
-          dragging.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
-        }}
-        onMouseMove={(e) => {
-          const d = dragging.current
-          if (!d) return
-          setOffset({ x: d.ox + (e.clientX - d.x), y: d.oy + (e.clientY - d.y) })
-        }}
-        onMouseUp={() => {
-          dragging.current = null
-        }}
-        onMouseLeave={() => {
-          dragging.current = null
+          // 左键拖动平移：任何时候都能拖，不再要求先放大
+          if (e.button !== 0) return
+          drag.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
+          setDragState({ active: true })
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose()
@@ -130,13 +191,11 @@ export default function Lightbox({
           <img
             src={detail.imageUrl}
             alt={detail.title}
-            className={zoom > 1 ? 'zoomed' : ''}
-            style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
-            onClick={() => setZoom((z) => (z > 1 ? 1 : 2))}
+            style={{ transform: 'translate(' + offset.x + 'px, ' + offset.y + 'px) scale(' + zoom + ')' }}
             draggable={false}
           />
         ) : (
-          <div className="empty" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          <div className="lightbox-empty">
             <h3>这张图还没有下载到本地</h3>
             <p>到「抓取」页面对这个分类执行一次下载，或使用右侧的「下载此图」。</p>
           </div>
@@ -178,23 +237,19 @@ export default function Lightbox({
           <dt>浏览量</dt>
           <dd>{detail?.views ?? 0}</dd>
           <dt>上传者</dt>
-          <dd>{detail?.uploader ?? '—'}</dd>
+          <dd>
+            {uploaderLabel.href ? (
+              <a onClick={() => void api.openExternal(uploaderLabel.href as string)}>{uploaderLabel.text}</a>
+            ) : (
+              uploaderLabel.text
+            )}
+          </dd>
           {detail?.pixivId && (
             <>
               <dt>Pixiv</dt>
               <dd>
                 <a onClick={() => void api.openExternal(`https://www.pixiv.net/artworks/${detail.pixivId}`)}>
                   {detail.pixivId}
-                </a>
-              </dd>
-            </>
-          )}
-          {detail?.pixivArtistUrl && (
-            <>
-              <dt>画师</dt>
-              <dd>
-                <a onClick={() => void api.openExternal(detail.pixivArtistUrl!)}>
-                  {detail.pixivArtistUrl.replace('https://www.pixiv.net/users/', 'users/')}
                 </a>
               </dd>
             </>
@@ -262,16 +317,36 @@ export default function Lightbox({
           </button>
         </div>
 
-        <div className="row" style={{ gap: 6, marginBottom: 16 }}>
-          <button className="btn icon sm" onClick={() => setZoom((z) => Math.max(1, z / 1.25))} title="缩小 (-)">
+        <div className="row" style={{ gap: 6, marginBottom: 8 }} data-component="Lightbox/Zoom">
+          <button
+            className="btn icon sm"
+            onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z / 1.25))}
+            disabled={zoom <= MIN_ZOOM + 0.001}
+            title="缩小 (-)"
+          >
             <IconZoomOut width={14} height={14} />
           </button>
-          <span className="mono muted" style={{ width: 46, textAlign: 'center' }}>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button className="btn icon sm" onClick={() => setZoom((z) => Math.min(6, z * 1.25))} title="放大 (+)">
+          <input
+            className="zoom-slider"
+            type="range"
+            min={MIN_ZOOM}
+            max={3}
+            step={0.01}
+            value={Math.min(3, zoom)}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            aria-label="缩放"
+          />
+          <button
+            className="btn icon sm"
+            onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z * 1.25))}
+            disabled={zoom >= MAX_ZOOM - 0.001}
+            title="放大 (+)"
+          >
             <IconZoomIn width={14} height={14} />
           </button>
+          <span className="mono muted" style={{ width: 44, textAlign: 'right' }}>
+            {Math.round(zoom * 100)}%
+          </span>
           <button
             className="btn sm ghost"
             onClick={() => {
@@ -282,6 +357,8 @@ export default function Lightbox({
             重置
           </button>
         </div>
+
+        <p className="lb-tip">滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭</p>
 
         {detail && detail.tags.length > 0 && (
           <>

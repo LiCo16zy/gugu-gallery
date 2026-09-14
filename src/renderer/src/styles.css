@@ -1126,6 +1126,19 @@ body.resizing * {
   border-color: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
+.pref-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+.pref-label {
+  width: 64px;
+  flex: none;
+  color: var(--text-dim);
+  font-size: 12.5px;
+}
+
 .switch {
   display: flex;
   align-items: center;
@@ -1320,7 +1333,10 @@ body.resizing * {
   background: rgba(5, 7, 11, 0.9);
   backdrop-filter: blur(16px);
   display: grid;
-  grid-template-columns: 1fr 336px;
+  grid-template-columns: minmax(0, 1fr) 336px;
+  /* 行高必须锁死在视口内：留 auto 的话长图会把行撑高，
+     于是 max-height:100% 永远满足不了，竖图的长边就跑到屏幕外面去了 */
+  grid-template-rows: minmax(0, 1fr);
   animation: fade 0.16s var(--ease);
 }
 @keyframes fade {
@@ -1336,22 +1352,65 @@ body.resizing * {
   position: relative;
   display: grid;
   place-items: center;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  padding: 26px;
+  padding: 24px;
+  cursor: grab;
+}
+.lightbox-stage.dragging {
+  cursor: grabbing;
 }
 .lightbox-stage img {
   max-width: 100%;
   max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
   border-radius: 6px;
   box-shadow: var(--shadow-lg);
-  transition: transform 0.12s linear;
-  cursor: zoom-in;
   user-select: none;
   -webkit-user-drag: none;
+  will-change: transform;
 }
-.lightbox-stage img.zoomed {
-  cursor: grab;
+
+.lightbox-empty {
+  max-width: 360px;
+  text-align: center;
+  color: var(--text-faint);
+}
+.lightbox-empty h3 {
+  font-size: 15px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.lightbox-empty p {
+  line-height: 1.7;
+}
+
+.lb-tip {
+  margin-bottom: 16px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.zoom-slider {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  outline: none;
+  cursor: pointer;
+}
+.zoom-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
 }
 
 .lb-nav {
@@ -1647,6 +1706,34 @@ body.resizing * {
     opacity: 0;
     transform: translate(-50%, 6px);
   }
+}
+
+/* --------------------------------------------------- 内容页重排过渡 */
+
+/*
+ * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
+ * 总时长 0.16s，其中透明度低于 30% 的区间控制在 40ms 左右（要求不超过 60ms）。
+ */
+@keyframes contentReflow {
+  0% {
+    opacity: 1;
+  }
+  12.5% {
+    opacity: 0.3;
+  }
+  25% {
+    opacity: 0;
+  }
+  37.5% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.main.reflowing {
+  animation: contentReflow 0.16s linear both;
 }
 
 /* ------------------------------------------------------------ 右键菜单 */

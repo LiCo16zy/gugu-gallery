@@ -61,6 +61,14 @@ const INITIAL_FILTERS: Filters = {
   minWidth: 0
 }
 
+/** 主题：dark / light / system，system 跟随操作系统配色 */
+function applyTheme(theme: 'dark' | 'light' | 'system'): void {
+  const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches
+  const resolved = theme === 'system' ? (prefersLight ? 'light' : 'dark') : theme
+  document.documentElement.dataset.theme = resolved
+  document.documentElement.dataset.themeMode = theme
+}
+
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'newest', label: '最新发布' },
   { value: 'oldest', label: '最早上传' },
@@ -131,6 +139,8 @@ export default function App(): JSX.Element {
   /** 自绘标题栏：最大化状态与窗口按钮联动 */
   const [maximized, setMaximized] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
+  const [reflowing, setReflowing] = useState(false)
   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
   const [appIconOk, setAppIconOk] = useState(true)
   /** 侧栏宽度：拖动时走本地状态，松手才落盘 */
@@ -140,6 +150,7 @@ export default function App(): JSX.Element {
   const [sortOpen, setSortOpen] = useState(false)
 
   const lastScrollTop = useRef(0)
+  const reflowTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const toastSeq = useRef(0)
   const requestId = useRef(0)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -151,10 +162,19 @@ export default function App(): JSX.Element {
       const [s, i] = await Promise.all([api.settings.get(), api.appInfo()])
       setSettings(s)
       setInfo(i)
-      document.documentElement.dataset.theme = s.theme === 'light' ? 'light' : 'dark'
+      applyTheme(s.theme)
       document.documentElement.style.setProperty('--accent', s.accent)
     })()
   }, [])
+
+  // 「跟随系统」要跟着系统配色实时变
+  useEffect(() => {
+    if (settings.theme !== 'system') return
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (): void => applyTheme('system')
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [settings.theme])
 
   const refreshMeta = useCallback(async () => {
     try {
@@ -332,7 +352,7 @@ export default function App(): JSX.Element {
     async (patch: Partial<AppSettings>) => {
       const next = await api.settings.set(patch)
       setSettings(next)
-      if (patch.theme) document.documentElement.dataset.theme = next.theme === 'light' ? 'light' : 'dark'
+      if (patch.theme) applyTheme(next.theme)
       if (patch.accent) document.documentElement.style.setProperty('--accent', next.accent)
       if (patch.libraryRoot) {
         setFilters(INITIAL_FILTERS)
@@ -345,6 +365,16 @@ export default function App(): JSX.Element {
     },
     [refreshMeta, loadPage]
   )
+
+  const triggerReflow = useCallback(() => {
+    setReflowing(false)
+    // 先摘掉再挂上，保证连续切换也能重播动画
+    requestAnimationFrame(() => {
+      setReflowing(true)
+      if (reflowTimer.current) clearTimeout(reflowTimer.current)
+      reflowTimer.current = setTimeout(() => setReflowing(false), 180)
+    })
+  }, [])
 
   /** 拖动侧栏右边缘调宽，上限为窗口宽度的 40%（依赖 onSettingsChange，故定义在其后） */
   const startSidebarResize = (event: React.MouseEvent): void => {
@@ -444,7 +474,10 @@ export default function App(): JSX.Element {
         {/* 品牌区同时是侧栏开关：鼠标移上去图标渐变为「展开/收起侧栏」 */}
         <button
           className="brand-mark"
-          onClick={() => void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed })}
+          onClick={() => {
+            triggerReflow()
+            void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed })
+          }}
           title={settings.sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
         >
           <span className="brand-logo">{appIconOk ? <img src="./app-icon.png" alt="" onError={() => setAppIconOk(false)} /> : '咕'}</span>
@@ -463,7 +496,10 @@ export default function App(): JSX.Element {
       <header className="topbar" data-component="App/TopBar">
         <button
           className="view-toggle"
-          onClick={() => setDense((v) => !v)}
+          onClick={() => {
+            triggerReflow()
+            setDense((v) => !v)
+          }}
           title={dense ? '切换到标准视图' : '切换到紧凑视图'}
         >
           <IconViewToggle dense={dense} />
@@ -543,7 +579,7 @@ export default function App(): JSX.Element {
         onToggleTag={toggleTag}
       />
 
-      <main className="main" ref={scrollRef} onScroll={onScroll}>
+      <main className={'main' + (reflowing ? ' reflowing' : '')} ref={scrollRef} onScroll={onScroll}>
         {view === 'gallery' && (
           <>
             <div

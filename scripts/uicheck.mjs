@@ -121,6 +121,28 @@ const SCRIPT = `(async () => {
     out.lightboxTagCount = qa('.lb-tags button').length
     out.lightboxStrip = qa('.lb-strip button').length
 
+    // 图片必须完整落在舞台内（竖图的长边曾经跑到屏幕外）
+    const stageEl = document.querySelector('.lightbox-stage')
+    const imgEl = stageEl ? stageEl.querySelector('img') : null
+    if (stageEl && imgEl) {
+      const sr = stageEl.getBoundingClientRect()
+      const ir = imgEl.getBoundingClientRect()
+      out.lightboxFit =
+        ir.top >= sr.top - 1 && ir.bottom <= sr.bottom + 1 && ir.left >= sr.left - 1 && ir.right <= sr.right + 1
+      out.lightboxFitInfo = {
+        stage: [Math.round(sr.width), Math.round(sr.height)],
+        img: [Math.round(ir.width), Math.round(ir.height)]
+      }
+    }
+
+    // 缩放下限应为 25%
+    const zoomLabel = () => (document.querySelector('[data-component="Lightbox/Zoom"] .mono') || {}).textContent || ''
+    const minusBtn = qa('[data-component="Lightbox/Zoom"] .btn')[0]
+    for (let i = 0; i < 24; i += 1) minusBtn?.click()
+    await sleep(500)
+    out.zoomFloor = zoomLabel().trim()
+    out.zoomFloorDisabled = Boolean(minusBtn?.disabled)
+
     // 5) 键盘翻页
     const before = out.lightboxId
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
@@ -256,6 +278,8 @@ const checks = [
   ['灯箱加载了原图', Boolean(result.lightboxImage && result.lightboxImage.w > 0)],
   ['灯箱有元数据面板', (result.lightboxTagCount ?? 0) > 0],
   ['灯箱有缩略图条', (result.lightboxStrip ?? 0) > 0],
+  ['灯箱图片完整落在可视区内', result.lightboxFit === true],
+  ['灯箱缩放下限为 25%', result.zoomFloor === '25%'],
   ['方向键能翻页', result.arrowChangedImage === true],
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
   ['分类树能展开出二级分类', (result.subItems ?? 0) > 0],

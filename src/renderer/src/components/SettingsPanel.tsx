@@ -183,20 +183,9 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
 
       <section className="card-panel">
         <div className="panel-title">外观</div>
-        <div className="row wrap" style={{ gap: 24 }}>
-          <div className="seg">
-            <button className={settings.theme === 'dark' ? 'active' : ''} onClick={() => void onChange({ theme: 'dark' })}>
-              深色
-            </button>
-            <button
-              className={settings.theme === 'light' ? 'active' : ''}
-              onClick={() => void onChange({ theme: 'light' })}
-            >
-              浅色
-            </button>
-          </div>
+        <div className="pref-row">
+          <span className="pref-label">主题色</span>
           <div className="row" style={{ gap: 8 }}>
-            <span className="dim">主题色</span>
             {ACCENTS.map((color) => (
               <button
                 key={color}
@@ -212,6 +201,23 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
                 }}
               />
             ))}
+          </div>
+        </div>
+        <div className="pref-row">
+          <span className="pref-label">明暗</span>
+          <div className="seg">
+            <button className={settings.theme === 'dark' ? 'active' : ''} onClick={() => void onChange({ theme: 'dark' })}>
+              深色
+            </button>
+            <button className={settings.theme === 'light' ? 'active' : ''} onClick={() => void onChange({ theme: 'light' })}>
+              浅色
+            </button>
+            <button
+              className={settings.theme === 'system' ? 'active' : ''}
+              onClick={() => void onChange({ theme: 'system' })}
+            >
+              跟随系统
+            </button>
           </div>
         </div>
       </section>
