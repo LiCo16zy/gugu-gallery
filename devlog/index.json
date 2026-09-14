@@ -126,7 +126,9 @@
       "baseCommit": "1a363cc",
       "branch": "master",
       "summary": "",
-      "status": "open"
+      "status": "closed",
+      "finishedAt": "2026-09-15 01:55",
+      "endCommit": "8df047b"
     }
   ]
 }
