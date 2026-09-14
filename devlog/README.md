@@ -48,14 +48,28 @@ devlog/
 **2）轮次工具产出**（我来做）
 
 ```bash
-node scripts/round.mjs list                # 看有哪些轮次
-node scripts/round.mjs new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
-node scripts/round.mjs finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 git tag
+npm run round -- inbox              # 打印最新未收尾轮次的内容
+npm run round -- list               # 看有哪些轮次
+npm run round -- new <slug>         # 开一轮：建目录 + 起始截图 + 元数据
+npm run round -- finalize <轮次ID>  # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 git tag
 ```
+
+> 这套工具是**可选插件**（`plugins/devlog`），发布构建时不会打进应用。
+> 操作手册见 [`plugins/devlog/SKILL.md`](../plugins/devlog/SKILL.md)。
 
 `finalize` 会自动补上 `changes.md`、`changes.patch`、`screenshots-after/`，
 并在 `README.md` 追加「过程存档」小节，最后打一个 `round/<轮次ID>` 的 git tag。
 每个轮次都能用 `git checkout round/<轮次ID>` 完整复原。
+
+## 什么时候建轮次
+
+**平时改代码只管 commit**，不需要每次都建档案 —— 每次 commit 都开一轮会把档案淹掉。
+
+只在有体量的迭代时建：
+
+- 用户提了一批界面修改意见，准备动手改
+- 做了一次结构性重构、换了技术方案、增删了主要功能
+- 一个功能从无到有做完了
 
 ## 命名规范
 
