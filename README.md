@@ -16,6 +16,8 @@ Electron + React + TypeScript，索引用 WebAssembly 版 SQLite（**零原生�
 - [数据模型](#数据模型)
 - [爬虫是怎么设计的](#爬虫是怎么设计的)
 - [命令行模式](#命令行模式)
+- [页面标注工具](#页面标注工具)
+- [开发过程档案](#开发过程档案)
 - [开发与测试](#开发与测试)
 - [已知限制](#已知限制)
 - [合规声明](#合规声明)
@@ -258,6 +260,64 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
 
 ---
 
+## 页面标注工具
+
+专门为「审阅界面 → 提修改意见」做的工具，内置在应用里，**按 `Ctrl+Shift+A` 打开**（顶栏右侧也有个笔形按钮）。
+
+用法：
+
+1. 打开后默认是**浏览**模式，不拦截任何点击 —— 正常操作应用，翻到你想提意见的那一屏
+   （比如打开某张图的灯箱、切到抓取面板、把窗口拖成你常用的尺寸）
+2. 切到**点选**：鼠标悬停时实时高亮元素并显示它属于哪个组件；点一下某个元素即可写批注
+3. 或者切到**框选**：按住左键拖出一个矩形，给一整片区域提意见
+4. 每条批注可以标类别（视觉样式 / 布局结构 / 文案内容 / 交互行为 / 缺陷 / 其它）
+   和优先级（必须改 / 建议改 / 锦上添花）
+5. 右下角「标注清单」可以回看、跳转、编辑、删除
+6. 点「导出标注」→ 填一句总体说明 → 确认
+
+导出会在 `devlog/rounds/` 下生成一个新轮次目录，包含：
+
+- `annotations.md` / `annotations.json` —— 每条批注的**原文**，外加自动采集的执行信息：
+  **组件名、CSS 选择器、父级链、元素文本、关键计算样式（字号/颜色/间距/圆角/阴影…）、WCAG 对比度**、
+  以及标注框的坐标尺寸
+- `screenshots/00-full.png` —— 导出时的整页截图
+- `screenshots/001-xxx.png` —— **每条标注自动裁切的局部截图**
+
+> 为什么记录得这么细：批注里写「这个按钮太小」是无法执行的，而执行改动的人（或 AI）
+> 未必看得到界面。所以工具把选择器、当前字号、当前颜色、当前间距全都记下来，
+> 拿到 `annotations.md` 就能直接定位到源码位置、并知道当前值是多少、要改成什么。
+
+标注只会写进 `devlog/`，**不会修改任何代码**，可以放心多点几下。
+
+## 开发过程档案
+
+每一轮迭代的「快照 + 说明 + 前后对照截图」都归档在 `devlog/`，用于回溯与对外展示。
+完整说明见 [`devlog/README.md`](devlog/README.md)，轮次索引见 `devlog/index.json`。
+
+```bash
+node scripts/round.mjs list                # 列出所有轮次
+node scripts/round.mjs new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
+node scripts/round.mjs finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 tag
+```
+
+每个轮次目录长这样：
+
+```
+devlog/rounds/0002-xxx/
+├── README.md             背景 / 改动 / 验证 / 遗留
+├── annotations.md        界面标注原文（人会读的版本）
+├── annotations.json      界面标注原始数据（机器可读）
+├── changes.md            代码差异概览（变更文件清单 + 统计）
+├── changes.patch         完整代码差异，可 git apply
+├── screenshots/          本轮界面截图
+├── screenshots-before/   改动前（用于前后对照）
+└── screenshots-after/    改动后（用于前后对照）
+```
+
+收尾时会自动打一个 `round/<轮次ID>` 的 git tag，
+所以任何一轮都能用 `git checkout round/0002-xxx` 完整复原。
+起点是 [`devlog/rounds/0001-baseline/`](devlog/rounds/0001-baseline/README.md)。
+
 ## 开发与测试
 
 ```bash
@@ -266,6 +326,7 @@ npm run typecheck  # 主进程 / 渲染进程分别做严格类型检查
 npm test           # 单元测试：解析器、URL 规则、格式嗅探（23 例）
 npm run e2e        # 真连目标站点跑一次端到端，校验索引与磁盘产物
 npm run uicheck    # 启动真实界面点一遍关键路径（17 项交互断言）
+npm run annotatecheck  # 驱动标注工具走完「点选 → 批注 → 框选 → 导出」（18 项断言）
 npm run shot       # 自动截图四个界面到 screenshots/
 ```
 
@@ -275,6 +336,7 @@ npm run shot       # 自动截图四个界面到 screenshots/
 | --- | --- | --- |
 | `npm test` | HTML 解析、URL 规则、base64、格式嗅探 | 否 |
 | `npm run uicheck` | 渲染、筛选、搜索、灯箱、键盘、主题、分类树 | 否（用本地图库） |
+| `npm run annotatecheck` | 标注工具的交互与导出产物 | 否（用临时目录） |
 | `npm run e2e` | 真实抓取 → 下载 → 落盘 → 缩略图 | 是 |
 
 - 单元测试用的是**真实抓下来的 HTML 样本**（`tests/fixtures/`），
@@ -294,6 +356,7 @@ src/
 │   ├── context.ts             依赖装配 + 运行期切换图库
 │   ├── config.ts              设置持久化（userData/settings.json）
 │   ├── ipc.ts                 IPC 处理函数（渲染进程的全部能力边界）
+│   ├── devlog.ts              开发过程档案：轮次目录、截图裁片、Markdown 生成
 │   ├── crawler/
 │   │   ├── site.ts            站点常量、URL 规则、base64 编解码
 │   │   ├── parser.ts          列表页 / 详情页解析 + 图片魔数嗅探
@@ -309,6 +372,7 @@ src/
 │       └── downloader 逻辑     在 crawler/engine.ts 内联（与进度上报强耦合）
 ├── preload/index.ts           contextBridge 白名单
 ├── renderer/                  React 界面（无 UI 库，纯手写 CSS 设计系统）
+│   └── src/devtools/          页面标注工具（点选/框选、元素自省、导出）
 └── shared/types.ts            两端共享的领域类型与 IPC 契约
 ```
 

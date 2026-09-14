@@ -14,7 +14,7 @@ const ACCENTS = ['#7c9cff', '#b98cff', '#4ade80', '#fbbf24', '#f87171', '#38bdf8
 
 export default function SettingsPanel({ settings, info, stats, onChange, onToast }: Props): JSX.Element {
   return (
-    <div className="page">
+    <div className="page" data-component="SettingsPanel">
       <div className="page-head">
         <h2>设置</h2>
         <p>抓取与图库的全局参数。改动即时生效，无需重启。</p>

@@ -103,8 +103,9 @@ export default function Lightbox({
   const summary = items.find((i) => i.id === id) ?? null
 
   return (
-    <div className="lightbox" onWheel={onWheel}>
+    <div className="lightbox" data-component="Lightbox" onWheel={onWheel}>
       <div
+        data-component="Lightbox/Stage"
         className="lightbox-stage"
         onMouseDown={(e) => {
           if (zoom <= 1) return
@@ -149,7 +150,7 @@ export default function Lightbox({
         </button>
       </div>
 
-      <div className="lightbox-side">
+      <div className="lightbox-side" data-component="Lightbox/SidePanel">
         <div className="lb-head">
           <h3>{detail?.title || summary?.title || `#${id}`}</h3>
           <button className="lb-close" onClick={onClose} title="关闭 (Esc)">
@@ -208,7 +209,7 @@ export default function Lightbox({
           )}
         </dl>
 
-        <div className="lb-actions">
+        <div className="lb-actions" data-component="Lightbox/Actions">
           <button className="btn sm" onClick={() => void toggleFavorite()}>
             <IconStar
               width={13}

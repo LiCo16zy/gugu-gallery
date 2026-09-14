@@ -12,6 +12,7 @@ Thumbs.db
 data/
 library/
 _research/
-screenshots/
+/screenshots/
+!/devlog/**/screenshots/
 *.db
 *.db-journal

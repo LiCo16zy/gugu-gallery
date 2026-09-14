@@ -1,0 +1,7 @@
+# 轮次 0001-baseline 无代码差异文件
+#
+# 这是项目的起始状态，「改动前」是空仓库，因此不产生 patch。
+# 需要完整查看本轮的代码，执行：
+#     git show d12d19d
+#     git checkout round/0001-baseline
+#

@@ -43,15 +43,16 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" data-component="Sidebar">
       <div className="side-section">
         <div className="side-title">{!collapsed && <span>资料库</span>}</div>
-        <button className={`side-item${isLibraryAll ? ' active' : ''}`} onClick={() => go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, tags: [] }))} title="全部图片">
+        <button data-component="Sidebar/Item" className={`side-item${isLibraryAll ? ' active' : ''}`} onClick={() => go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, tags: [] }))} title="全部图片">
           <IconImage />
           {!collapsed && <span className="label">全部图片</span>}
           {!collapsed && <span className="count">{stats?.items ?? 0}</span>}
         </button>
         <button
+          data-component="Sidebar/Item"
           className={`side-item${view === 'gallery' && filters.favorite ? ' active' : ''}`}
           onClick={() => go(() => onFilters({ favorite: true }))}
           title="我的收藏"
@@ -61,6 +62,7 @@ export default function Sidebar({
           {!collapsed && <span className="count">{stats?.favorites ?? 0}</span>}
         </button>
         <button
+          data-component="Sidebar/Item"
           className={`side-item${view === 'gallery' && filters.downloaded === 'only' ? ' active' : ''}`}
           onClick={() => go(() => onFilters({ favorite: false, downloaded: 'only' }))}
           title="已下载到本地"
@@ -70,6 +72,7 @@ export default function Sidebar({
           {!collapsed && <span className="count">{stats?.downloaded ?? 0}</span>}
         </button>
         <button
+          data-component="Sidebar/Item"
           className={`side-item${view === 'gallery' && filters.downloaded === 'never' ? ' active' : ''}`}
           onClick={() => go(() => onFilters({ favorite: false, downloaded: 'never' }))}
           title="仅索引、尚未下载"
@@ -81,6 +84,7 @@ export default function Sidebar({
           )}
         </button>
         <button
+          data-component="Sidebar/Item"
           className={`side-item${view === 'crawl' ? ' active' : ''}`}
           onClick={onNavigateCrawl}
           title="抓取任务"
@@ -105,6 +109,7 @@ export default function Sidebar({
             return (
               <div key={plate.name}>
                 <button
+                  data-component="Sidebar/Plate"
                   className={`side-item${activePlate ? ' active' : ''}`}
                   onClick={() => {
                     setExpanded(open ? null : plate.name)
@@ -118,6 +123,7 @@ export default function Sidebar({
                 {open &&
                   plate.words.map((word) => (
                     <button
+                      data-component="Sidebar/Word"
                       key={word.name}
                       className={`side-item sub${
                         filters.plate === plate.name && filters.word === word.name ? ' active' : ''
@@ -143,10 +149,11 @@ export default function Sidebar({
             </button>
           </div>
           {tagsOpen && (
-            <div className="tag-cloud">
+            <div className="tag-cloud" data-component="Sidebar/TagCloud">
               {topTags.slice(0, 28).map((tag) => (
                 <button
                   key={tag.name}
+                  data-component="Sidebar/TagChip"
                   className={`tag-chip${filters.tags.includes(tag.name) ? ' active' : ''}`}
                   onClick={() => {
                     onNavigateGallery()

@@ -29,7 +29,9 @@ const IPC = {
   sourcesList: 'sources:list',
   sourcesRemove: 'sources:remove',
   sourcesToggle: 'sources:toggle',
-  progressEvent: 'crawl:progress-event'
+  progressEvent: 'crawl:progress-event',
+  devlogList: 'devlog:list',
+  devlogExport: 'devlog:export'
 } as const
 
 const api = {
@@ -68,6 +70,10 @@ const api = {
     list: () => ipcRenderer.invoke(IPC.sourcesList),
     remove: (id: number) => ipcRenderer.invoke(IPC.sourcesRemove, id),
     toggle: (id: number, enabled: boolean) => ipcRenderer.invoke(IPC.sourcesToggle, id, enabled)
+  },
+  devlog: {
+    list: () => ipcRenderer.invoke(IPC.devlogList),
+    export: (payload: unknown) => ipcRenderer.invoke(IPC.devlogExport, payload)
   },
   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url)
 }

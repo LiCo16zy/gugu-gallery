@@ -1266,3 +1266,10 @@ textarea {
   box-shadow: var(--shadow);
   animation: fade 0.18s var(--ease);
 }
+
+/* 标注模式开启时高亮顶栏按钮，避免忘记自己还开着工具 */
+.btn.ghost.annotate-on {
+  background: rgba(255, 159, 69, 0.16);
+  color: #ff9f45;
+  box-shadow: inset 0 0 0 1px rgba(255, 159, 69, 0.4);
+}

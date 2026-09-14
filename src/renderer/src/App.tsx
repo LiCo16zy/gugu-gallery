@@ -19,7 +19,8 @@ import GalleryGrid from './components/GalleryGrid'
 import Lightbox from './components/Lightbox'
 import CrawlPanel from './components/CrawlPanel'
 import SettingsPanel from './components/SettingsPanel'
-import { IconGrid, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
+import Annotator from './devtools/Annotator'
+import { IconGrid, IconMarker, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
 
 export type View = 'gallery' | 'crawl' | 'settings'
 
@@ -67,6 +68,7 @@ export default function App(): JSX.Element {
   const [view, setView] = useState<View>('gallery')
   const [openId, setOpenId] = useState<number | null>(null)
 
+  const [annotateOn, setAnnotateOn] = useState(false)
   const [progress, setProgress] = useState<CrawlProgress | null>(null)
   const [logs, setLogs] = useState<CrawlLogLine[]>([])
   const [toast, setToast] = useState<string | null>(null)
@@ -261,7 +263,7 @@ export default function App(): JSX.Element {
         )}
       </div>
 
-      <header className="topbar">
+      <header className="topbar" data-component="App/TopBar">
         <button
           className="btn icon ghost"
           title="折叠/展开侧栏"
@@ -311,6 +313,14 @@ export default function App(): JSX.Element {
           </button>
         </div>
 
+        <button
+          className={`btn icon ghost${annotateOn ? ' annotate-on' : ''}`}
+          title="页面标注工具（Ctrl+Shift+A）"
+          onClick={() => setAnnotateOn((v) => !v)}
+        >
+          <IconMarker />
+        </button>
+
         <div className="seg">
           <button className={view === 'gallery' ? 'active' : ''} onClick={() => setView('gallery')}>
             图库
@@ -342,7 +352,7 @@ export default function App(): JSX.Element {
       <main className="main" ref={scrollRef} onScroll={onScroll}>
         {view === 'gallery' && (
           <>
-            <div className="filter-bar">
+            <div className="filter-bar" data-component="App/FilterBar">
               <button
                 className={`pill${filters.downloaded === 'any' && !filters.favorite && !filters.plate && filters.tags.length === 0 ? ' active' : ''}`}
                 onClick={() =>
@@ -464,7 +474,7 @@ export default function App(): JSX.Element {
       </main>
 
       {jobActive && progress && (
-        <div className="statusbar">
+        <div className="statusbar" data-component="App/StatusBar">
           <span className={`dot ${progress.phase}`} />
           <span className="text">
             {progress.phase === 'indexing' ? '建立索引' : progress.phase === 'paused' ? '已暂停' : '下载中'}
@@ -507,6 +517,14 @@ export default function App(): JSX.Element {
           onToast={setToast}
         />
       )}
+
+      <Annotator
+        enabled={annotateOn}
+        onToggle={setAnnotateOn}
+        view={openId != null ? 'lightbox' : view}
+        appVersion={info?.version ?? ''}
+        onToast={setToast}
+      />
 
       {toast && <div className="toast">{toast}</div>}
     </div>

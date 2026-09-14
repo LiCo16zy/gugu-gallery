@@ -153,6 +153,14 @@ export const IconCheck = (p: P) => (
   </svg>
 )
 
+export const IconMarker = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 20h16" />
+    <path d="M14.5 3.5 20 9l-9.5 9.5H5v-5.5z" />
+    <path d="M12.5 5.5 18 11" />
+  </svg>
+)
+
 export const IconZoomIn = (p: P) => (
   <svg {...base(p)}>
     <circle cx="11" cy="11" r="7" />

@@ -134,7 +134,7 @@ export default function CrawlPanel({
   }, [progress])
 
   return (
-    <div className="page">
+    <div className="page" data-component="CrawlPanel">
       <div className="page-head">
         <h2>抓取任务</h2>
         <p>

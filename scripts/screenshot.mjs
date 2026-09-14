@@ -32,7 +32,7 @@ if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
   process.exit(1)
 }
 
-const outDir = join(root, 'screenshots')
+const outDir = process.env.GUGU_SHOT_DIR ?? join(root, 'screenshots')
 await mkdir(outDir, { recursive: true })
 
 const views = process.argv.slice(2)
@@ -50,7 +50,8 @@ for (const view of targets) {
       GUGU_SHOT_SETTLE: '2200',
       GUGU_LIBRARY_ROOT: libraryRoot,
       GUGU_SETTINGS_FILE: join(root, 'data', 'screenshot-settings.json'),
-      GUGU_DIAG: process.env.GUGU_DIAG ?? '1'
+      GUGU_DIAG: process.env.GUGU_DIAG ?? '1',
+      GUGU_SHOT_FORMAT: process.env.GUGU_SHOT_FORMAT ?? 'png'
     }
     const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
       cwd: root,
@@ -62,7 +63,8 @@ for (const view of targets) {
       else reject(new Error(`截图 ${view} 退出码 ${code}`))
     })
   })
-  console.log(`已截图: ${join(outDir, `${view === 'gallery' ? 'home' : view}.png`)}`)
+  const ext = (process.env.GUGU_SHOT_FORMAT ?? 'png') === 'jpeg' ? 'jpg' : 'png'
+  console.log(`已截图: ${join(outDir, `${view === 'gallery' ? 'home' : view}.${ext}`)}`)
 }
 
 console.log('完成。')

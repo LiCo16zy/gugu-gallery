@@ -16,6 +16,7 @@ import type {
   TargetInput
 } from '@shared/types'
 import type { AppContext } from './context'
+import type { ExportPayload } from './devlog'
 import { defaultLibraryRoot } from './config'
 
 export const IPC = {
@@ -43,7 +44,9 @@ export const IPC = {
   sourcesList: 'sources:list',
   sourcesRemove: 'sources:remove',
   sourcesToggle: 'sources:toggle',
-  progressEvent: 'crawl:progress-event'
+  progressEvent: 'crawl:progress-event',
+  devlogList: 'devlog:list',
+  devlogExport: 'devlog:export'
 } as const
 
 export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | null): void {
@@ -162,6 +165,12 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
     ctx.repository.setSourceEnabled(id, enabled)
     return true
   })
+
+  handle(IPC.devlogList, () => ctx.devlog.listRounds())
+
+  handle(IPC.devlogExport, (payload: ExportPayload) =>
+    ctx.devlog.exportAnnotations(payload, getWindow())
+  )
 
   // 引擎进度 -> 渲染进程
   ctx.onProgress((progress, logs) => emitProgress(getWindow(), progress, logs))

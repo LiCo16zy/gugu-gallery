@@ -171,7 +171,10 @@ async function runScreenshot(win: BrowserWindow): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 400))
 
   const image = await win.webContents.capturePage()
-  await writeFile(join(outDir, `${view || 'home'}.png`), image.toPNG())
+  // 归档用 JPEG（体积约为 PNG 的 1/5），日常自检仍用 PNG 保留无损细节
+  const asJpeg = process.env.GUGU_SHOT_FORMAT === 'jpeg'
+  const ext = asJpeg ? 'jpg' : 'png'
+  await writeFile(join(outDir, `${view || 'home'}.${ext}`), asJpeg ? image.toJPEG(86) : image.toPNG())
 
   if (process.env.GUGU_DIAG) {
     const report = await win.webContents.executeJavaScript(DIAGNOSTICS_SCRIPT)
@@ -190,7 +193,7 @@ async function runScreenshot(win: BrowserWindow): Promise<void> {
       )
     }
     const after = await win.webContents.capturePage()
-    await writeFile(join(outDir, `${view || 'home'}-after-eval.png`), after.toPNG())
+    await writeFile(join(outDir, `${view || 'home'}-after-eval.${ext}`), asJpeg ? after.toJPEG(86) : after.toPNG())
   }
 
   app.quit()

@@ -24,7 +24,9 @@
     "crawl": "electron-vite build && electron out/main/cli.js",
     "crawl:dev": "electron out/main/cli.js",
     "e2e": "node scripts/e2e.mjs",
-    "uicheck": "node scripts/uicheck.mjs"
+    "uicheck": "node scripts/uicheck.mjs",
+    "annotatecheck": "node scripts/annotatecheck.mjs",
+    "annotate": "electron-vite build && electron out/main/index.js"
   },
   "dependencies": {
     "sql.js": "^1.13.0"

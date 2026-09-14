@@ -22,7 +22,7 @@ export default function GalleryGrid({
 }: Props): JSX.Element {
   if (!loading && items.length === 0) {
     return (
-      <div className="empty">
+      <div className="empty" data-component="GalleryGrid/Empty">
         <IconImage width={34} height={34} />
         <h3>这里还没有内容</h3>
         <p>{emptyHint}</p>
@@ -31,7 +31,7 @@ export default function GalleryGrid({
   }
 
   return (
-    <div className="grid" style={{ ['--card-min' as string]: cardMin }}>
+    <div className="grid" data-component="GalleryGrid" style={{ ['--card-min' as string]: cardMin }}>
       {items.map((item) => (
         <Card key={item.id} item={item} onOpen={onOpen} onQuickFavorite={onQuickFavorite} />
       ))}
@@ -95,7 +95,7 @@ function Card({
   const isTall = ratio < 0.66
 
   return (
-    <div className="card" onClick={() => onOpen(item.id)} title={item.title}>
+    <div className="card" data-component="GalleryGrid/Card" onClick={() => onOpen(item.id)} title={item.title}>
       <div className="card-media" style={!loaded ? { aspectRatio: String(ratio || 0.75) } : undefined}>
         {item.thumbUrl && !failed ? (
           <img

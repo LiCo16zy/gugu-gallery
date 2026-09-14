@@ -1,0 +1,522 @@
+/* ============================================================================
+   页面标注工具 · 样式
+   刻意用一套独立的暖色调，和应用的冷色主题区分开，避免误判当前处于哪种模式。
+   ========================================================================== */
+
+.gugu-anno-root {
+  --anno: #ff9f45;
+  --anno-soft: rgba(255, 159, 69, 0.16);
+  --anno-line: rgba(255, 159, 69, 0.85);
+  --anno-panel: #16130f;
+  --anno-panel-2: #1e1a15;
+  --anno-border: rgba(255, 178, 102, 0.22);
+  --anno-text: #f4ece2;
+  --anno-dim: #a99a89;
+
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  font-family: var(--font);
+  font-size: 12.5px;
+  color: var(--anno-text);
+}
+
+.gugu-anno-root * {
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ 工具栏 */
+
+.gugu-anno-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--anno-panel) 94%, transparent);
+  border: 1px solid var(--anno-border);
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(14px);
+}
+
+.gugu-anno-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0 6px 0 3px;
+  border-right: 1px solid var(--anno-border);
+}
+.gugu-anno-brand b {
+  color: var(--anno);
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+.gugu-anno-brand em {
+  font-style: normal;
+  color: var(--anno-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.gugu-anno-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.gugu-anno-seg button {
+  border: none;
+  background: transparent;
+  color: var(--anno-dim);
+  padding: 4px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.14s var(--ease);
+}
+.gugu-anno-seg button:hover {
+  color: var(--anno-text);
+}
+.gugu-anno-seg button.on {
+  background: var(--anno);
+  color: #241704;
+  font-weight: 600;
+}
+
+.gugu-anno-btn {
+  border: 1px solid var(--anno-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--anno-text);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.14s var(--ease);
+  white-space: nowrap;
+}
+.gugu-anno-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+.gugu-anno-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.gugu-anno-btn.on {
+  background: var(--anno-soft);
+  border-color: var(--anno-line);
+  color: var(--anno);
+}
+.gugu-anno-btn.primary {
+  background: linear-gradient(135deg, #ffb35c, #ff8a2b);
+  border-color: transparent;
+  color: #241704;
+  font-weight: 600;
+}
+.gugu-anno-btn.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.gugu-anno-btn.danger {
+  color: #ff9b8a;
+  border-color: rgba(255, 120, 100, 0.3);
+}
+
+.gugu-anno-hint {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  padding: 5px 13px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--anno-panel) 88%, transparent);
+  border: 1px solid var(--anno-border);
+  color: var(--anno-dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ 高亮 */
+
+.gugu-anno-hover {
+  position: absolute;
+  pointer-events: none;
+  outline: 2px solid var(--anno-line);
+  outline-offset: 1px;
+  background: var(--anno-soft);
+  border-radius: 3px;
+}
+
+.gugu-anno-hover-label {
+  position: absolute;
+  top: -23px;
+  left: -2px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: var(--anno);
+  color: #241704;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gugu-anno-drag {
+  position: absolute;
+  pointer-events: none;
+  border: 2px dashed var(--anno);
+  background: var(--anno-soft);
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ 图钉 */
+
+.gugu-anno-pin {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 2px solid var(--anno);
+  border-radius: 5px;
+  background: var(--anno-soft);
+  transition: box-shadow 0.15s var(--ease);
+}
+.gugu-anno-pin:hover {
+  box-shadow: 0 0 0 3px rgba(255, 159, 69, 0.28);
+}
+
+.gugu-anno-pin.gugu-anno-layout {
+  border-color: #6fd3ff;
+  background: rgba(111, 211, 255, 0.14);
+}
+.gugu-anno-pin.gugu-anno-content {
+  border-color: #b39bff;
+  background: rgba(179, 155, 255, 0.14);
+}
+.gugu-anno-pin.gugu-anno-behavior {
+  border-color: #6ee7a8;
+  background: rgba(110, 231, 168, 0.14);
+}
+.gugu-anno-pin.gugu-anno-bug {
+  border-color: #ff7676;
+  background: rgba(255, 118, 118, 0.16);
+}
+.gugu-anno-pin.gugu-anno-other {
+  border-color: #b9bec9;
+  background: rgba(185, 190, 201, 0.14);
+}
+
+.gugu-anno-index {
+  position: absolute;
+  top: -11px;
+  left: -11px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--anno);
+  color: #241704;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.gugu-anno-pin.gugu-anno-layout .gugu-anno-index {
+  background: #6fd3ff;
+}
+.gugu-anno-pin.gugu-anno-content .gugu-anno-index {
+  background: #b39bff;
+}
+.gugu-anno-pin.gugu-anno-behavior .gugu-anno-index {
+  background: #6ee7a8;
+}
+.gugu-anno-pin.gugu-anno-bug .gugu-anno-index {
+  background: #ff7676;
+}
+.gugu-anno-pin.gugu-anno-other .gugu-anno-index {
+  background: #b9bec9;
+}
+
+/* ------------------------------------------------------------------ 编辑框 */
+
+.gugu-anno-editor {
+  position: absolute;
+  pointer-events: auto;
+  width: 360px;
+  padding: 13px 14px 11px;
+  border-radius: 13px;
+  background: var(--anno-panel);
+  border: 1px solid var(--anno-border);
+  box-shadow: 0 22px 50px -16px rgba(0, 0, 0, 0.85);
+}
+
+.gugu-anno-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 620;
+  color: var(--anno);
+  margin-bottom: 9px;
+}
+
+.gugu-anno-x {
+  border: none;
+  background: transparent;
+  color: var(--anno-dim);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 3px;
+}
+.gugu-anno-x:hover {
+  color: var(--anno-text);
+}
+
+.gugu-anno-target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  margin-bottom: 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  max-height: 118px;
+  overflow: auto;
+  user-select: text;
+}
+.gugu-anno-target > div {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 7px;
+  font-size: 11px;
+  align-items: baseline;
+}
+.gugu-anno-target span {
+  color: var(--anno-dim);
+}
+.gugu-anno-target code {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: #ffd9ac;
+  word-break: break-all;
+}
+.gugu-anno-target em {
+  font-style: normal;
+  color: #d9cfc2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gugu-anno-editor textarea,
+.gugu-anno-modal textarea {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--anno-text);
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.6;
+  user-select: text;
+}
+.gugu-anno-editor textarea:focus,
+.gugu-anno-modal textarea:focus {
+  border-color: var(--anno-line);
+}
+
+.gugu-anno-editor-row {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+}
+.gugu-anno-editor-row select {
+  flex: 1;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--anno-panel-2);
+  color: var(--anno-text);
+  outline: none;
+  cursor: pointer;
+}
+
+.gugu-anno-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+}
+.gugu-anno-spacer {
+  flex: 1;
+}
+.gugu-anno-editor-tip {
+  margin-top: 6px;
+  color: var(--anno-dim);
+  font-size: 10.5px;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------------ 清单 */
+
+.gugu-anno-panel {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 306px;
+  max-height: 46vh;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--anno-panel) 94%, transparent);
+  border: 1px solid var(--anno-border);
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+.gugu-anno-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--anno-border);
+  color: var(--anno);
+}
+.gugu-anno-panel-head span {
+  color: var(--anno-dim);
+  font-size: 11.5px;
+}
+
+.gugu-anno-panel-list {
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.gugu-anno-item {
+  display: flex;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.gugu-anno-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gugu-anno-dot {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--anno);
+  color: #241704;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+.gugu-anno-dot.gugu-anno-layout {
+  background: #6fd3ff;
+}
+.gugu-anno-dot.gugu-anno-content {
+  background: #b39bff;
+}
+.gugu-anno-dot.gugu-anno-behavior {
+  background: #6ee7a8;
+}
+.gugu-anno-dot.gugu-anno-bug {
+  background: #ff7676;
+}
+.gugu-anno-dot.gugu-anno-other {
+  background: #b9bec9;
+}
+
+.gugu-anno-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.gugu-anno-item-title {
+  color: var(--anno-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gugu-anno-item-meta {
+  color: var(--anno-dim);
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ 弹窗 */
+
+.gugu-anno-modal-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.62);
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(3px);
+}
+
+.gugu-anno-modal {
+  width: 460px;
+  padding: 20px 22px;
+  border-radius: 15px;
+  background: var(--anno-panel);
+  border: 1px solid var(--anno-border);
+  box-shadow: 0 26px 60px -18px rgba(0, 0, 0, 0.85);
+}
+.gugu-anno-modal h3 {
+  font-size: 15px;
+  color: var(--anno);
+  margin-bottom: 8px;
+}
+.gugu-anno-modal p {
+  color: var(--anno-dim);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.gugu-anno-modal code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #ffd9ac;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.gugu-anno-modal label {
+  display: block;
+  color: var(--anno-dim);
+  font-size: 11.5px;
+  margin-bottom: 5px;
+}
+.gugu-anno-modal-meta {
+  margin-top: 9px;
+  color: var(--anno-dim);
+  font-size: 11px;
+}
+.gugu-anno-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

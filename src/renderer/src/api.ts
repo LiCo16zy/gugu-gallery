@@ -55,6 +55,10 @@ export interface GuguBridge {
     remove(id: number): Promise<boolean>
     toggle(id: number, enabled: boolean): Promise<boolean>
   }
+  devlog: {
+    list(): Promise<unknown>
+    export(payload: unknown): Promise<unknown>
+  }
   openExternal(url: string): Promise<void>
 }
 
@@ -113,6 +117,10 @@ export const api: GuguBridge = {
     list: () => bridge().sources.list(),
     remove: (id) => bridge().sources.remove(id),
     toggle: (id, enabled) => bridge().sources.toggle(id, enabled)
+  },
+  devlog: {
+    list: () => bridge().devlog.list(),
+    export: (payload) => bridge().devlog.export(payload)
   },
   openExternal: (url) => bridge().openExternal(url)
 }

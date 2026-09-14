@@ -1,0 +1,19 @@
+{
+  "project": "gugu-gallery",
+  "description": "咕咕小站（guguxz.com）桌面爬虫与本地图库浏览器",
+  "rounds": [
+    {
+      "id": "0001-baseline",
+      "slug": "baseline",
+      "title": "初始可用版本",
+      "createdAt": "2026-09-14 12:24",
+      "finishedAt": "2026-09-14 12:24",
+      "baseCommit": null,
+      "endCommit": "343a0e6",
+      "branch": "master",
+      "status": "closed",
+      "summary": "站点逆向 + 爬虫 + 数据层 + 前端首版；测试与端到端验证全绿，等待界面审阅。",
+      "hasAnnotations": false
+    }
+  ]
+}

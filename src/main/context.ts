@@ -8,10 +8,12 @@ import { Database } from './store/db'
 import { Repository } from './store/repository'
 import { Library } from './media/library'
 import { SettingsStore } from './config'
+import { DevlogStore } from './devlog'
 import type { AppSettings, CrawlProgress } from '@shared/types'
 
 export class AppContext {
   readonly settings: SettingsStore
+  readonly devlog: DevlogStore
   private db!: Database
   private repo!: Repository
   private lib!: Library
@@ -21,6 +23,7 @@ export class AppContext {
 
   constructor() {
     this.settings = new SettingsStore()
+    this.devlog = new DevlogStore(DevlogStore.resolveRoot())
   }
 
   async init(): Promise<void> {
