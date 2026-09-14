@@ -79,6 +79,19 @@
       "summary": "修标注工具三处易用性问题（批注框出屏、清单显隐、连续标注），处理 10 条界面标注，顺带修掉导航解析把模板占位名当真实分类的缺陷。",
       "hasAnnotations": true,
       "finishedAt": "2026-09-14 21:20"
+    },
+    {
+      "id": "0007-20260914-2221",
+      "slug": "toolbar-compact-and-motion",
+      "title": "标注工具栏可拖动 / 简易形态 + 动效调整",
+      "createdAt": "2026-09-14 22:21",
+      "baseCommit": "2ecf186",
+      "endCommit": "dcd2b06",
+      "branch": "master",
+      "status": "closed",
+      "summary": "标注工具栏改为可拖动并支持简易/标准两种形态；处理 4 条动效与沉浸模式标注；版本升至 0.5.0 并产出不含插件的预览发布包。",
+      "hasAnnotations": true,
+      "finishedAt": "2026-09-14 23:05"
     }
   ]
 }

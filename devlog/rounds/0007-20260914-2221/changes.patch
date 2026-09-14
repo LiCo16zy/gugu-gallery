@@ -1,0 +1,1677 @@
+# 轮次 0007-20260914-2221 代码差异
+# 基线提交 2ecf186 -> dcd2b06
+
+diff --git a/devlog/rounds/0007-20260914-2221/README.md b/devlog/rounds/0007-20260914-2221/README.md
+new file mode 100644
+index 0000000..88845e7
+--- /dev/null
++++ b/devlog/rounds/0007-20260914-2221/README.md
+@@ -0,0 +1,27 @@
++# 轮次 0007-20260914-2221
++
++> 由页面标注工具自动生成，请在完成本轮改动后补全下面的小节。
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++沉浸模式优化，内容页动画优化
++
++## 反馈标注
++
++共 4 条，详见 [`annotations.md`](annotations.md) 与 [`annotations.json`](annotations.json)。
++
++导出时视口 1348×716，界面 gallery，应用版本 0.1.0。
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
+diff --git a/devlog/rounds/0007-20260914-2221/annotations.json b/devlog/rounds/0007-20260914-2221/annotations.json
+new file mode 100644
+index 0000000..8778e38
+--- /dev/null
++++ b/devlog/rounds/0007-20260914-2221/annotations.json
+@@ -0,0 +1,285 @@
++{
++  "roundId": "0007-20260914-2221",
++  "exportedAt": "2026-09-14T14:21:50.379Z",
++  "view": "gallery",
++  "note": "沉浸模式优化，内容页动画优化",
++  "viewport": {
++    "width": 1348,
++    "height": 716
++  },
++  "devicePixelRatio": 1.4249999523162842,
++  "appVersion": "0.1.0",
++  "annotations": [
++    {
++      "id": "y79vr6a6",
++      "index": 1,
++      "comment": "调整布局重排时的卡片过度动画速度，太快了，变暗（透明）0.6s, 变亮（不透明）0.6s，动画过度平滑，整个过度动画低暗时间(透明度低于30%)不超过0.6s",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789395012213,
++      "rect": {
++        "x": 63.99123001098633,
++        "y": 106.6885986328125,
++        "width": 1274.25439453125,
++        "height": 3237.050537109375
++      },
++      "pageRect": {
++        "x": 63.99123001098633,
++        "y": 106.6885986328125,
++        "width": 1274.25439453125,
++        "height": 3237.050537109375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
++        "component": "GalleryGrid",
++        "tag": "div",
++        "classes": "grid",
++        "text": "2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（明日方舟）pid 118816127 · 13 浏览3584×6368·2026-09-14白发 · 女仆pid 119512232 · 17 浏览2160×3456·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 14 浏览1600×2000·2026-09-14女孩子 · 插画pid 118770165 · 17 浏览4144×9000·2026-09-13碧蓝档案pid 114882512 · 13 浏览1856×1280·2026-09-13脚底 · 白裤袜pid 117507782 · 18 浏览1158×1637·20",
++        "parentChain": [
++          "main.main",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "start",
++          "gap": "0px 14px",
++          "grid-template-columns": "164.846px 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px",
++          "width": "1274.25px",
++          "height": "3237.05px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "16px 18px 60px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "p4if56ey",
++      "index": 2,
++      "comment": "删除文本，仅保留图标，图标按钮透明，仅保留图标。图标大小放大4px",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789395098731,
++      "rect": {
++        "x": 1231.7105712890625,
++        "y": 13.991228103637695,
++        "width": 102.36842346191406,
++        "height": 33.99123001098633
++      },
++      "pageRect": {
++        "x": 1231.7105712890625,
++        "y": 13.991228103637695,
++        "width": 102.36842346191406,
++        "height": 33.99123001098633
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1) > button.lb-exit-immersive:nth-of-type(1)",
++        "component": "Lightbox/Stage › button.lb-exit-immersive",
++        "tag": "button",
++        "classes": "lb-exit-immersive",
++        "text": "退出沉浸",
++        "parentChain": [
++          "div.lightbox-stage",
++          "div.lightbox.immersive",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "position": "absolute",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "102.368px",
++          "height": "33.9912px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px 14px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(124, 156, 255, 0.24)",
++          "border": "0.701754px solid rgba(124, 156, 255, 0.5)",
++          "border-radius": "9px",
++          "white-space": "normal",
++          "z-index": "5",
++          "transition": "0.16s cubic-bezier(0.22, 0.61, 0.36, 1)"
++        },
++        "attributes": {
++          "title": "退出沉浸模式"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "z8r348b4",
++      "index": 3,
++      "comment": "当进入沉浸模式时，在切换图片时，右下角从右到左平滑弹出标题描述文本框，过渡动画0.6s，文本框的边框透明，背景透明，仅有下边框有4px粗白线。仅在文本框完全淡出界面时，且用户切换到上一张或下一张图片时触发文本框弹入，文本框弹入后保持2s，之后文本框向下平滑滑出界面，过度动画0.6s。文本框保持的2s时间内，用户继续切换图片时，立刻改变文本框内容，并重置保持时间为2s。在文本框淡出动画时，用户切换界面，则从右到左弹出新的文本框。当用户退出沉浸模式时，文本框立刻0.6s淡出。当用户保持沉浸模式时，退出灯箱，文本框立刻0.6s淡出，当用户保持沉浸模式时，进入别的灯箱，文本框不淡入，仅在切换图片时候播放淡入-保持-淡出。\n文本框内容：2845x4500 17.53M [匿名-分享]\n类似这种标题，文字大小 22px",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789395184129,
++      "rect": {
++        "x": 0,
++        "y": 0,
++        "width": 1348.0701904296875,
++        "height": 716.4912109375
++      },
++      "pageRect": {
++        "x": 0,
++        "y": 0,
++        "width": 1348.0701904296875,
++        "height": 716.4912109375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1)",
++        "component": "Lightbox/Stage",
++        "tag": "div",
++        "classes": "lightbox-stage",
++        "text": "退出沉浸",
++        "parentChain": [
++          "div.lightbox.immersive",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "position": "relative",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "1348.07px",
++          "height": "716.491px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "24px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "overflow": "hidden",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "uel4i1gl",
++      "index": 4,
++      "comment": "向下浏览时，对于用户界面外的卡片，当进入页面内高度超过20%时，播放淡入动画，从全透明平滑过度到不透明，动画时间0.4s，之后不再淡出。\n仅在用户切换分类，切换筛选条件，搜索时触发了页面重排，才会对用户界面以外的卡片进行隐藏，在用户向下滑动过程中播放淡入动画。在用户调整窗口大小，切换左侧边栏，拖动左侧边栏触发页面重排时，不会去隐藏那些已经播放完淡入动画的卡片。\n这里的逻辑该请你自行梳理，实现以上效果的同时要考虑是否可以兼容性能优化，防止在用户浏览一万张图片这个量级时造成卡顿。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789395667640,
++      "rect": {
++        "x": 63.99123001098633,
++        "y": 106.6885986328125,
++        "width": 1274.25439453125,
++        "height": 3237.050537109375
++      },
++      "pageRect": {
++        "x": 63.99123001098633,
++        "y": 106.6885986328125,
++        "width": 1274.25439453125,
++        "height": 3237.050537109375
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
++        "component": "GalleryGrid",
++        "tag": "div",
++        "classes": "grid",
++        "text": "2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（明日方舟）pid 118816127 · 13 浏览3584×6368·2026-09-14白发 · 女仆pid 119512232 · 17 浏览2160×3456·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 14 浏览1600×2000·2026-09-14女孩子 · 插画pid 118770165 · 17 浏览4144×9000·2026-09-13碧蓝档案pid 114882512 · 13 浏览1856×1280·2026-09-13脚底 · 白裤袜pid 117507782 · 18 浏览1158×1637·20",
++        "parentChain": [
++          "main.main",
++          "div.app.sidebar-collapsed",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "grid",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "start",
++          "gap": "0px 14px",
++          "grid-template-columns": "164.846px 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px",
++          "width": "1274.25px",
++          "height": "3237.05px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "16px 18px 60px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/devlog/rounds/0007-20260914-2221/annotations.md b/devlog/rounds/0007-20260914-2221/annotations.md
+new file mode 100644
+index 0000000..5bf89ee
+--- /dev/null
++++ b/devlog/rounds/0007-20260914-2221/annotations.md
+@@ -0,0 +1,66 @@
++# 界面标注 · 轮次 0007-20260914-2221
++
++- 导出时间：2026-09-14T14:21:50.379Z
++- 所在界面：gallery
++- 视口：1348×716（DPR 1.4249999523162842）
++- 应用版本：0.1.0
++- 标注条数：4
++
++## 总体说明
++
++沉浸模式优化，内容页动画优化
++
++## 逐条标注
++
++### 1. 调整布局重排时的卡片过度动画速度，太快了，变暗（透明）0.6s, 变亮（不透明）0.6s，动画过度平滑，整个过度动画低暗
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid`
++- **选择器**：`body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)`
++- **父级链**：`main.main` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **元素文本**：2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（…
++- **位置尺寸**：x=64 y=107 1274×3237
++- **关键样式**：display: grid; flex-direction: row; justify-content: normal; align-items: start; gap: 0px 14px; grid-template-columns: 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px; width: 1274.25px; height: 3237.05px; min-width: 0px; max-width: none; padding: 16px 18px 60px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 调整布局重排时的卡片过度动画速度，太快了，变暗（透明）0.6s, 变亮（不透明）0.6s，动画过度平滑，整个过度动画低暗时间(透明度低于30%)不超过0.6s
++
++### 2. 删除文本，仅保留图标，图标按钮透明，仅保留图标。图标大小放大4px
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Stage › button.lb-exit-immersive`
++- **选择器**：`div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1) > button.lb-exit-immersive:nth-of-type(1)`
++- **父级链**：`div.lightbox-stage` ← `div.lightbox.immersive` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **元素文本**：退出沉浸
++- **位置尺寸**：x=1232 y=14 102×34
++- **关键样式**：display: flex; position: absolute; flex-direction: row; justify-content: normal; align-items: center; gap: 7px; grid-template-columns: none; width: 102.368px; height: 33.9912px; min-width: 0px; max-width: none; padding: 0px 14px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgba(124, 156, 255, 0.24); border: 0.701754px solid rgba(124, 156, 255, 0.5); border-radius: 9px; white-space: normal; z-index: 5; transition: 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)
++- **属性**：title="退出沉浸模式"
++
++> 删除文本，仅保留图标，图标按钮透明，仅保留图标。图标大小放大4px
++
++### 3. 当进入沉浸模式时，在切换图片时，右下角从右到左平滑弹出标题描述文本框，过渡动画0.6s，文本框的边框透明，背景透明，仅有
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Lightbox/Stage`
++- **选择器**：`body > div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1)`
++- **父级链**：`div.lightbox.immersive` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **元素文本**：退出沉浸
++- **位置尺寸**：x=0 y=0 1348×716
++- **关键样式**：display: grid; position: relative; flex-direction: row; justify-content: normal; align-items: center; gap: normal; grid-template-columns: none; width: 1348.07px; height: 716.491px; min-width: 0px; max-width: none; padding: 24px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; overflow: hidden; white-space: normal; transition: all
++
++> 当进入沉浸模式时，在切换图片时，右下角从右到左平滑弹出标题描述文本框，过渡动画0.6s，文本框的边框透明，背景透明，仅有下边框有4px粗白线。仅在文本框完全淡出界面时，且用户切换到上一张或下一张图片时触发文本框弹入，文本框弹入后保持2s，之后文本框向下平滑滑出界面，过度动画0.6s。文本框保持的2s时间内，用户继续切换图片时，立刻改变文本框内容，并重置保持时间为2s。在文本框淡出动画时，用户切换界面，则从右到左弹出新的文本框。当用户退出沉浸模式时，文本框立刻0.6s淡出。当用户保持沉浸模式时，退出灯箱，文本框立刻0.6s淡出，当用户保持沉浸模式时，进入别的灯箱，文本框不淡入，仅在切换图片时候播放淡入-保持-淡出。
++> 文本框内容：2845x4500 17.53M [匿名-分享]
++> 类似这种标题，文字大小 22px
++
++### 4. 向下浏览时，对于用户界面外的卡片，当进入页面内高度超过20%时，播放淡入动画，从全透明平滑过度到不透明，动画时间0.4s
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`GalleryGrid`
++- **选择器**：`body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)`
++- **父级链**：`main.main` ← `div.app.sidebar-collapsed` ← `div` ← `body`
++- **元素文本**：2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（…
++- **位置尺寸**：x=64 y=107 1274×3237
++- **关键样式**：display: grid; flex-direction: row; justify-content: normal; align-items: start; gap: 0px 14px; grid-template-columns: 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px; width: 1274.25px; height: 3237.05px; min-width: 0px; max-width: none; padding: 16px 18px 60px; margin: 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 向下浏览时，对于用户界面外的卡片，当进入页面内高度超过20%时，播放淡入动画，从全透明平滑过度到不透明，动画时间0.4s，之后不再淡出。
++> 仅在用户切换分类，切换筛选条件，搜索时触发了页面重排，才会对用户界面以外的卡片进行隐藏，在用户向下滑动过程中播放淡入动画。在用户调整窗口大小，切换左侧边栏，拖动左侧边栏触发页面重排时，不会去隐藏那些已经播放完淡入动画的卡片。
++> 这里的逻辑该请你自行梳理，实现以上效果的同时要考虑是否可以兼容性能优化，防止在用户浏览一万张图片这个量级时造成卡顿。
+diff --git a/devlog/rounds/0007-20260914-2221/screenshots/00-full.png b/devlog/rounds/0007-20260914-2221/screenshots/00-full.png
+new file mode 100644
+index 0000000..11eb3a3
+Binary files /dev/null and b/devlog/rounds/0007-20260914-2221/screenshots/00-full.png differ
+diff --git "a/devlog/rounds/0007-20260914-2221/screenshots/001-\350\260\203\346\225\264\345\270\203\345\261\200\351\207\215\346\216\222\346\227\266\347\232\204\345\215\241\347\211\207\350\277\207\345\272\246\345\212\250\347\224\273\351\200\237\345\272\246\345\244\252\345\277\253\344\272\206\345\217\230\346\232\227\351\200\217\346\230\2160.6s,.png" "b/devlog/rounds/0007-20260914-2221/screenshots/001-\350\260\203\346\225\264\345\270\203\345\261\200\351\207\215\346\216\222\346\227\266\347\232\204\345\215\241\347\211\207\350\277\207\345\272\246\345\212\250\347\224\273\351\200\237\345\272\246\345\244\252\345\277\253\344\272\206\345\217\230\346\232\227\351\200\217\346\230\2160.6s,.png"
+new file mode 100644
+index 0000000..71bef13
+Binary files /dev/null and "b/devlog/rounds/0007-20260914-2221/screenshots/001-\350\260\203\346\225\264\345\270\203\345\261\200\351\207\215\346\216\222\346\227\266\347\232\204\345\215\241\347\211\207\350\277\207\345\272\246\345\212\250\347\224\273\351\200\237\345\272\246\345\244\252\345\277\253\344\272\206\345\217\230\346\232\227\351\200\217\346\230\2160.6s,.png" differ
+diff --git "a/devlog/rounds/0007-20260914-2221/screenshots/002-\345\210\240\351\231\244\346\226\207\346\234\254\344\273\205\344\277\235\347\225\231\345\233\276\346\240\207\345\233\276\346\240\207\346\214\211\351\222\256\351\200\217\346\230\216\344\273\205\344\277\235\347\225\231\345\233\276\346\240\207\345\233\276\346\240\207\345\244\247\345\260\217\346\224\276\345\244\2474p.png" "b/devlog/rounds/0007-20260914-2221/screenshots/002-\345\210\240\351\231\244\346\226\207\346\234\254\344\273\205\344\277\235\347\225\231\345\233\276\346\240\207\345\233\276\346\240\207\346\214\211\351\222\256\351\200\217\346\230\216\344\273\205\344\277\235\347\225\231\345\233\276\346\240\207\345\233\276\346\240\207\345\244\247\345\260\217\346\224\276\345\244\2474p.png"
+new file mode 100644
+index 0000000..18d2cec
+Binary files /dev/null and "b/devlog/rounds/0007-20260914-2221/screenshots/002-\345\210\240\351\231\244\346\226\207\346\234\254\344\273\205\344\277\235\347\225\231\345\233\276\346\240\207\345\233\276\346\240\207\346\214\211\351\222\256\351\200\217\346\230\216\344\273\205\344\277\235\347\225\231\345\233\276\346\240\207\345\233\276\346\240\207\345\244\247\345\260\217\346\224\276\345\244\2474p.png" differ
+diff --git "a/devlog/rounds/0007-20260914-2221/screenshots/003-\345\275\223\350\277\233\345\205\245\346\262\211\346\265\270\346\250\241\345\274\217\346\227\266\345\234\250\345\210\207\346\215\242\345\233\276\347\211\207\346\227\266\345\217\263\344\270\213\350\247\222\344\273\216\345\217\263\345\210\260\345\267\246\345\271\263\346\273\221\345\274\271\345\207\272\346\240\207\351\242\230\346\217\217.png" "b/devlog/rounds/0007-20260914-2221/screenshots/003-\345\275\223\350\277\233\345\205\245\346\262\211\346\265\270\346\250\241\345\274\217\346\227\266\345\234\250\345\210\207\346\215\242\345\233\276\347\211\207\346\227\266\345\217\263\344\270\213\350\247\222\344\273\216\345\217\263\345\210\260\345\267\246\345\271\263\346\273\221\345\274\271\345\207\272\346\240\207\351\242\230\346\217\217.png"
+new file mode 100644
+index 0000000..11eb3a3
+Binary files /dev/null and "b/devlog/rounds/0007-20260914-2221/screenshots/003-\345\275\223\350\277\233\345\205\245\346\262\211\346\265\270\346\250\241\345\274\217\346\227\266\345\234\250\345\210\207\346\215\242\345\233\276\347\211\207\346\227\266\345\217\263\344\270\213\350\247\222\344\273\216\345\217\263\345\210\260\345\267\246\345\271\263\346\273\221\345\274\271\345\207\272\346\240\207\351\242\230\346\217\217.png" differ
+diff --git "a/devlog/rounds/0007-20260914-2221/screenshots/004-\345\220\221\344\270\213\346\265\217\350\247\210\346\227\266\345\257\271\344\272\216\347\224\250\346\210\267\347\225\214\351\235\242\345\244\226\347\232\204\345\215\241\347\211\207\345\275\223\350\277\233\345\205\245\351\241\265\351\235\242\345\206\205\351\253\230\345\272\246\350\266\205\350\277\20720%.png" "b/devlog/rounds/0007-20260914-2221/screenshots/004-\345\220\221\344\270\213\346\265\217\350\247\210\346\227\266\345\257\271\344\272\216\347\224\250\346\210\267\347\225\214\351\235\242\345\244\226\347\232\204\345\215\241\347\211\207\345\275\223\350\277\233\345\205\245\351\241\265\351\235\242\345\206\205\351\253\230\345\272\246\350\266\205\350\277\20720%.png"
+new file mode 100644
+index 0000000..71bef13
+Binary files /dev/null and "b/devlog/rounds/0007-20260914-2221/screenshots/004-\345\220\221\344\270\213\346\265\217\350\247\210\346\227\266\345\257\271\344\272\216\347\224\250\346\210\267\347\225\214\351\235\242\345\244\226\347\232\204\345\215\241\347\211\207\345\275\223\350\277\233\345\205\245\351\241\265\351\235\242\345\206\205\351\253\230\345\272\246\350\266\205\350\277\20720%.png" differ
+diff --git a/plugins/annotator/bin/check.mjs b/plugins/annotator/bin/check.mjs
+index a0bda8d..87c666a 100644
+--- a/plugins/annotator/bin/check.mjs
++++ b/plugins/annotator/bin/check.mjs
+@@ -194,7 +194,9 @@ const SCRIPT = `(async () => {
+   }
+   const toolbar = document.querySelector('.gugu-anno-toolbar')
+   const firstPin = document.querySelector('.gugu-anno-pin')
+-  out.toolbarZ = toolbar ? Number(getComputedStyle(toolbar).zIndex) || 0 : -1
++  // 层级现在挂在停靠点（dock）上，工具栏自身不再单独设 z-index
++  const dockEl = document.querySelector('.gugu-anno-dock')
++  out.toolbarZ = dockEl ? Number(getComputedStyle(dockEl).zIndex) || 0 : -1
+   out.pinZ = firstPin ? Number(getComputedStyle(firstPin).zIndex) || 0 : -1
+   out.toolbarAbovePins = out.toolbarZ > out.pinZ
+   out.toolbarHitTest = (() => {
+@@ -230,20 +232,57 @@ const SCRIPT = `(async () => {
+   await sleep(5200)
+   out.hintAfter5s = document.querySelector('.gugu-anno-hint')?.textContent ?? null
+ 
+-  // 9) 工具栏自动上收 + 靠近顶部呼出
+-  document.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }))
+-  await sleep(5600)
+-  out.toolbarCollapsedAfterLeave = Boolean(document.querySelector('.gugu-anno-toolbar.collapsed'))
+-  const handle = document.querySelector('.gugu-anno-handle')
+-  out.handleExists = Boolean(handle)
+-  out.handleOpacityWhenCollapsed = handle ? Number(getComputedStyle(handle).opacity) : -1
+-  // 鼠标靠近顶部
+-  window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 600, clientY: 10 }))
+-  await sleep(400)
+-  out.handleOpacityWhenHot = handle ? Number(getComputedStyle(handle).opacity) : -1
+-  handle?.click()
+-  await sleep(400)
+-  out.toolbarReopened = !document.querySelector('.gugu-anno-toolbar.collapsed')
++  // 9) 工具栏：可拖动 + 简易/标准形态互切
++  {
++    const toolbar = document.querySelector('.gugu-anno-toolbar')
++    const dock = document.querySelector('.gugu-anno-dock')
++    const before = dock.getBoundingClientRect()
++    // 从工具栏空白处（左上角内侧）开始拖，避开按钮
++    const sx = before.left + 6
++    const sy = before.top + before.height / 2
++    fire(toolbar, 'mousedown', sx, sy)
++    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: sx + 180, clientY: sy + 140 }))
++    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: sx + 180, clientY: sy + 140 }))
++    await sleep(300)
++    const after = dock.getBoundingClientRect()
++    out.dragMovedX = Math.round(after.left - before.left)
++    out.dragMovedY = Math.round(after.top - before.top)
++    out.dragWorks = Math.abs(out.dragMovedX) > 60 && Math.abs(out.dragMovedY) > 60
++
++    // 试图拖到标题栏里：应被夹在拖动区下方
++    fire(toolbar, 'mousedown', after.left + 6, after.top + after.height / 2)
++    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 2 }))
++    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 2 }))
++    await sleep(300)
++    out.dockTopAfterDragUp = Math.round(dock.getBoundingClientRect().top)
++    const topbar = document.querySelector('.topbar')
++    out.dragTopClamped = out.dockTopAfterDragUp >= (topbar ? topbar.getBoundingClientRect().bottom : 58)
++
++    // 切到简易工具栏
++    Array.from(document.querySelectorAll('.gugu-anno-toolbar button')).find((b) => b.textContent.trim() === '收起')?.click()
++    await sleep(350)
++    out.compactMode = Boolean(document.querySelector('.gugu-anno-toolbar.compact'))
++    out.compactIconCount = document.querySelectorAll('.gugu-anno-toolbar.compact .anno-icon-btn').length
++    out.compactHasText = (document.querySelector('.gugu-anno-toolbar.compact')?.textContent || '').trim()
++
++    // 简易工具栏上的图标能切模式
++    const iconBtns = Array.from(document.querySelectorAll('.gugu-anno-toolbar.compact .anno-icon-btn'))
++    iconBtns[2]?.click()
++    await sleep(300)
++    out.compactRegionMode = iconBtns[2]?.className.includes('on') === true
++    iconBtns[0]?.click()
++    await sleep(250)
++    out.compactBrowseMode = iconBtns[0]?.className.includes('on') === true
++
++    // 展开回标准
++    iconBtns[3]?.click()
++    await sleep(350)
++    out.expandedBack = !document.querySelector('.gugu-anno-toolbar.compact')
++    out.expandedHasText = Boolean(
++      Array.from(document.querySelectorAll('.gugu-anno-toolbar button')).find((b) => b.textContent.trim() === '导出标注')
++    )
++  }
++  return out
+   return out
+ })()`
+ 
+@@ -331,7 +370,13 @@ const checks = [
+   ['整页截图已落盘', shots.includes('00-full.png')],
+   ['每条标注都有裁片', shots.filter((f) => /^\d{3}-/.test(f)).length === 2],
+   ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
+-  ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
++  ['工具栏可以拖动', result.dragWorks === true],
++  ['工具栏不会被拖进窗口拖动区', result.dragTopClamped === true],
++  ['可以切到简易工具栏', result.compactMode === true],
++  ['简易工具栏恰好 4 个图标', result.compactIconCount === 4],
++  ['简易工具栏没有文字', result.compactHasText === ''],
++  ['简易工具栏的图标能切模式', result.compactRegionMode === true && result.compactBrowseMode === true],
++  ['能从简易切回标准工具栏', result.expandedBack === true && result.expandedHasText === true],
+   ['工具栏整体位于窗口拖动区下方', result.toolbarBelowDragZone === true],
+   ['贴边元素的批注框完整落在视口内', result.editorInViewport === true],
+   ['批注框的「添加」按钮点得到', result.addButtonHittable === true],
+@@ -344,11 +389,6 @@ const checks = [
+   ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
+   ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],
+   ['说明气泡 5s 后自动隐藏', result.hintAfter5s === null],
+-  ['鼠标离开后工具栏自动上收', result.toolbarCollapsedAfterLeave === true],
+-  ['收起后存在呼出把手', result.handleExists === true],
+-  ['收起时把手不可见', result.handleOpacityWhenCollapsed === 0],
+-  ['鼠标靠近顶部时把手显形', result.handleOpacityWhenHot === 1],
+-  ['点击把手可重新展开工具栏', result.toolbarReopened === true]
+ ]
+ 
+ console.log('标注工具自检：')
+diff --git a/plugins/annotator/renderer/index.tsx b/plugins/annotator/renderer/index.tsx
+index 9a1818f..f4e6706 100644
+--- a/plugins/annotator/renderer/index.tsx
++++ b/plugins/annotator/renderer/index.tsx
+@@ -31,14 +31,18 @@ import './toolbar.css'
+ const manifest = manifestJson as RendererPluginModule['manifest']
+ type ToolMode = 'browse' | 'element' | 'region'
+ 
+-/** 鼠标离开工具栏多久后自动上收 */
+-const TOOLBAR_HIDE_DELAY = 5000
+ /** 说明气泡显示时长 */
+ const HINT_DURATION = 5000
+-/** 鼠标靠近顶部多少像素内，呼出把手显形 */
+-const HANDLE_HOT_ZONE = 88
+-/** 把手悬停多久自动展开 */
+-const HANDLE_HOVER_DELAY = 400
++/**
++ * 工具栏能被拖到任意位置，但纵向不能低于这里。
++ * 顶栏那一条是窗口拖动区（自绘标题栏的副作用），落在里面的话
++ * 真实鼠标点击会被窗口吞掉 —— 上一轮就是栽在这上面，所以直接禁掉。
++ */
++const TOOLBAR_TOP_SAFE = 60
++
++/** 工具栏位置与形态跨次打开保持 */
++let toolbarPosition: { x: number; y: number } | null = null
++let compactPreference = false
+ 
+ const MODE_LABEL: Record<ToolMode, string> = { browse: '浏览', element: '点选', region: '框选' }
+ const MODE_HINT: Record<ToolMode, string> = {
+@@ -47,6 +51,59 @@ const MODE_HINT: Record<ToolMode, string> = {
+   region: '框选模式：按住左键拖出一个区域写批注（Esc 取消）'
+ }
+ 
++/** 把工具栏夹进视口，且不低于窗口拖动区 */
++function clampDock(x: number, y: number, compact: boolean): { x: number; y: number } {
++  const width = compact ? 196 : 588
++  const height = compact ? 44 : 52
++  return {
++    x: Math.max(4, Math.min(Math.max(4, window.innerWidth - width - 4), x)),
++    y: Math.max(TOOLBAR_TOP_SAFE, Math.min(Math.max(TOOLBAR_TOP_SAFE, window.innerHeight - height - 4), y))
++  }
++}
++
++/* ------------------------------------------------ 简易工具栏上的四个图标 */
++
++/** 浏览：只伸出食指的右手 */
++function IconPointHand(): JSX.Element {
++  return (
++    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
++      <path d="M10.2 11.4V4.6a1.7 1.7 0 0 1 3.4 0v6.8" />
++      <path d="M13.6 11.4V9.6a1.7 1.7 0 0 1 3.4 0v1.8" />
++      <path d="M17 11.4v-1a1.7 1.7 0 0 1 3.4 0v4.4A6.4 6.4 0 0 1 14 21.2h-2.2A6.4 6.4 0 0 1 5.4 14.8v-3.9a1.7 1.7 0 0 1 3.4 0v.6" />
++    </svg>
++  )
++}
++
++/** 点选：被瞄准的元素 */
++function IconPickElement(): JSX.Element {
++  return (
++    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
++      <rect x="5" y="5" width="14" height="14" rx="2" />
++      <path d="M12 2.4v2.6M12 19v2.6M2.4 12H5M19 12h2.6" />
++    </svg>
++  )
++}
++
++/** 框选：虚线框住的区域 */
++function IconPickRegion(): JSX.Element {
++  return (
++    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
++      <rect x="3.5" y="5.5" width="17" height="13" rx="2" strokeDasharray="3.2 3.2" />
++      <path d="M8.5 12h7" />
++    </svg>
++  )
++}
++
++/** 展开：从简易切回标准工具栏 */
++function IconExpandToolbar(): JSX.Element {
++  return (
++    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
++      <path d="M6 5.5 12 11l6-5.5" />
++      <path d="M6 12.5 12 18l6-5.5" />
++    </svg>
++  )
++}
++
+ interface Draft {
+   kind: 'element' | 'region'
+   rect: AnnotationRect
+@@ -77,33 +134,23 @@ function AnnotatorOverlay({
+   const [note, setNote] = useState('')
+   const [rounds, setRounds] = useState<RoundInfo[]>([])
+   const [scrollTick, setScrollTick] = useState(0)
+-  /** 工具栏是否展开；鼠标离开 5s 后自动上收 */
+-  const [toolbarOpen, setToolbarOpen] = useState(true)
+-  /** 鼠标是否靠近顶部 —— 决定收起后的「呼出把手」是否显形 */
+-  const [handleHot, setHandleHot] = useState(false)
++  /** 简易工具栏（4 个图标）还是标准工具栏 */
++  const [compact, setCompact] = useState(compactPreference)
++  /** 拖动后的位置；null 表示默认居中 */
++  const [pos, setPos] = useState<{ x: number; y: number } | null>(toolbarPosition)
+   /** 说明气泡：只在点击选项后显示 5s */
+   const [hint, setHint] = useState<string | null>(null)
+ 
+   const dragStart = useRef<{ x: number; y: number } | null>(null)
+   const modeRef = useRef<ToolMode>(mode)
+   modeRef.current = mode
+-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+-  const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
++  const dockRef = useRef<HTMLDivElement | null>(null)
++  const posRef = useRef<{ x: number; y: number } | null>(toolbarPosition)
++  const dragState = useRef<{ dx: number; dy: number } | null>(null)
+ 
+   /* ------------------------------------------------------ 工具栏自动收起 */
+ 
+-  const cancelAutoHide = useCallback(() => {
+-    if (hideTimer.current) {
+-      clearTimeout(hideTimer.current)
+-      hideTimer.current = null
+-    }
+-  }, [])
+-
+-  const scheduleAutoHide = useCallback(() => {
+-    cancelAutoHide()
+-    hideTimer.current = setTimeout(() => setToolbarOpen(false), TOOLBAR_HIDE_DELAY)
+-  }, [cancelAutoHide])
+ 
+   /** 点击某个选项后弹一句说明，5s 后自动消失 */
+   const flashHint = useCallback((text: string) => {
+@@ -112,48 +159,51 @@ function AnnotatorOverlay({
+     hintTimer.current = setTimeout(() => setHint(null), HINT_DURATION)
+   }, [])
+ 
+-  const expandToolbar = useCallback(
+-    (withHint?: string) => {
+-      setToolbarOpen(true)
+-      cancelAutoHide()
+-      if (withHint) flashHint(withHint)
+-    },
+-    [cancelAutoHide, flashHint]
+-  )
+ 
+-  // 靠近顶部时让把手显形；远离时如果工具栏开着，重新开始计时
+-  useEffect(() => {
+-    if (!enabled) return
+-    const onMove = (e: MouseEvent): void => {
+-      setHandleHot(e.clientY <= HANDLE_HOT_ZONE)
+-    }
+-    const onLeave = (): void => {
+-      setHandleHot(false)
+-      scheduleAutoHide()
+-    }
+-    window.addEventListener('mousemove', onMove)
+-    document.addEventListener('mouseleave', onLeave)
+-    return () => {
+-      window.removeEventListener('mousemove', onMove)
+-      document.removeEventListener('mouseleave', onLeave)
+-    }
+-  }, [enabled, scheduleAutoHide])
++  const compactRef = useRef(compact)
++  compactRef.current = compact
+ 
+-  // 打开标注工具时先展开一次，随后交给自动收起
+   useEffect(() => {
+-    if (!enabled) {
+-      cancelAutoHide()
+-      if (hintTimer.current) clearTimeout(hintTimer.current)
+-      return
++    if (enabled) return
++    if (hintTimer.current) clearTimeout(hintTimer.current)
++  }, [enabled])
++
++  const switchCompact = useCallback((next: boolean) => {
++    setCompact(next)
++    compactPreference = next
++    setPos((current) => (current ? clampDock(current.x, current.y, next) : current))
++    setHint(next ? '已收起到简易工具栏' : '已展开标准工具栏')
++    if (hintTimer.current) clearTimeout(hintTimer.current)
++    hintTimer.current = setTimeout(() => setHint(null), HINT_DURATION)
++  }, [])
++
++  /** 按住工具栏空白处即可拖动；按钮上不触发，免得点不动 */
++  const startToolbarDrag = useCallback((event: React.MouseEvent) => {
++    if ((event.target as Element).closest('button')) return
++    const el = dockRef.current
++    if (!el) return
++    event.preventDefault()
++    const rect = el.getBoundingClientRect()
++    dragState.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top }
++
++    const onMove = (e: MouseEvent): void => {
++      const d = dragState.current
++      if (!d) return
++      const next = clampDock(e.clientX - d.dx, e.clientY - d.dy, compactRef.current)
++      setPos(next)
++      posRef.current = next
+     }
+-    setToolbarOpen(true)
+-    scheduleAutoHide()
+-    return () => {
+-      cancelAutoHide()
+-      if (hintTimer.current) clearTimeout(hintTimer.current)
+-      if (expandTimer.current) clearTimeout(expandTimer.current)
++    const onUp = (): void => {
++      dragState.current = null
++      toolbarPosition = posRef.current
++      document.removeEventListener('mousemove', onMove)
++      document.removeEventListener('mouseup', onUp)
++      document.body.classList.remove('dragging-tool')
+     }
+-  }, [enabled, cancelAutoHide, scheduleAutoHide])
++    document.addEventListener('mousemove', onMove)
++    document.addEventListener('mouseup', onUp)
++    document.body.classList.add('dragging-tool')
++  }, [])
+ 
+   /* ---------------------------------------------------------- 快捷键与滚动 */
+ 
+@@ -410,95 +460,123 @@ function AnnotatorOverlay({
+ 
+   return (
+     <div className="gugu-anno-root">
+-      {/* ------------------------------------------------ 收起后的呼出把手 */}
+-      <button
+-        className={`gugu-anno-handle${toolbarOpen ? ' gone' : ''}${handleHot ? ' hot' : ''}${
+-          mode !== 'browse' ? ' capturing' : ''
+-        }`}
+-        title="展开标注工具栏"
+-        onMouseEnter={() => {
+-          if (expandTimer.current) clearTimeout(expandTimer.current)
+-          expandTimer.current = setTimeout(() => expandToolbar(MODE_HINT[modeRef.current]), HANDLE_HOVER_DELAY)
+-        }}
+-        onMouseLeave={() => {
+-          if (expandTimer.current) {
+-            clearTimeout(expandTimer.current)
+-            expandTimer.current = null
+-          }
+-        }}
+-        onClick={() => {
+-          if (expandTimer.current) {
+-            clearTimeout(expandTimer.current)
+-            expandTimer.current = null
+-          }
+-          expandToolbar(MODE_HINT[modeRef.current])
+-        }}
+-      >
+-        <span className="gugu-anno-handle-grip" />
+-        <span className="gugu-anno-handle-mode">{MODE_LABEL[mode]}</span>
+-        {pendingCount > 0 && <span className="gugu-anno-handle-count">{pendingCount}</span>}
+-      </button>
+-
+-      {/* -------------------------------------------------------- 悬浮工具栏 */}
++      {/* ------------------------------------------------------------ 工具栏 */}
+       <div
+-        className={`gugu-anno-toolbar${toolbarOpen ? '' : ' collapsed'}`}
+-        onMouseEnter={cancelAutoHide}
+-        onMouseLeave={scheduleAutoHide}
++        ref={dockRef}
++        className={'gugu-anno-dock' + (pos ? ' placed' : '') + (compact ? ' compact-mode' : '')}
++        style={pos ? { left: pos.x, top: pos.y } : undefined}
+       >
+-        <span className="gugu-anno-brand">
+-          <b>标注模式</b>
+-          <em>{pendingCount} 条</em>
+-        </span>
++        {compact ? (
++          /* 简易工具栏：只有 4 个图标，无文字 */
++          <div className="gugu-anno-toolbar compact" onMouseDown={startToolbarDrag} title="按住空白处可拖动">
++            <span className="gugu-anno-grip" aria-hidden />
++            <button
++              className={'anno-icon-btn' + (mode === 'browse' ? ' on' : '')}
++              title="浏览：不拦截点击，正常使用应用"
++              aria-label="浏览"
++              onClick={() => {
++                setMode('browse')
++                setDraft(null)
++                flashHint(MODE_HINT.browse)
++              }}
++            >
++              <IconPointHand />
++            </button>
++            <button
++              className={'anno-icon-btn' + (mode === 'element' ? ' on' : '')}
++              title="点选元素"
++              aria-label="点选元素"
++              onClick={() => {
++                setMode('element')
++                setDraft(null)
++                flashHint(MODE_HINT.element)
++              }}
++            >
++              <IconPickElement />
++            </button>
++            <button
++              className={'anno-icon-btn' + (mode === 'region' ? ' on' : '')}
++              title="框选区域"
++              aria-label="框选区域"
++              onClick={() => {
++                setMode('region')
++                setDraft(null)
++                flashHint(MODE_HINT.region)
++              }}
++            >
++              <IconPickRegion />
++            </button>
++            <button
++              className="anno-icon-btn"
++              title="展开标准工具栏"
++              aria-label="展开标准工具栏"
++              onClick={() => switchCompact(false)}
++            >
++              <IconExpandToolbar />
++            </button>
++          </div>
++        ) : (
++          <div className="gugu-anno-toolbar" onMouseDown={startToolbarDrag} title="按住空白处可拖动">
++            <span className="gugu-anno-grip" aria-hidden />
++            <span className="gugu-anno-brand">
++              <b>标注模式</b>
++              <em>{pendingCount} 条</em>
++            </span>
++
++            <div className="gugu-anno-seg">
++              {(['browse', 'element', 'region'] as ToolMode[]).map((value) => (
++                <button
++                  key={value}
++                  className={mode === value ? 'on' : ''}
++                  onClick={() => {
++                    setMode(value)
++                    setDraft(null)
++                    flashHint(MODE_HINT[value])
++                  }}
++                  title={value === 'browse' ? '不拦截点击，正常使用应用' : '点击 / 拖拽即可添加标注'}
++                >
++                  {MODE_LABEL[value]}
++                </button>
++              ))}
++            </div>
+ 
+-        <div className="gugu-anno-seg">
+-          {(['browse', 'element', 'region'] as ToolMode[]).map((value) => (
+             <button
+-              key={value}
+-              className={mode === value ? 'on' : ''}
++              className={'gugu-anno-btn' + (showPins ? ' on' : '')}
+               onClick={() => {
+-                setMode(value)
++                const next = !showPins
++                setShowPins(next)
++                flashHint(next ? '已显示标注记号' : '已隐藏标注记号')
++              }}
++            >
++              {showPins ? '隐藏标注' : '显示标注'}
++            </button>
++            <button className="gugu-anno-btn primary" onClick={() => setExportOpen(true)} disabled={pendingCount === 0}>
++              导出标注
++            </button>
++            <button
++              className="gugu-anno-btn danger"
++              onClick={() => {
++                if (pendingCount > 0 && !window.confirm('放弃 ' + pendingCount + ' 条未导出的标注？')) return
++                setAnnotations([])
+                 setDraft(null)
+-                flashHint(MODE_HINT[value])
++                flashHint('已清空未导出的标注')
+               }}
+-              title={value === 'browse' ? '不拦截点击，正常使用应用' : '点击 / 拖拽即可添加标注'}
++              disabled={pendingCount === 0 && !draft}
+             >
+-              {MODE_LABEL[value]}
++              清空
+             </button>
+-          ))}
+-        </div>
++            <button className="gugu-anno-btn" onClick={() => onToggle(false)} title="退出标注（Ctrl+Shift+A）">
++              退出
++            </button>
++            <button className="gugu-anno-btn ghost" onClick={() => switchCompact(true)} title="收起到简易工具栏">
++              收起
++            </button>
++          </div>
++        )}
+ 
+-        <button
+-          className={`gugu-anno-btn${showPins ? ' on' : ''}`}
+-          onClick={() => {
+-            const next = !showPins
+-            setShowPins(next)
+-            flashHint(next ? '已显示标注记号' : '已隐藏标注记号')
+-          }}
+-        >
+-          {showPins ? '隐藏标注' : '显示标注'}
+-        </button>
+-        <button className="gugu-anno-btn primary" onClick={() => setExportOpen(true)} disabled={pendingCount === 0}>
+-          导出标注
+-        </button>
+-        <button
+-          className="gugu-anno-btn danger"
+-          onClick={() => {
+-            if (pendingCount > 0 && !window.confirm(`放弃 ${pendingCount} 条未导出的标注？`)) return
+-            setAnnotations([])
+-            setDraft(null)
+-            flashHint('已清空未导出的标注')
+-          }}
+-          disabled={pendingCount === 0 && !draft}
+-        >
+-          清空
+-        </button>
+-        <button className="gugu-anno-btn" onClick={() => onToggle(false)} title="退出标注（Ctrl+Shift+A）">
+-          退出
+-        </button>
++        {hint && <div className="gugu-anno-hint">{hint}</div>}
+       </div>
+ 
+-      {toolbarOpen && hint && <div className="gugu-anno-hint">{hint}</div>}
+-
+       {/* ------------------------------------------------------------ 高亮 */}
+       {hoverRect && mode !== 'browse' && (
+         <div
+diff --git a/plugins/annotator/renderer/toolbar.css b/plugins/annotator/renderer/toolbar.css
+index 8673e29..5bb53bf 100644
+--- a/plugins/annotator/renderer/toolbar.css
++++ b/plugins/annotator/renderer/toolbar.css
+@@ -1,117 +1,136 @@
+ /* ============================================================================
+-   标注工具栏的层级与自动收起
+-   单独成文件，是因为这块的行为（置顶、上收、呼出把手）和工具栏内容无关。
++   标注工具栏：层级、位置、拖动与简易形态
++   单独成文件，是因为这块只关心「工具栏放在哪、长什么样」，
++   和工具栏里有哪些按钮无关。
+    ========================================================================== */
+ 
+-/* 工具栏必须盖住标注记号：标注多了以后，记号是后渲染的兄弟节点，
+-   不给层级就会被压在下面。 */
+-/*
+- * 工具栏放在顶栏下方（58px 标题栏 + 8px 间隙），刻意避开窗口拖动区。
+- *
+- * 原因：自绘标题栏把上方的 .topbar 整条设成了 -webkit-app-region: drag，
+- * 覆盖层即便写了 no-drag，Chromium 也不一定会从拖动区里把它挖出来 ——
+- * 实测表现就是工具栏左半压在搜索框（no-drag）上能点，右半被窗口吞掉点不动。
+- * 与其赌实现细节，不如直接让工具栏不落在拖动区里。
+- */
+-.gugu-anno-toolbar {
++/* 工具栏与说明气泡都挂在同一个「停靠点」上，拖动时一起走 */
++.gugu-anno-dock {
++  position: absolute;
++  top: 62px;
++  left: 50%;
++  transform: translateX(-50%);
+   z-index: 30;
+-  transition:
+-    transform 0.22s var(--ease),
+-    opacity 0.22s var(--ease);
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 8px;
++  pointer-events: none;
+ }
+-
+-.gugu-anno-toolbar.collapsed {
+-  transform: translate(-50%, -160%);
+-  opacity: 0;
++.gugu-anno-dock.placed {
++  transform: none;
++}
++.gugu-anno-dock > .gugu-anno-toolbar {
++  pointer-events: auto;
++}
++.gugu-anno-dock > .gugu-anno-hint {
+   pointer-events: none;
+ }
+ 
+-/* 说明气泡跟着工具栏一起走 */
+-.gugu-anno-hint {
+-  z-index: 29;
++/*
++ * 工具栏不再自己绝对定位 —— 位置交给停靠点。
++ * 纵向刻意不低于窗口拖动区（自绘标题栏那条），落在里面的话
++ * 真实鼠标点击会被窗口吞掉。
++ */
++.gugu-anno-toolbar {
++  position: static;
++  top: auto;
++  left: auto;
++  transform: none;
++  cursor: grab;
++  user-select: none;
+ }
+-
+-/* 标注记号压在工具栏下面，但仍然可点 */
+-.gugu-anno-pin {
+-  z-index: 10;
++.gugu-anno-toolbar:active {
++  cursor: grabbing;
+ }
+ 
+-/* 编辑框与弹出层继续在工具栏之上 */
+-.gugu-anno-editor {
+-  z-index: 40;
++.gugu-anno-toolbar.compact {
++  gap: 4px;
++  padding: 6px 8px;
++  border-radius: 12px;
+ }
+-.gugu-anno-panel {
+-  z-index: 25;
++
++/* 拖动把手：点阵纹理，提示这里可以拖 */
++.gugu-anno-grip {
++  width: 10px;
++  height: 18px;
++  flex: none;
++  align-self: center;
++  border-radius: 3px;
++  background-image: radial-gradient(circle, currentColor 1px, transparent 1.3px);
++  background-size: 5px 5px;
++  opacity: 0.32;
+ }
+-.gugu-anno-modal-mask {
+-  z-index: 60;
++.gugu-anno-toolbar:hover .gugu-anno-grip {
++  opacity: 0.6;
+ }
+ 
+-/* ------------------------------------------------- 收起后的「呼出把手」 */
+-
+-.gugu-anno-handle {
+-  position: absolute;
+-  top: 44px;
+-  left: 50%;
+-  transform: translateX(-50%);
+-  z-index: 31;
+-  display: flex;
+-  align-items: center;
+-  gap: 7px;
+-  height: 22px;
+-  padding: 0 12px;
+-  border: 1px solid var(--anno-border);
+-  border-top: none;
+-  border-radius: 0 0 10px 10px;
+-  background: color-mix(in srgb, var(--anno-panel) 92%, transparent);
++/* 简易工具栏上的图标按钮 */
++.anno-icon-btn {
++  width: 30px;
++  height: 30px;
++  flex: none;
++  display: grid;
++  place-items: center;
++  border: none;
++  border-radius: 8px;
++  background: transparent;
+   color: var(--anno-dim);
+-  font-size: 11px;
+   cursor: pointer;
+-  backdrop-filter: blur(14px);
+-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
+-  opacity: 0;
+-  pointer-events: none;
+-  transition:
+-    opacity 0.2s var(--ease),
+-    color 0.16s var(--ease),
+-    height 0.16s var(--ease);
++  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+ }
+-
+-/* 只有工具栏收起、且鼠标靠近顶部时才显形 */
+-.gugu-anno-handle.gone {
+-  opacity: 0;
+-  pointer-events: none;
++.anno-icon-btn:hover {
++  background: rgba(255, 255, 255, 0.09);
++  color: var(--anno-text);
+ }
+-.gugu-anno-handle.hot:not(.gone) {
+-  opacity: 1;
+-  pointer-events: auto;
++.anno-icon-btn.on {
++  background: var(--anno);
++  color: #241704;
++}
++
++.gugu-anno-btn.ghost {
++  border-color: transparent;
++  background: transparent;
++  color: var(--anno-dim);
+ }
+-.gugu-anno-handle.hot:not(.gone):hover {
+-  height: 26px;
++.gugu-anno-btn.ghost:hover {
+   color: var(--anno-text);
++  background: rgba(255, 255, 255, 0.08);
+ }
+ 
+-.gugu-anno-handle-grip {
+-  width: 16px;
+-  height: 3px;
+-  border-radius: 99px;
+-  background: currentColor;
+-  opacity: 0.55;
++/* 说明气泡改为跟随停靠点，不再自己绝对定位 */
++.gugu-anno-hint {
++  position: static;
++  top: auto;
++  left: auto;
++  transform: none;
+ }
+ 
+-.gugu-anno-handle-mode {
+-  font-weight: 600;
+-  letter-spacing: 0.2px;
+-}
++/* --------------------------------------------------------------- 层级 */
+ 
+-.gugu-anno-handle.capturing .gugu-anno-handle-mode {
+-  color: var(--anno);
++/* 工具栏必须盖住标注记号：记号是后渲染的兄弟节点，不给层级就会被压在下面 */
++.gugu-anno-dock {
++  z-index: 30;
++}
++.gugu-anno-hint {
++  z-index: 29;
++}
++.gugu-anno-pin {
++  z-index: 10;
++}
++.gugu-anno-editor {
++  z-index: 40;
++}
++.gugu-anno-panel {
++  z-index: 25;
++}
++.gugu-anno-modal-mask {
++  z-index: 60;
+ }
+ 
+-.gugu-anno-handle-count {
+-  padding: 0 5px;
+-  border-radius: 99px;
+-  background: var(--anno-soft);
+-  color: var(--anno);
+-  font-variant-numeric: tabular-nums;
++/* 拖动时给个全局提示 */
++body.dragging-tool,
++body.dragging-tool * {
++  cursor: grabbing !important;
++  user-select: none;
+ }
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index 140ce10..fbe9a41 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -64,7 +64,7 @@ const SCRIPT = `(async () => {
+       const m = /^(\\d+) \\/ span (\\d+)$/.exec(c.style.gridColumn)
+       const r = /^(\\d+) \\/ span (\\d+)$/.exec(c.style.gridRow)
+       if (!m || !r) continue
+-      areas.push({ col: +m[1], span: +m[2], row: +r[1], rows: +r[2], w: Math.round(c.getBoundingClientRect().width), id: c.querySelector('.card-title')?.textContent || '' })
++      areas.push({ col: +m[1], span: +m[2], row: +r[1], rows: +r[2], w: Math.round(c.getBoundingClientRect().width), itemId: c.dataset.itemId, id: c.querySelector('.card-title')?.textContent || '' })
+     }
+     out.masonryColumns = Number(grid?.dataset.columns)
+     out.masonryCards = areas.length
+@@ -85,6 +85,10 @@ const SCRIPT = `(async () => {
+       }
+     }
+     out.masonryOverlaps = overlap
++    out.firstScreenVisible = areas.slice(0, 4).every((a) => {
++      const el = document.querySelector('.card[data-item-id="' + a.itemId + '"]')
++      return el ? Number(getComputedStyle(el).opacity) > 0.5 : false
++    })
+   }
+ 
+   // 2) 点第一个标签，筛选应生效
+@@ -231,13 +235,29 @@ const SCRIPT = `(async () => {
+     out.immersiveExitVisible = Boolean(exitBtn)
+     if (exitBtn) {
+       const er = exitBtn.getBoundingClientRect()
+-      out.immersiveExitHittable = document.elementFromPoint(er.left + er.width / 2, er.top + er.height / 2) === exitBtn
++      // 按钮现在只有图标，中心点命中的是 svg，所以要往上找一层
++      const hitEl = document.elementFromPoint(er.left + er.width / 2, er.top + er.height / 2)
++      out.immersiveExitHittable = Boolean(hitEl && hitEl.closest('.lb-exit-immersive') === exitBtn)
+       exitBtn.click()
+       await sleep(600)
+       out.immersiveExitedByStageBtn = !lb?.classList.contains('immersive')
+       toggle?.click()
+       await sleep(600)
+     }
++
++    // 沉浸模式下切图应当弹出右下角标题条
++    {
++      const kb = (key) => window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
++      out.captionHiddenBefore = !document.querySelector('.lb-caption')
++      kb('ArrowRight')
++      await sleep(350)
++      const cap = document.querySelector('.lb-caption')
++      out.captionShown = Boolean(cap)
++      out.captionText = cap ? (cap.textContent || '').trim() : null
++      // 2.6s 后应当自行滑出（先 out 再 hidden）
++      await sleep(3400)
++      out.captionGoneLater = !document.querySelector('.lb-caption')
++    }
+     out.immersiveOpacityBefore = before
+     toggle?.click()
+     await sleep(700)
+@@ -339,6 +359,7 @@ const checks = [
+   ['瀑布流：同列卡片不重叠', result.masonryOverlaps === 0],
+   ['瀑布流：卡片宽度��跨栏数一致', result.masonryWidthOk === true],
+   ['瀑布流：横图占到两栏', (result.masonrySpan2 ?? 0) > 0],
++  ['进场动画不隐藏首屏卡片', result.firstScreenVisible === true],
+   ['顶部统计与实际数据一致', /共 \d+ 条/.test(result.initialMeta || '')],
+   ['点击标签后筛选条件生效', (result.afterTagChips ?? 0) >= 1],
+   ['清空筛选后恢复', (result.afterClearMeta || '').startsWith('共')],
+@@ -359,6 +380,9 @@ const checks = [
+   ['灯箱有沉浸模式开关', result.immersiveToggle === true],
+   ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
+   ['沉浸模式下仍可退出（舞台内有出口）', result.immersiveExitHittable === true],
++  ['沉浸模式下切图弹出标题条', result.captionShown === true],
++  ['标题条内容取自站点标题', typeof result.captionText === 'string' && result.captionText.length > 0],
++  ['标题条保持后自行滑出', result.captionGoneLater === true],
+   ['舞台出口能真正退出沉浸模式', result.immersiveExitedByStageBtn === true],
+   ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
+   ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index fc0e00a..17d0cd1 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -147,6 +147,8 @@ export default function App(): JSX.Element {
+   const [barHidden, setBarHidden] = useState(false)
+   /** 向上滚动且已经离开首屏时，右下角出现回到顶部 */
+   const [showToTop, setShowToTop] = useState(false)
++  /** 每换一批结果就 +1：给网格做 key，让它整体重挂载并重播进场动画 */
++  const [listEpoch, setListEpoch] = useState(0)
+   const [sortOpen, setSortOpen] = useState(false)
+ 
+   const lastScrollTop = useRef(0)
+@@ -239,6 +241,7 @@ export default function App(): JSX.Element {
+   // 条件变化 -> 回到第一页
+   useEffect(() => {
+     setCursor(null)
++    setListEpoch((e) => e + 1)
+     void loadPage('reset')
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth])
+@@ -396,7 +399,7 @@ export default function App(): JSX.Element {
+     requestAnimationFrame(() => {
+       setReflowing(true)
+       if (reflowTimer.current) clearTimeout(reflowTimer.current)
+-      reflowTimer.current = setTimeout(() => setReflowing(false), 180)
++      reflowTimer.current = setTimeout(() => setReflowing(false), 1250)
+     })
+   }, [])
+ 
+@@ -726,6 +729,7 @@ export default function App(): JSX.Element {
+             </div>
+ 
+             <GalleryGrid
++              key={listEpoch}
+               items={items}
+               loading={loading}
+               dense={dense}
+diff --git a/src/renderer/src/components/GalleryGrid.tsx b/src/renderer/src/components/GalleryGrid.tsx
+index 7f7962d..5ac6557 100644
+--- a/src/renderer/src/components/GalleryGrid.tsx
++++ b/src/renderer/src/components/GalleryGrid.tsx
+@@ -52,6 +52,13 @@ export default function GalleryGrid({
+   // 网格元素根本不存在；等它挂载出来必须重新绑定观察器，否则宽度永远是 0。
+   const [gridEl, setGridEl] = useState<HTMLDivElement | null>(null)
+   const [width, setWidth] = useState(0)
++  /**
++   * 已经播放过进场动画的条目。放在 ref 里而不是 state：
++   * 交叉回调里只直接改 DOM class，不触发 React 重渲染 ——
++   * 上万张图时逐张 setState 会把主线程拖垮。
++   */
++  const animatedRef = useRef<Set<number>>(new Set())
++  const [classified, setClassified] = useState(false)
+ 
+   useLayoutEffect(() => {
+     if (!gridEl) return
+@@ -71,6 +78,49 @@ export default function GalleryGrid({
+ 
+   const { placements, columns, colWidth } = useMasonry(items, width, dense ? MIN_CARD_DENSE : MIN_CARD_NORMAL)
+ 
++  /**
++   * 进场淡入：只有「界面之外」的卡片会被先藏起来，滚到可见高���超过 20% 时淡入 0.4s。
++   *
++   * 三条约束（都来自反馈）：
++   *  1. 已经播放过的不再被隐藏 —— 否则改窗口大小、开合侧栏引发重排时会整屏闪一下
++   *  2. 只在一批新结果（切分类 / 改筛选 / 搜索）时才重置，组件用 key 重新挂载
++   *  3. 逐张淡入必须廉价：单个 observer + 直接改 class，不走 React 状态
++   */
++  useEffect(() => {
++    if (!gridEl) return
++    const observer = new IntersectionObserver(
++      (entries) => {
++        for (const entry of entries) {
++          const el = entry.target as HTMLElement
++          const itemId = Number(el.dataset.itemId)
++          if (!Number.isFinite(itemId)) continue
++          if (animatedRef.current.has(itemId)) {
++            observer.unobserve(el)
++            continue
++          }
++          const visible = entry.intersectionRect.height
++          const cardHeight = entry.boundingClientRect.height
++          const viewportHeight = entry.rootBounds?.height ?? window.innerHeight
++          // 超高长图永远到不了 20% 的比例，所以再给一条「可见高度占视口 20%」的兜底
++          const enough = visible >= cardHeight * 0.2 || visible >= viewportHeight * 0.2
++          if (entry.isIntersecting && enough) {
++            animatedRef.current.add(itemId)
++            el.classList.remove('card-pending')
++            observer.unobserve(el)
++          } else if (!entry.isIntersecting) {
++            el.classList.add('card-pending')
++          }
++        }
++        setClassified(true)
++      },
++      { threshold: [0, 0.05, 0.2, 0.5, 1] }
++    )
++    // 首轮要覆盖全部卡片做一次分类；之后只盯还没播放过的
++    const pendingSelector = classified ? '.card.card-pending' : '.card'
++    gridEl.querySelectorAll(pendingSelector).forEach((el) => observer.observe(el))
++    return () => observer.disconnect()
++  }, [gridEl, items, classified])
++
+   if (!loading && items.length === 0) {
+     return (
+       <div className="empty" data-component="GalleryGrid/Empty">
+@@ -96,6 +146,7 @@ export default function GalleryGrid({
+         <Card
+           key={item.id}
+           item={item}
++          pending={classified && !animatedRef.current.has(item.id)}
+           placement={placements.get(item.id)}
+           onOpen={onOpen}
+           onQuickFavorite={onQuickFavorite}
+@@ -200,12 +251,14 @@ function SkeletonCards(): JSX.Element {
+ 
+ function Card({
+   item,
++  pending,
+   placement,
+   onOpen,
+   onQuickFavorite,
+   onContextMenu
+ }: {
+   item: ItemSummary
++  pending: boolean
+   placement?: Placement
+   onOpen: (id: number) => void
+   onQuickFavorite: (item: ItemSummary) => void
+@@ -230,7 +283,8 @@ function Card({
+ 
+   return (
+     <div
+-      className="card"
++      className={'card' + (pending ? ' card-pending' : '')}
++      data-item-id={item.id}
+       data-component="GalleryGrid/Card"
+       style={geometry}
+       onClick={() => onOpen(item.id)}
+diff --git a/src/renderer/src/components/Lightbox.tsx b/src/renderer/src/components/Lightbox.tsx
+index fbcda31..ce6422a 100644
+--- a/src/renderer/src/components/Lightbox.tsx
++++ b/src/renderer/src/components/Lightbox.tsx
+@@ -49,6 +49,16 @@ export default function Lightbox({
+   const [delState, setDelState] = useState<'idle' | 'confirm' | 'done'>('idle')
+   const [downloading, setDownloading] = useState(false)
+   const [dragState, setDragState] = useState<{ active: boolean }>({ active: false })
++  /**
++   * 沉浸模式右下角的标题条，是个四态机：
++   *   hidden → in(0.6s 从右滑入) → hold(2s) → out(0.6s 下滑淡出) → hidden
++   * 只在「已经完全淡出」或「正在淡出」时切图才会重新弹入；
++   * 保持期间切图只换文字并重置 2s 计时。
++   */
++  const [capPhase, setCapPhase] = useState<'hidden' | 'in' | 'hold' | 'out'>('hidden')
++  const [capText, setCapText] = useState('')
++  const [capNonce, setCapNonce] = useState(0)
++  const lastCapId = useRef<number | null>(null)
+   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
+   const stageRef = useRef<HTMLDivElement | null>(null)
+ 
+@@ -76,6 +86,48 @@ export default function Lightbox({
+     immersivePreference = immersive
+   }, [immersive])
+ 
++  // 进/出沉浸模式时对齐状态：进入时对齐 id，避免一进去就弹框；退出时立刻淡出
++  useEffect(() => {
++    if (immersive) {
++      lastCapId.current = id
++      return
++    }
++    setCapPhase((p) => (p === 'hidden' ? p : 'out'))
++    lastCapId.current = null
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [immersive])
++
++  // 切图才是弹入的触发条件
++  useEffect(() => {
++    if (!immersive) return
++    if (lastCapId.current === null) {
++      lastCapId.current = id
++      return
++    }
++    if (lastCapId.current === id) return
++    lastCapId.current = id
++    const text = detail?.title || summaryTitle || '#' + id
++    setCapText(text)
++    setCapPhase((p) => {
++      if (p === 'hold') {
++        setCapNonce((n) => n + 1)
++        return 'hold'
++      }
++      if (p === 'in') return 'in'
++      return 'in'
++    })
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [id, immersive, detail?.title])
++
++  // 相位推进
++  useEffect(() => {
++    if (capPhase === 'hidden') return
++    const delay = capPhase === 'in' ? 600 : capPhase === 'hold' ? 2000 : 600
++    const next = capPhase === 'in' ? 'hold' : capPhase === 'hold' ? 'out' : 'hidden'
++    const timer = setTimeout(() => setCapPhase(next), delay)
++    return () => clearTimeout(timer)
++  }, [capPhase, capNonce])
++
+   // 下载启动后轮询直到文件就绪，解决「下载完预览界面不刷新」
+   useEffect(() => {
+     if (!downloading) return
+@@ -186,6 +238,7 @@ export default function Lightbox({
+   }, [items, index])
+ 
+   const summary = items.find((i) => i.id === id) ?? null
++  const summaryTitle = summary?.title ?? ''
+ 
+   /**
+    * 上传者：站点把所有来源都标成「匿名-分享」，没有信息量。
+@@ -244,15 +297,21 @@ export default function Lightbox({
+               setImmersive(false)
+             }}
+             title="退出沉浸模式"
++            aria-label="退出沉浸模式"
+           >
+-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
++            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+               <rect x="3" y="4" width="18" height="16" rx="2" />
+               <path d="M15 4v16" />
+             </svg>
+-            退出沉浸
+           </button>
+         )}
+ 
++        {capPhase !== 'hidden' && (
++          <div className={'lb-caption phase-' + capPhase} data-component="Lightbox/Caption">
++            {capText}
++          </div>
++        )}
++
+         <button className="lb-nav prev" onClick={() => step(-1)} disabled={!prev} title="上一张 (←)">
+           <IconChevronLeft width={20} height={20} />
+         </button>
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index 1041bbf..93a2b53 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -780,7 +780,11 @@ body.resizing * {
+   background: var(--surface);
+   border: 1px solid var(--border);
+   cursor: pointer;
+-  transition: transform 0.18s var(--ease), border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
++  transition:
++    opacity 0.4s var(--ease),
++    transform 0.18s var(--ease),
++    border-color 0.18s var(--ease),
++    box-shadow 0.18s var(--ease);
+   content-visibility: auto;
+   contain-intrinsic-size: auto 260px;
+ }
+@@ -898,18 +902,14 @@ body.resizing * {
+   color: #fff;
+ }
+ 
+-/* 新卡片逐张渐显：每张卡各自播放，0.06s */
+-@keyframes cardIn {
+-  from {
+-    opacity: 0;
+-  }
+-  to {
+-    opacity: 1;
+-  }
+-}
+-
+-.card {
+-  animation: cardIn 0.06s var(--ease) both;
++/*
++ * 进场淡入：界面之外的卡片先带 card-pending（透明），
++ * 滚到可见高度超过 20% 时由 IntersectionObserver 摘掉这个类，0.4s 淡入。
++ * 用过渡而不是动画，是为了让「已经播放过」的卡片天然保持不透明 ——
++ * 重排（改窗口、开合侧栏）不会让它们重新播一遍。
++ */
++.card.card-pending {
++  opacity: 0;
+ }
+ 
+ .card-body {
+@@ -1342,27 +1342,27 @@ body.resizing * {
+   pointer-events: none;
+ }
+ 
++/* 沉浸模式出口：只有图标，背景透明，避免挡住画面 */
+ .lb-exit-immersive {
+   position: absolute;
+-  top: 14px;
+-  right: 14px;
++  top: 12px;
++  right: 12px;
+   z-index: 5;
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 7px;
+-  height: 34px;
+-  padding: 0 14px;
+-  border-radius: 9px;
+-  border: 1px solid rgba(255, 255, 255, 0.14);
+-  background: rgba(12, 16, 24, 0.66);
+-  color: #e7ebf3;
++  width: 38px;
++  height: 38px;
++  display: grid;
++  place-items: center;
++  border: none;
++  border-radius: 10px;
++  background: transparent;
++  color: rgba(255, 255, 255, 0.82);
+   cursor: pointer;
+-  backdrop-filter: blur(10px);
+-  transition: all 0.16s var(--ease);
++  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
++  transition: color 0.16s var(--ease), transform 0.16s var(--ease);
+ }
+ .lb-exit-immersive:hover {
+-  background: rgba(124, 156, 255, 0.24);
+-  border-color: rgba(124, 156, 255, 0.5);
++  color: #fff;
++  transform: scale(1.08);
+ }
+ 
+ .lb-immersive {
+@@ -1388,6 +1388,59 @@ body.resizing * {
+   color: var(--accent);
+ }
+ 
++/* 沉浸模式右下角的标题条：只有一条 4px 白色下边框 */
++.lb-caption {
++  position: absolute;
++  right: 28px;
++  bottom: 26px;
++  z-index: 4;
++  max-width: min(72%, 940px);
++  padding: 0 2px 12px;
++  font-size: 22px;
++  line-height: 1.35;
++  font-weight: 500;
++  color: #fff;
++  text-align: right;
++  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
++  border-bottom: 4px solid #fff;
++  background: transparent;
++  pointer-events: none;
++}
++.lb-caption.phase-in {
++  animation: capIn 0.6s var(--ease) both;
++}
++.lb-caption.phase-hold {
++  opacity: 1;
++  transform: none;
++}
++.lb-caption.phase-out {
++  animation: capOut 0.6s var(--ease) both;
++}
++
++/* 从右到左弹入 */
++@keyframes capIn {
++  from {
++    opacity: 0;
++    transform: translateX(72px);
++  }
++  to {
++    opacity: 1;
++    transform: translateX(0);
++  }
++}
++
++/* 向下滑出 */
++@keyframes capOut {
++  from {
++    opacity: 1;
++    transform: translateY(0);
++  }
++  to {
++    opacity: 0;
++    transform: translateY(52px);
++  }
++}
++
+ /* 下载中的转圈 */
+ .spinner {
+   width: 13px;
+@@ -1882,26 +1935,24 @@ body.resizing * {
+  * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
+  * 总时长 0.16s，其中透明度低于 30% 的区间控制在 40ms 左右（要求不超过 60ms）。
+  */
++/*
++ * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
++ * 变暗 0.6s + 变亮 0.6s，全程线性，透明度低于 30% 的区间合计约 0.36s（要求 ≤ 0.6s）。
++ */
+ @keyframes contentReflow {
+   0% {
+     opacity: 1;
+   }
+-  12.5% {
+-    opacity: 0.3;
+-  }
+-  25% {
++  50% {
+     opacity: 0;
+   }
+-  37.5% {
+-    opacity: 0.3;
+-  }
+   100% {
+     opacity: 1;
+   }
+ }
+ 
+ .main.reflowing {
+-  animation: contentReflow 0.16s linear both;
++  animation: contentReflow 1.2s linear both;
+ }
+ 
+ /* ------------------------------------------------------------ 右键菜单 */
