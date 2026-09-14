@@ -86,10 +86,16 @@ npm run pack     # 只生成 release/win-unpacked，快
 npm run dist     # 生成 NSIS 安装包
 ```
 
-> **Windows 打包提示**：`electron-builder` 解压 `winCodeSign` 时会创建符号链接，
-> 普通用户权限下会报 `Cannot create symbolic link`。此时 `release/win-unpacked/` 已经生成完毕，
-> 里面的 `GuguGallery.exe` 是可以直接运行的免安装版本；想要安装包则需要以管理员身份运行，
-> 或者打开「设置 → 隐私和安全性 → 开发者选项 → 开发人员模式」后重试。
+> **Windows 打包提示**：`electron-builder` 下载的 `winCodeSign` 压缩包里带两个 macOS 用的
+> 符号链接，普通用户权限下解压会失败（`Cannot create symbolic link`），
+> 结果是**既出不了安装包，exe 的版本信息也会缺失**（文件属性显示成 "Electron"）。
+>
+> 发布脚本已经内置了绕行方案（`scripts/fix-wincodesign.mjs`）：
+> 自己把压缩包解开、跳过 Windows 用不到的 `darwin` 目录，放到 electron-builder 期望的缓存位置，
+> 它会直接命中缓存。`npm run dist` 会自动执行这一步。
+>
+> 手动执行：`node scripts/fix-wincodesign.mjs`；若缓存里还没有压缩包，
+> 先随便跑一次 `npm run pack` 让它下载完，再执行上面的命令。
 
 首次启动会提示图库目录，默认 `<图片>/GuguGallery`。也可以在「设置 → 图库位置」里随时更改，
 换目录会切换到另一套独立的索引与文件（旧库原样保留）。

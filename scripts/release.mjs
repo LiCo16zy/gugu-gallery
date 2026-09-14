@@ -66,6 +66,11 @@ if (problems.length > 0) {
 console.log('✓ 产物中没有任何插件代码')
 
 if (mode === 'pack' || mode === 'dist') {
+  // 先把 winCodeSign 缓存备好，绕开 Windows 符号链接权限问题
+  // （否则不仅出不了安装包，exe 的版本信息也会缺失）
+  console.log('\n== 准备 winCodeSign 缓存')
+  await sh('node', [join(root, 'scripts', 'fix-wincodesign.mjs')])
+
   console.log(`\n== 打包（${mode === 'dist' ? '安装包' : '免安装目录'}）`)
   const args = mode === 'dist' ? [] : ['--dir']
   const code = await sh('npx', ['electron-builder', ...args])
