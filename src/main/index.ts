@@ -90,6 +90,8 @@ function createWindow(): BrowserWindow {
     backgroundColor: '#0d1017',
     autoHideMenuBar: true,
     title: '咕咕图库',
+    // 打包后任务栏图标来自 exe 自身，这里主要是让开发态也有正常图标
+    icon: app.isPackaged ? undefined : join(app.getAppPath(), 'build', 'icon.png'),
     // 自绘标题栏：去掉系统边框，右上角用应用自己的按钮，
     // 换掉 Windows 默认那条与整体风格不一致的标题栏
     frame: false,

@@ -21,6 +21,7 @@ import CrawlPanel from './components/CrawlPanel'
 import SettingsPanel from './components/SettingsPanel'
 import ContextMenu, { type MenuEntry } from './components/ContextMenu'
 import Toast, { type ToastPayload } from './components/Toast'
+import SetupWizard from './components/SetupWizard'
 import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
 import { loadedPlugins } from './plugins'
 import {
@@ -143,6 +144,9 @@ export default function App(): JSX.Element {
   const [appIconOk, setAppIconOk] = useState(true)
   /** 侧栏宽度：拖动时走本地状态，松手才落盘 */
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SETTINGS.sidebarWidth)
+  /** 首次启动向导：建议的图库位置 */
+  const [suggestedRoot, setSuggestedRoot] = useState('')
+  const [bootstrapped, setBootstrapped] = useState(false)
   /** 向下滚动时把过滤栏藏起来 */
   const [barHidden, setBarHidden] = useState(false)
   /** 向上滚动且已经离开首屏时，右下角出现回到顶部 */
@@ -166,6 +170,10 @@ export default function App(): JSX.Element {
       setInfo(i)
       applyTheme(s.theme)
       document.documentElement.style.setProperty('--accent', s.accent)
+      if (!s.setupCompleted) {
+        setSuggestedRoot(await api.suggestedLibraryRoot())
+      }
+      setBootstrapped(true)
     })()
   }, [])
 
@@ -881,6 +889,24 @@ export default function App(): JSX.Element {
             </div>
           </div>
         </div>
+      )}
+
+      {bootstrapped && !settings.setupCompleted && (
+        <SetupWizard
+          suggested={suggestedRoot}
+          appVersion={info?.version ?? ''}
+          packaged={info?.packaged === true}
+          onConfirm={async (dir) => {
+            const applied = await api.library.setRoot(dir)
+            await onSettingsChange({ libraryRoot: applied, setupCompleted: true }, { silent: true })
+            setFilters(INITIAL_FILTERS)
+            setItems([])
+            setCursor(null)
+            setListEpoch((e) => e + 1)
+            await refreshMeta()
+            await loadPage('reset')
+          }}
+        />
       )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />

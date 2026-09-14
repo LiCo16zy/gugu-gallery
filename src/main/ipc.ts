@@ -2,7 +2,7 @@
  * 渲染进程 <-> 主进程的 IPC 契约实现。
  * 所有能力都通过 contextBridge 暴露，渲染进程不直接碰 Node / fs。
  */
-import { clipboard, ipcMain, shell, dialog, BrowserWindow } from 'electron'
+import { app, clipboard, ipcMain, shell, dialog, BrowserWindow } from 'electron'
 import { existsSync } from 'node:fs'
 import type {
   AppInfo,
@@ -16,7 +16,8 @@ import type {
   TargetInput
 } from '@shared/types'
 import type { AppContext } from './context'
-import { defaultLibraryRoot } from './config'
+import { defaultLibraryRoot, suggestedLibraryRoot } from './config'
+import { mkdir } from 'node:fs/promises'
 
 export const IPC = {
   appInfo: 'app:info',
@@ -31,6 +32,9 @@ export const IPC = {
   libraryDelete: 'library:delete',
   libraryReveal: 'library:reveal',
   libraryPickRoot: 'library:pickRoot',
+  libraryChooseDir: 'library:chooseDir',
+  librarySetRoot: 'library:setRoot',
+  suggestedLibraryRoot: 'app:suggestedLibraryRoot',
   openExternal: 'app:openExternal',
   copyText: 'app:copyText',
   windowMinimize: 'window:minimize',
@@ -65,6 +69,7 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
       node: process.versions.node,
       chrome: process.versions.chrome,
       platform: process.platform,
+      packaged: app.isPackaged,
       libraryRoot: s.libraryRoot,
       dbPath: ctx.library.dbPath
     }
@@ -119,6 +124,29 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
     if (result.canceled || result.filePaths.length === 0) return null
     await ctx.switchLibrary(result.filePaths[0])
     return result.filePaths[0]
+  })
+
+  handle(IPC.suggestedLibraryRoot, (): string => suggestedLibraryRoot())
+
+  // 只弹目录选择框、只返回路径，不做切换 —— 首次启动向导里用
+  handle(IPC.libraryChooseDir, async (defaultPath?: string): Promise<string | null> => {
+    const win = getWindow()
+    const options: Electron.OpenDialogOptions = {
+      title: '选择图库目录',
+      defaultPath: defaultPath || suggestedLibraryRoot(),
+      properties: ['openDirectory', 'createDirectory']
+    }
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
+  })
+
+  handle(IPC.librarySetRoot, async (dir: string): Promise<string> => {
+    const target = dir?.trim()
+    if (!target) throw new Error('图库目录不能为空')
+    await mkdir(target, { recursive: true })
+    await ctx.switchLibrary(target)
+    return target
   })
 
   handle(IPC.openExternal, async (url: string): Promise<void> => {

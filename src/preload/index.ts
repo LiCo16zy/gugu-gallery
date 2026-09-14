@@ -20,6 +20,9 @@ const IPC = {
   libraryDelete: 'library:delete',
   libraryReveal: 'library:reveal',
   libraryPickRoot: 'library:pickRoot',
+  libraryChooseDir: 'library:chooseDir',
+  librarySetRoot: 'library:setRoot',
+  suggestedLibraryRoot: 'app:suggestedLibraryRoot',
   openExternal: 'app:openExternal',
   copyText: 'app:copyText',
   windowMinimize: 'window:minimize',
@@ -61,8 +64,11 @@ const api = {
     rating: (id: number, value: number) => ipcRenderer.invoke(IPC.libraryRating, id, value),
     remove: (ids: number[], deleteFiles: boolean) => ipcRenderer.invoke(IPC.libraryDelete, ids, deleteFiles),
     reveal: (id: number) => ipcRenderer.invoke(IPC.libraryReveal, id),
-    pickRoot: () => ipcRenderer.invoke(IPC.libraryPickRoot)
+    pickRoot: () => ipcRenderer.invoke(IPC.libraryPickRoot),
+    setRoot: (dir: string) => ipcRenderer.invoke(IPC.librarySetRoot, dir),
+    chooseDir: (defaultPath?: string) => ipcRenderer.invoke(IPC.libraryChooseDir, defaultPath)
   },
+  suggestedLibraryRoot: () => ipcRenderer.invoke(IPC.suggestedLibraryRoot),
   crawl: {
     siteInfo: () => ipcRenderer.invoke(IPC.siteInfo),
     targetInfo: (target: unknown) => ipcRenderer.invoke(IPC.crawlTargetInfo, target),

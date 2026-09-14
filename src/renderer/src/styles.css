@@ -397,6 +397,131 @@ body.resizing * {
   color: #fff;
 }
 
+/* --------------------------------------------------------- 首次启动向导 */
+
+.setup-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(900px 500px at 70% 0%, rgba(124, 156, 255, 0.16), transparent 60%),
+    rgba(6, 9, 14, 0.94);
+  backdrop-filter: blur(6px);
+  animation: fade 0.2s var(--ease);
+}
+
+.setup-card {
+  width: min(620px, calc(100vw - 64px));
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.setup-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.setup-brand h2 {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+}
+.setup-brand p {
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+.brand-mark.static {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  border-radius: 13px;
+  cursor: default;
+}
+
+.setup-body {
+  padding: 20px 24px 22px;
+}
+.setup-body > p {
+  color: var(--text-dim);
+  line-height: 1.75;
+}
+.setup-body strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.setup-label {
+  display: block;
+  margin: 18px 0 7px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.setup-path {
+  display: flex;
+  gap: 8px;
+}
+.setup-path input {
+  flex: 1;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text);
+  outline: none;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  user-select: text;
+}
+.setup-path input:focus {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.setup-warn,
+.setup-hint,
+.setup-error {
+  margin-top: 12px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.setup-warn {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 34%, transparent);
+  color: color-mix(in srgb, var(--warn) 78%, var(--text));
+}
+.setup-warn strong {
+  color: var(--warn);
+}
+.setup-hint {
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  color: color-mix(in srgb, var(--success) 72%, var(--text));
+}
+.setup-error {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
+  color: var(--danger);
+}
+
+.setup-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
 /* ------------------------------------------------------------ 通用弹窗 */
 
 .modal-mask {

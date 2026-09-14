@@ -51,7 +51,8 @@
     "appId": "com.gugu.gallery",
     "productName": "GuguGallery",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "out/**/*",
@@ -59,8 +60,25 @@
     ],
     "win": {
       "target": [
-        "nsis"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "咕咕图库",
+      "artifactName": "GuguGallery-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
     }
   }
 }

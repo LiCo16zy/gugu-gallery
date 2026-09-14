@@ -236,6 +236,8 @@ export interface AppSettings {
   sidebarCollapsed: boolean
   /** 侧栏宽度（像素），可拖动调整，上限为窗口宽度的 40% */
   sidebarWidth: number
+  /** 是否走完首次启动向导（选择图库目录）。已有配置的老用户会被自动置为 true */
+  setupCompleted: boolean
   pageSize: number
 }
 
@@ -253,6 +255,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   proxy: '',
   sidebarCollapsed: false,
   sidebarWidth: 248,
+  setupCompleted: false,
   pageSize: 60
 }
 
@@ -269,6 +272,8 @@ export interface AppInfo {
   node: string
   chrome: string
   platform: string
+  /** 是否跑在打包后的安装版里（决定图库默认落在安装目录还是图片目录） */
+  packaged: boolean
   libraryRoot: string
   dbPath: string
 }

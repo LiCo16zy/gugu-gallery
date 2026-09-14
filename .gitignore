@@ -16,3 +16,6 @@ _research/
 !/devlog/**/screenshots/
 *.db
 *.db-journal
+
+# 图标生成的中间产物
+build/.make-icon.*

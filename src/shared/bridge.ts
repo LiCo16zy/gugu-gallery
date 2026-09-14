@@ -44,7 +44,13 @@ export interface GuguBridge {
     remove(ids: number[], deleteFiles: boolean): Promise<number>
     reveal(id: number): Promise<boolean>
     pickRoot(): Promise<string | null>
+    /** 只选目录不切换（首次启动向导用） */
+    chooseDir(defaultPath?: string): Promise<string | null>
+    /** 直接切到指定目录（首次启动向导用），返回最终路径 */
+    setRoot(dir: string): Promise<string>
   }
+  /** 建议的图库位置：安装版是安装目录下的子文件夹 */
+  suggestedLibraryRoot(): Promise<string>
   crawl: {
     siteInfo(): Promise<CrawlSiteInfo>
     /** 某个目标的总页数 / 总条数，用于在界面上给个规模预期 */
