@@ -52,7 +52,14 @@ export default function GalleryGrid({
 
   useLayoutEffect(() => {
     if (!gridEl) return
-    const update = (): void => setWidth(gridEl.clientWidth)
+    // 必须减掉左右内边距：clientWidth 含 padding，拿它当可用宽度的话，
+    // 算出来的列宽总和会比内容盒宽出 2×padding，页面就出现横向滚动条了
+    const update = (): void => {
+      const style = getComputedStyle(gridEl)
+      const usable =
+        gridEl.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0')
+      setWidth(Math.max(0, Math.floor(usable)))
+    }
     update()
     const observer = new ResizeObserver(update)
     observer.observe(gridEl)

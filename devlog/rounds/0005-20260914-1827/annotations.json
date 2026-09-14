@@ -1,0 +1,1573 @@
+{
+  "roundId": "0005-20260914-1827",
+  "exportedAt": "2026-09-14T10:27:45.817Z",
+  "view": "gallery",
+  "note": "左侧栏折叠问题、竖图显示问题、筛选逻辑问题\n基础调整",
+  "viewport": {
+    "width": 1348,
+    "height": 716
+  },
+  "devicePixelRatio": 1.4249999523162842,
+  "appVersion": "0.1.0",
+  "annotations": [
+    {
+      "id": "h4yh8ntx",
+      "index": 1,
+      "comment": "这个×按钮的图标不在按钮中心, 将 按钮左移4px距离，图标放大2px",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378035972,
+      "rect": {
+        "x": 666.0635986328125,
+        "y": 17.64254379272461,
+        "width": 21.995615005493164,
+        "height": 21.995615005493164
+      },
+      "pageRect": {
+        "x": 666.0635986328125,
+        "y": 17.64254379272461,
+        "width": 21.995615005493164,
+        "height": 21.995615005493164
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > header.topbar > div.search:nth-of-type(1) > button.search-clear",
+        "component": "App/TopBar › button.search-clear",
+        "tag": "button",
+        "classes": "search-clear",
+        "text": "",
+        "parentChain": [
+          "div.search",
+          "header.topbar",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "position": "absolute",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "21.9956px",
+          "height": "21.9956px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(34, 42, 58)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "6px",
+          "white-space": "normal",
+          "transition": "all",
+          "── 对比度": "12.04:1（AAA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "2rad4e2l",
+      "index": 2,
+      "comment": "鼠标移动到卡片上时，下方暗角内容，我希望不显示图片大小，仅显示图片分辨率和日期",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378111711,
+      "rect": {
+        "x": 194.82789611816406,
+        "y": 113.10820770263672,
+        "width": 228.7213897705078,
+        "height": 430.55767822265625
+      },
+      "pageRect": {
+        "x": 194.82789611816406,
+        "y": 113.10820770263672,
+        "width": 228.7213897705078,
+        "height": 430.55767822265625
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "main.main > div.grid:nth-of-type(2) > div.card:nth-of-type(1) > div.card-media:nth-of-type(1) > img",
+        "component": "GalleryGrid/Card › img",
+        "tag": "img",
+        "classes": "",
+        "text": "",
+        "parentChain": [
+          "div.card-media",
+          "div.card",
+          "div.grid",
+          "main.main",
+          "div.app"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "220.987px",
+          "height": "415.998px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "overflow": "clip",
+          "white-space": "normal",
+          "transition": "transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "object-fit": "cover"
+        },
+        "attributes": {
+          "src": "gugu://thumb/19495"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "alrdgeuk",
+      "index": 3,
+      "comment": "图标使用空心的长方体，横边12px 竖边16px；紧凑视图使用2个空心长方体横边8px 竖边16px 间隔4px",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378371471,
+      "rect": {
+        "x": 202.48904418945312,
+        "y": 21.140350341796875,
+        "width": 15,
+        "height": 15
+      },
+      "pageRect": {
+        "x": 202.48904418945312,
+        "y": 21.140350341796875,
+        "width": 15,
+        "height": 15
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > header.topbar > button.view-toggle:nth-of-type(1) > svg",
+        "component": "App/TopBar › svg",
+        "tag": "svg",
+        "classes": "",
+        "text": "",
+        "parentChain": [
+          "button.view-toggle",
+          "header.topbar",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "15px",
+          "height": "15px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "overflow": "hidden",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "um2bmbik",
+      "index": 4,
+      "comment": "不显示此栏",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378429434,
+      "rect": {
+        "x": 416.7324523925781,
+        "y": 427.8179931640625,
+        "width": 103.99122619628906,
+        "height": 18.585525512695312
+      },
+      "pageRect": {
+        "x": 416.7324523925781,
+        "y": 427.8179931640625,
+        "width": 103.99122619628906,
+        "height": 18.585525512695312
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(2) > dt:nth-of-type(3)",
+        "component": "App/Help › dt",
+        "tag": "dt",
+        "classes": "",
+        "text": "已装载工具",
+        "parentChain": [
+          "dl.kv",
+          "div.modal",
+          "div.modal-mask",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "103.991px",
+          "height": "18.5855px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "18.6px",
+          "color": "rgb(102, 112, 133)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(102, 112, 133)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "kmzygngg",
+      "index": 5,
+      "comment": "不显示此栏",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378454815,
+      "rect": {
+        "x": 416.7324523925781,
+        "y": 329.0789489746094,
+        "width": 103.99122619628906,
+        "height": 18.585525512695312
+      },
+      "pageRect": {
+        "x": 416.7324523925781,
+        "y": 329.0789489746094,
+        "width": 103.99122619628906,
+        "height": 18.585525512695312
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > dl.kv:nth-of-type(1) > dt:nth-of-type(4)",
+        "component": "App/Help › dt",
+        "tag": "dt",
+        "classes": "",
+        "text": "标注重叠",
+        "parentChain": [
+          "dl.kv",
+          "div.modal",
+          "div.modal-mask",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "103.991px",
+          "height": "18.5855px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "18.6px",
+          "color": "rgb(102, 112, 133)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(102, 112, 133)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "rce80wr6",
+      "index": 6,
+      "comment": "\"访问网站\"",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378482233,
+      "rect": {
+        "x": 773.5855102539062,
+        "y": 462.40130615234375,
+        "width": 81.38157653808594,
+        "height": 33.99123001098633
+      },
+      "pageRect": {
+        "x": 773.5855102539062,
+        "y": 462.40130615234375,
+        "width": 81.38157653808594,
+        "height": 33.99123001098633
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(2) > button.btn:nth-of-type(1)",
+        "component": "App/Help › button.btn",
+        "tag": "button",
+        "classes": "btn",
+        "text": "数据来源",
+        "parentChain": [
+          "div.modal-actions",
+          "div.modal",
+          "div.modal-mask",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "center",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "81.3816px",
+          "height": "33.9912px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 14px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(26, 32, 45)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "9px",
+          "white-space": "nowrap",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "13.64:1（AAA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "tl8n6zdj",
+      "index": 7,
+      "comment": "点击左侧栏时，不呼出\"保存已设置\"",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378518761,
+      "rect": {
+        "x": 15.997807502746582,
+        "y": 14.649123191833496,
+        "width": 27.99342155456543,
+        "height": 27.99342155456543
+      },
+      "pageRect": {
+        "x": 15.997807502746582,
+        "y": 14.649123191833496,
+        "width": 27.99342155456543,
+        "height": 27.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.brand:nth-of-type(1) > button.brand-mark > span.brand-toggle:nth-of-type(2)",
+        "component": "App/Brand › span.brand-toggle",
+        "tag": "span",
+        "classes": "brand-toggle",
+        "text": "",
+        "parentChain": [
+          "button.brand-mark",
+          "div.brand",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "position": "absolute",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "normal",
+          "grid-template-columns": "27.9934px",
+          "width": "27.9934px",
+          "height": "27.9934px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "14px",
+          "font-weight": "700",
+          "line-height": "normal",
+          "color": "rgb(255, 255, 255)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(255, 255, 255)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "opacity 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "a6locb00",
+      "index": 8,
+      "comment": "调整左栏时不呼出设置已保存",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378580530,
+      "rect": {
+        "x": 266.99560546875,
+        "y": 57.9934196472168,
+        "width": 5.997807025909424,
+        "height": 658.497802734375
+      },
+      "pageRect": {
+        "x": 266.99560546875,
+        "y": 57.9934196472168,
+        "width": 5.997807025909424,
+        "height": 658.497802734375
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "html > body > div > div.app > div.sidebar-resizer:nth-of-type(2)",
+        "component": null,
+        "tag": "div",
+        "classes": "sidebar-resizer",
+        "text": "",
+        "parentChain": [
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "position": "fixed",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "5.99781px",
+          "height": "658.498px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "background-image": "linear-gradient(to right, rgba(0, 0, 0, 0), rgb(124, 156, 255), rgba(0, 0, 0, 0))",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "opacity": "0.5",
+          "white-space": "normal",
+          "z-index": "12",
+          "transition": "left 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), background 0.14s cubic-bezier(0.22, 0.61, 0.36, 1)"
+        },
+        "attributes": {
+          "title": "拖动调整侧栏宽度",
+          "role": "separator"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "kx8vuqil",
+      "index": 9,
+      "comment": "左栏展开/收起功能失效，不能正确收起，收起时不能调整左侧栏宽度",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378646836,
+      "rect": {
+        "x": 0,
+        "y": 57.9934196472168,
+        "width": 270,
+        "height": 658.497802734375
+      },
+      "pageRect": {
+        "x": 0,
+        "y": 57.9934196472168,
+        "width": 270,
+        "height": 658.497802734375
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "html > body > div > div.app > aside.sidebar",
+        "component": "Sidebar",
+        "tag": "aside",
+        "classes": "sidebar",
+        "text": "资料库全部图片240我的收藏1已下载35待下载205抓取任务分类ACG图片240Pixiv萌图240热门标签女孩子94碧蓝档案28赤脚28东方20脚底20崩坏：星穹铁道19明日方舟18插画17脚指17着袜足底16崩坏314白裤袜12黑丝袜11泳装10黑裤袜10萝莉8博丽灵梦7知更鸟（星穹铁道）7流萤（星穹铁道）6碧蓝航线6兽耳5双马尾5太美了5瑟莉姆（崩坏3）5白发5初音未来4恋足癖4旗袍4应用与存储原图 220.74 MB索引 448.0 KB帮助设置",
+        "parentChain": [
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "column",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "270px",
+          "height": "658.498px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "12px 10px 0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "color(srgb 0.0588235 0.0745098 0.105882 / 0.55)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "eot0b7zo",
+      "index": 10,
+      "comment": "这里的收藏图标同样改成爱心",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378753779,
+      "rect": {
+        "x": 1041.4693603515625,
+        "y": 338.8157958984375,
+        "width": 12.99342155456543,
+        "height": 12.99342155456543
+      },
+      "pageRect": {
+        "x": 1041.4693603515625,
+        "y": 338.8157958984375,
+        "width": 12.99342155456543,
+        "height": 12.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(1) > svg",
+        "component": "Lightbox/Actions › svg",
+        "tag": "svg",
+        "classes": "",
+        "text": "",
+        "parentChain": [
+          "button.btn.sm",
+          "div.lb-actions",
+          "div.lightbox-side",
+          "div.lightbox",
+          "div.app"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "12.9934px",
+          "height": "12.9934px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(248, 113, 113)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(248, 113, 113)",
+          "border-radius": "0px",
+          "overflow": "hidden",
+          "white-space": "nowrap",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "d12d66lj",
+      "index": 11,
+      "comment": "\"访问网站\"",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789378803887,
+      "rect": {
+        "x": 1030.767578125,
+        "y": 366.3048400878906,
+        "width": 89.375,
+        "height": 27.99342155456543
+      },
+      "pageRect": {
+        "x": 1030.767578125,
+        "y": 366.3048400878906,
+        "width": 89.375,
+        "height": 27.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(4)",
+        "component": "Lightbox/Actions › button.btn",
+        "tag": "button",
+        "classes": "btn sm",
+        "text": "原始页面",
+        "parentChain": [
+          "div.lb-actions",
+          "div.lightbox-side",
+          "div.lightbox",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "center",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "89.375px",
+          "height": "27.9934px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 10px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(26, 32, 45)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "7px",
+          "white-space": "nowrap",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "13.64:1（AAA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "opymeixq",
+      "index": 12,
+      "comment": "三角形箭头 用大一点的指向右边的三角形的2边图标，无需转动动画。\n当鼠标移动到此选项上时候展开折叠，离开此选项时收起折叠，当然鼠标处于折叠子项中时不要折叠。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789379088830,
+      "rect": {
+        "x": 341.6995544433594,
+        "y": 416.7653503417969,
+        "width": 160.59210205078125,
+        "height": 31.53508758544922
+      },
+      "pageRect": {
+        "x": 341.6995544433594,
+        "y": 416.7653503417969,
+        "width": 160.59210205078125,
+        "height": 31.53508758544922
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.ctx-menu:nth-of-type(4) > div:nth-of-type(3) > button.ctx-item",
+        "component": "ContextMenu › button.ctx-item",
+        "tag": "button",
+        "classes": "ctx-item",
+        "text": "打开于…▸",
+        "parentChain": [
+          "div",
+          "div.ctx-menu",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "9px",
+          "grid-template-columns": "none",
+          "width": "160.592px",
+          "height": "31.5351px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "7px 10px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(34, 42, 58)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "7px",
+          "white-space": "normal",
+          "transition": "background 0.12s cubic-bezier(0.22, 0.61, 0.36, 1), color 0.12s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "12.04:1（AAA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "1aa21k7y",
+      "index": 13,
+      "comment": "子筛选项下取消分辨率这一筛选。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789379233932,
+      "rect": {
+        "x": 197.99342346191406,
+        "y": 68.99122619628906,
+        "width": 98.09210968017578,
+        "height": 25.997806549072266
+      },
+      "pageRect": {
+        "x": 197.99342346191406,
+        "y": 68.99122619628906,
+        "width": 98.09210968017578,
+        "height": 25.997806549072266
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > main.main > div.filter-bar:nth-of-type(1) > div.sort-picker > button.pill",
+        "component": "App/FilterBar › button.pill",
+        "tag": "button",
+        "classes": "pill",
+        "text": "排序：随机▾",
+        "parentChain": [
+          "div.sort-picker",
+          "div.filter-bar",
+          "main.main",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "inline-flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "6px",
+          "grid-template-columns": "none",
+          "width": "98.0921px",
+          "height": "25.9978px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px 10px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(20, 25, 36)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "99px",
+          "white-space": "normal",
+          "transition": "0.14s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "14.72:1（AAA）"
+        },
+        "attributes": {
+          "title": "排序方式"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "teyt7rin",
+      "index": 14,
+      "comment": "没有解决竖图显示超出页面问题\n滚轮动作无效",
+      "category": "bug",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789379414530,
+      "rect": {
+        "x": 23.991228103637695,
+        "y": 23.991228103637695,
+        "width": 964.0899047851562,
+        "height": 1712.9715576171875
+      },
+      "pageRect": {
+        "x": 23.991228103637695,
+        "y": 23.991228103637695,
+        "width": 964.0899047851562,
+        "height": 1712.9715576171875
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-stage:nth-of-type(1) > img",
+        "component": "Lightbox/Stage › img",
+        "tag": "img",
+        "classes": "",
+        "text": "",
+        "parentChain": [
+          "div.lightbox-stage",
+          "div.lightbox",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "964.09px",
+          "height": "1712.97px",
+          "min-width": "auto",
+          "max-width": "100%",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "6px",
+          "box-shadow": "rgba(0, 0, 0, 0.75) 0px 24px 60px -20px",
+          "overflow": "clip",
+          "white-space": "normal",
+          "transition": "all",
+          "object-fit": "contain"
+        },
+        "attributes": {
+          "src": "gugu://media/19520"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "c2o6hdm6",
+      "index": 15,
+      "comment": "在右上角×按钮左侧添加“沉浸模式”隐藏右边栏\n收起时有过渡动画向右移动的平滑动画0.4s\n左侧图片预览区 移动到居中\n右上角保留“沉浸模式”按钮\n再次点击展开右侧栏\n沉浸模式仅手动切换，每次预览图片默认打开上次沉浸/详细状态",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789379989512,
+      "rect": {
+        "x": 1012.0723876953125,
+        "y": 0,
+        "width": 335.997802734375,
+        "height": 716.4912109375
+      },
+      "pageRect": {
+        "x": 1012.0723876953125,
+        "y": 0,
+        "width": 335.997802734375,
+        "height": 716.4912109375
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-side:nth-of-type(2)",
+        "component": "Lightbox/SidePanel",
+        "tag": "div",
+        "classes": "lightbox-side",
+        "text": "3557x6658 6.14M [匿名-分享]编号19495分辨率3557 × 6658 · 23.7 MP文件大小6.14 MB格式JPG分类ACG图片 / Pixiv萌图发布时间2026-09-11 14:00浏览量16上传者users/51648995Pixiv111307782本地路径originals/ACG图片/Pixiv萌图/19495_女孩子-初音未来-pid111307782.jpg已收藏打开位置下载此图原始页面删除40%重置滚轮缩放 · 左键拖动 · ← → 翻页 · Esc 关闭标签女孩子初音未来",
+        "parentChain": [
+          "div.lightbox",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "335.998px",
+          "height": "716.491px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "16px 18px 40px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "color(srgb 0.0588235 0.0745098 0.105882 / 0.92)",
+          "border-radius": "0px",
+          "overflow": "auto",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "8yr7izqd",
+      "index": 16,
+      "comment": "注意折叠右边栏时这个元素也要移动到右侧",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789380049931,
+      "rect": {
+        "x": 956.0855102539062,
+        "y": 324.2489013671875,
+        "width": 41.99561309814453,
+        "height": 67.99342346191406
+      },
+      "pageRect": {
+        "x": 956.0855102539062,
+        "y": 324.2489013671875,
+        "width": 41.99561309814453,
+        "height": 67.99342346191406
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.lightbox:nth-of-type(3) > div.lightbox-stage:nth-of-type(1) > button.lb-nav.next:nth-of-type(2)",
+        "component": "Lightbox/Stage › button.lb-nav",
+        "tag": "button",
+        "classes": "lb-nav next",
+        "text": "",
+        "parentChain": [
+          "div.lightbox-stage",
+          "div.lightbox",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "position": "absolute",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "normal",
+          "grid-template-columns": "40.5921px",
+          "width": "41.9956px",
+          "height": "67.9934px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(255, 255, 255)",
+          "background-color": "rgba(124, 156, 255, 0.22)",
+          "border": "0.701754px solid rgba(124, 156, 255, 0.4)",
+          "border-radius": "12px",
+          "white-space": "normal",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)"
+        },
+        "attributes": {
+          "title": "下一张 (→)"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "gspxrd3o",
+      "index": 17,
+      "comment": "这个图标也需要在折叠左侧栏时居中",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789380207045,
+      "rect": {
+        "x": 15.997807502746582,
+        "y": 14.649123191833496,
+        "width": 27.99342155456543,
+        "height": 27.99342155456543
+      },
+      "pageRect": {
+        "x": 15.997807502746582,
+        "y": 14.649123191833496,
+        "width": 27.99342155456543,
+        "height": 27.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app.sidebar-collapsed > div.brand:nth-of-type(1) > button.brand-mark > span.brand-toggle:nth-of-type(2)",
+        "component": "App/Brand › span.brand-toggle",
+        "tag": "span",
+        "classes": "brand-toggle",
+        "text": "",
+        "parentChain": [
+          "button.brand-mark",
+          "div.brand",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "position": "absolute",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "normal",
+          "grid-template-columns": "27.9934px",
+          "width": "27.9934px",
+          "height": "27.9934px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "14px",
+          "font-weight": "700",
+          "line-height": "normal",
+          "color": "rgb(255, 255, 255)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(255, 255, 255)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "opacity 0.16s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.16s cubic-bezier(0.22, 0.61, 0.36, 1)"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "8f5vtz72",
+      "index": 18,
+      "comment": "内容页在标准视图下仅4栏，宽松视图下有6栏\n你可以适当调整宽度",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789380325046,
+      "rect": {
+        "x": 236.44737243652344,
+        "y": 106.6885986328125,
+        "width": 1084.25439453125,
+        "height": 10804.4189453125
+      },
+      "pageRect": {
+        "x": 236.44737243652344,
+        "y": 106.6885986328125,
+        "width": 1084.25439453125,
+        "height": 10804.4189453125
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
+        "component": "GalleryGrid",
+        "tag": "div",
+        "classes": "grid",
+        "text": "3584×6368·8.76 MB·2026-09-14白发 · 女仆pid 119512232 · 11 浏览2160×3456·1.69 MB·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 9 浏览1600×2000·1.52 MB·2026-09-14女孩子 · 插画pid 118770165 · 15 浏览4144×9000·13.64 MB·2026-09-13碧蓝档案pid 114882512 · 12 浏览1856×1280·222.4 KB·2026-09-13脚底 · 白裤袜pid 117507782 · 17 浏览1158×1637·1.48 MB·2026-09-13白发 · 女孩子pid 119521367 · 13 浏览1106×1800·1005.4 KB·2026-09-13崩坏3pid 117213814 · 12 浏览2400×3",
+        "parentChain": [
+          "main.main",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "start",
+          "gap": "0px 14px",
+          "grid-template-columns": "205.592px 205.592px 205.592px 205.592px 205.592px",
+          "width": "1084.25px",
+          "height": "10804.4px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "16px 18px 60px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "g6nuqsdo",
+      "index": 19,
+      "comment": "当用户界面中没有看到第一行图片时，且用户正在上滑，则在右下角显示一个圆形按钮，点击即可快速跳转到顶部。当用户下滑时隐藏按钮，显示/隐藏有过度动画0.2s",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789380493347,
+      "rect": {
+        "x": 253.99122619628906,
+        "y": 106.6885986328125,
+        "width": 1084.25439453125,
+        "height": 10804.4189453125
+      },
+      "pageRect": {
+        "x": 253.99122619628906,
+        "y": 106.6885986328125,
+        "width": 1084.25439453125,
+        "height": 10804.4189453125
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
+        "component": "GalleryGrid",
+        "tag": "div",
+        "classes": "grid",
+        "text": "3584×6368·8.76 MB·2026-09-14白发 · 女仆pid 119512232 · 11 浏览2160×3456·1.69 MB·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 9 浏览1600×2000·1.52 MB·2026-09-14女孩子 · 插画pid 118770165 · 15 浏览4144×9000·13.64 MB·2026-09-13碧蓝档案pid 114882512 · 12 浏览1856×1280·222.4 KB·2026-09-13脚底 · 白裤袜pid 117507782 · 17 浏览1158×1637·1.48 MB·2026-09-13白发 · 女孩子pid 119521367 · 13 浏览1106×1800·1005.4 KB·2026-09-13崩坏3pid 117213814 · 12 浏览2400×3",
+        "parentChain": [
+          "main.main",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "start",
+          "gap": "0px 14px",
+          "grid-template-columns": "205.592px 205.592px 205.592px 205.592px 205.592px",
+          "width": "1084.25px",
+          "height": "10804.4px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "16px 18px 60px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "vdhxqkw4",
+      "index": 20,
+      "comment": "点击删除按钮后，并不立刻执行删除，按钮文本先变成\"你确定吗?\" 再次点击后变成 “已删除”，且不可再交互。仅在从灯箱打开预览图时，检查一次图片是否可删除，再转变成初始的样子。2次变化均有0.2s过渡动画。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789380775093,
+      "rect": {
+        "x": 1127.13818359375,
+        "y": 366.3048400878906,
+        "width": 65.38377380371094,
+        "height": 27.99342155456543
+      },
+      "pageRect": {
+        "x": 1127.13818359375,
+        "y": 366.3048400878906,
+        "width": 65.38377380371094,
+        "height": 27.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app.sidebar-collapsed > div.lightbox:nth-of-type(2) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(5)",
+        "component": "Lightbox/Actions › button.btn",
+        "tag": "button",
+        "classes": "btn sm danger",
+        "text": "删除",
+        "parentChain": [
+          "div.lb-actions",
+          "div.lightbox-side",
+          "div.lightbox",
+          "div.app.sidebar-collapsed",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "center",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "65.3838px",
+          "height": "27.9934px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 10px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(248, 113, 113)",
+          "background-color": "color(srgb 0.972549 0.443137 0.443137 / 0.18)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "7px",
+          "white-space": "nowrap",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "l6kyxmw3",
+      "index": 21,
+      "comment": "对于已下载的图片预览不显示此选项。\n点击下载此图后，没有立刻执行下载任务，下载任务执行完成后预览界面未刷新。\n期望，点击后，该按钮的图标转化为箭头转圈动画，文字变成“下载中“，缓解用户等待焦虑，左下角再来个弹窗进度条，弹窗进度条的来源应当与抓取界面下的进度同步",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789381149891,
+      "rect": {
+        "x": 1199.517578125,
+        "y": 266.65570068359375,
+        "width": 89.375,
+        "height": 27.99342155456543
+      },
+      "pageRect": {
+        "x": 1199.517578125,
+        "y": 266.65570068359375,
+        "width": 89.375,
+        "height": 27.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app.sidebar-collapsed > div.lightbox:nth-of-type(2) > div.lightbox-side:nth-of-type(2) > div.lb-actions:nth-of-type(2) > button.btn.sm:nth-of-type(3)",
+        "component": "Lightbox/Actions › button.btn",
+        "tag": "button",
+        "classes": "btn sm",
+        "text": "下载此图",
+        "parentChain": [
+          "div.lb-actions",
+          "div.lightbox-side",
+          "div.lightbox",
+          "div.app.sidebar-collapsed",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "center",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "89.375px",
+          "height": "27.9934px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 10px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(26, 32, 45)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "7px",
+          "white-space": "nowrap",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "13.64:1（AAA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "v1rhl085",
+      "index": 22,
+      "comment": "你要一次全榨干吗...",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789381423319,
+      "rect": {
+        "x": 801.9846801757812,
+        "y": 362.0723571777344,
+        "width": 237.65350341796875,
+        "height": 17.039474487304688
+      },
+      "pageRect": {
+        "x": 801.9846801757812,
+        "y": 362.0723571777344,
+        "width": 237.65350341796875,
+        "height": 17.039474487304688
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.page > section.card-panel:nth-of-type(2) > div.field-grid:nth-of-type(2) > div.field:nth-of-type(3) > span.help",
+        "component": "CrawlPanel › span.help",
+        "tag": "span",
+        "classes": "help",
+        "text": "先跑 200 张试试水",
+        "parentChain": [
+          "div.field",
+          "div.field-grid",
+          "section.card-panel",
+          "div.page",
+          "main.main"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "237.654px",
+          "height": "17.0395px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "11px",
+          "font-weight": "400",
+          "line-height": "17.05px",
+          "color": "rgb(102, 112, 133)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(102, 112, 133)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "ein472c8",
+      "index": 23,
+      "comment": "筛选逻辑存在问题，自行重整",
+      "category": "bug",
+      "severity": "should",
+      "kind": "region",
+      "createdAt": 1789381552892,
+      "rect": {
+        "x": 261,
+        "y": 61,
+        "width": 553,
+        "height": 42
+      },
+      "pageRect": {
+        "x": 261,
+        "y": 61,
+        "width": 553,
+        "height": 42
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "区域中心命中 → div > div.app > main.main > div.filter-bar:nth-of-type(1) > button.pill:nth-of-type(3)",
+        "component": "App/FilterBar › button.pill",
+        "tag": "button",
+        "classes": "pill",
+        "text": "[区域中心元素] 已下载",
+        "parentChain": [
+          "div.filter-bar",
+          "main.main",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "6px",
+          "grid-template-columns": "none",
+          "width": "57.3904px",
+          "height": "25.9978px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 10px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(151, 161, 181)",
+          "background-color": "rgb(20, 25, 36)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.07)",
+          "border-radius": "99px",
+          "white-space": "normal",
+          "transition": "0.14s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "6.77:1（AA）"
+        },
+        "attributes": {
+          "title": "仅已下载（只与「待下载」互斥）"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    }
+  ]
+}

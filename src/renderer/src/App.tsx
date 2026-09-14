@@ -468,7 +468,11 @@ export default function App(): JSX.Element {
   return (
     <div
       className={`app${settings.sidebarCollapsed ? ' sidebar-collapsed' : ''}`}
-      style={{ ['--sidebar-w' as string]: sidebarWidth + 'px' }}
+      style={{
+        // 收起时交给 .sidebar-collapsed 的 64px。
+        // 之前无条件写内联值，内联优先级更高，侧栏就永远收不起来了。
+        ['--sidebar-w' as string]: (settings.sidebarCollapsed ? 64 : sidebarWidth) + 'px'
+      }}
     >
       <div className="brand" data-component="App/Brand">
         {/* 品牌区同时是侧栏开关：鼠标移上去图标渐变为「展开/收起侧栏」 */}

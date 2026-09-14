@@ -646,6 +646,8 @@ body.resizing * {
 .main {
   grid-area: main;
   overflow-y: auto;
+  /* 明确禁掉横向滚动：只允许上下滚动 */
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -1349,24 +1351,37 @@ body.resizing * {
 }
 
 .lightbox-stage {
+  --lb-pad: 24px;
   position: relative;
   display: grid;
   place-items: center;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: 24px;
+  padding: var(--lb-pad);
   cursor: grab;
 }
 .lightbox-stage.dragging {
   cursor: grabbing;
 }
+/*
+ * 图片用绝对定位 + margin:auto 来「按比例塞满可视区」。
+ *
+ * 为什么不用 max-height:100%：作为居中的网格项，百分比最大高度在这套结构里
+ * 根本解析不了（实测六种写法只有绝对定位那两种有效），竖图会一路撑到 1713px 溢出屏幕。
+ * 绝对定位的包含块是舞台的内边距盒，尺寸确定，百分比才靠得住。
+ * 再减去两倍内边距，保证四周留白。
+ */
 .lightbox-stage img {
-  max-width: 100%;
-  max-height: 100%;
+  position: absolute;
+  inset: 0;
+  margin: auto;
   width: auto;
   height: auto;
+  max-width: calc(100% - var(--lb-pad) * 2);
+  max-height: calc(100% - var(--lb-pad) * 2);
   object-fit: contain;
+  object-position: center;
   border-radius: 6px;
   box-shadow: var(--shadow-lg);
   user-select: none;

@@ -5,6 +5,14 @@
 
 /* 工具栏必须盖住标注记号：标注多了以后，记号是后渲染的兄弟节点，
    不给层级就会被压在下面。 */
+/*
+ * 工具栏放在顶栏下方（58px 标题栏 + 8px 间隙），刻意避开窗口拖动区。
+ *
+ * 原因：自绘标题栏把上方的 .topbar 整条设成了 -webkit-app-region: drag，
+ * 覆盖层即便写了 no-drag，Chromium 也不一定会从拖动区里把它挖出来 ——
+ * 实测表现就是工具栏左半压在搜索框（no-drag）上能点，右半被窗口吞掉点不动。
+ * 与其赌实现细节，不如直接让工具栏不落在拖动区里。
+ */
 .gugu-anno-toolbar {
   z-index: 30;
   transition:
@@ -43,7 +51,7 @@
 
 .gugu-anno-handle {
   position: absolute;
-  top: 0;
+  top: 44px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 31;

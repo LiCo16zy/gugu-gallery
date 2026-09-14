@@ -175,6 +175,7 @@ export default function Lightbox({
   return (
     <div className="lightbox" data-component="Lightbox">
       <div
+        ref={stageRef}
         data-component="Lightbox/Stage"
         className={'lightbox-stage' + (dragState.active ? ' dragging' : '')}
         onMouseDown={(e) => {
