@@ -64,7 +64,7 @@ const SCRIPT = `(async () => {
       const m = /^(\\d+) \\/ span (\\d+)$/.exec(c.style.gridColumn)
       const r = /^(\\d+) \\/ span (\\d+)$/.exec(c.style.gridRow)
       if (!m || !r) continue
-      areas.push({ col: +m[1], span: +m[2], row: +r[1], rows: +r[2], w: Math.round(c.getBoundingClientRect().width), id: c.querySelector('.card-title')?.textContent || '' })
+      areas.push({ col: +m[1], span: +m[2], row: +r[1], rows: +r[2], w: Math.round(c.getBoundingClientRect().width), itemId: c.dataset.itemId, id: c.querySelector('.card-title')?.textContent || '' })
     }
     out.masonryColumns = Number(grid?.dataset.columns)
     out.masonryCards = areas.length
@@ -85,6 +85,10 @@ const SCRIPT = `(async () => {
       }
     }
     out.masonryOverlaps = overlap
+    out.firstScreenVisible = areas.slice(0, 4).every((a) => {
+      const el = document.querySelector('.card[data-item-id="' + a.itemId + '"]')
+      return el ? Number(getComputedStyle(el).opacity) > 0.5 : false
+    })
   }
 
   // 2) 点第一个标签，筛选应生效
@@ -231,12 +235,28 @@ const SCRIPT = `(async () => {
     out.immersiveExitVisible = Boolean(exitBtn)
     if (exitBtn) {
       const er = exitBtn.getBoundingClientRect()
-      out.immersiveExitHittable = document.elementFromPoint(er.left + er.width / 2, er.top + er.height / 2) === exitBtn
+      // 按钮现在只有图标，中心点命中的是 svg，所以要往上找一层
+      const hitEl = document.elementFromPoint(er.left + er.width / 2, er.top + er.height / 2)
+      out.immersiveExitHittable = Boolean(hitEl && hitEl.closest('.lb-exit-immersive') === exitBtn)
       exitBtn.click()
       await sleep(600)
       out.immersiveExitedByStageBtn = !lb?.classList.contains('immersive')
       toggle?.click()
       await sleep(600)
+    }
+
+    // 沉浸模式下切图应当弹出右下角标题条
+    {
+      const kb = (key) => window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      out.captionHiddenBefore = !document.querySelector('.lb-caption')
+      kb('ArrowRight')
+      await sleep(350)
+      const cap = document.querySelector('.lb-caption')
+      out.captionShown = Boolean(cap)
+      out.captionText = cap ? (cap.textContent || '').trim() : null
+      // 2.6s 后应当自行滑出（先 out 再 hidden）
+      await sleep(3400)
+      out.captionGoneLater = !document.querySelector('.lb-caption')
     }
     out.immersiveOpacityBefore = before
     toggle?.click()
@@ -339,6 +359,7 @@ const checks = [
   ['瀑布流：同列卡片不重叠', result.masonryOverlaps === 0],
   ['瀑布流：卡片宽度与跨栏数一致', result.masonryWidthOk === true],
   ['瀑布流：横图占到两栏', (result.masonrySpan2 ?? 0) > 0],
+  ['进场动画不隐藏首屏卡片', result.firstScreenVisible === true],
   ['顶部统计与实际数据一致', /共 \d+ 条/.test(result.initialMeta || '')],
   ['点击标签后筛选条件生效', (result.afterTagChips ?? 0) >= 1],
   ['清空筛选后恢复', (result.afterClearMeta || '').startsWith('共')],
@@ -359,6 +380,9 @@ const checks = [
   ['灯箱有沉浸模式开关', result.immersiveToggle === true],
   ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
   ['沉浸模式下仍可退出（舞台内有出口）', result.immersiveExitHittable === true],
+  ['沉浸模式下切图弹出标题条', result.captionShown === true],
+  ['标题条内容取自站点标题', typeof result.captionText === 'string' && result.captionText.length > 0],
+  ['标题条保持后自行滑出', result.captionGoneLater === true],
   ['舞台出口能真正退出沉浸模式', result.immersiveExitedByStageBtn === true],
   ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
   ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],

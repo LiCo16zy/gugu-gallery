@@ -52,6 +52,13 @@ export default function GalleryGrid({
   // 网格元素根本不存在；等它挂载出来必须重新绑定观察器，否则宽度永远是 0。
   const [gridEl, setGridEl] = useState<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(0)
+  /**
+   * 已经播放过进场动画的条目。放在 ref 里而不是 state：
+   * 交叉回调里只直接改 DOM class，不触发 React 重渲染 ——
+   * 上万张图时逐张 setState 会把主线程拖垮。
+   */
+  const animatedRef = useRef<Set<number>>(new Set())
+  const [classified, setClassified] = useState(false)
 
   useLayoutEffect(() => {
     if (!gridEl) return
@@ -70,6 +77,49 @@ export default function GalleryGrid({
   }, [gridEl])
 
   const { placements, columns, colWidth } = useMasonry(items, width, dense ? MIN_CARD_DENSE : MIN_CARD_NORMAL)
+
+  /**
+   * 进场淡入：只有「界面之外」的卡片会被先藏起来，滚到可见高度超过 20% 时淡入 0.4s。
+   *
+   * 三条约束（都来自反馈）：
+   *  1. 已经播放过的不再被隐藏 —— 否则改窗口大小、开合侧栏引发重排时会整屏闪一下
+   *  2. 只在一批新结果（切分类 / 改筛选 / 搜索）时才重置，组件用 key 重新挂载
+   *  3. 逐张淡入必须廉价：单个 observer + 直接改 class，不走 React 状态
+   */
+  useEffect(() => {
+    if (!gridEl) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const el = entry.target as HTMLElement
+          const itemId = Number(el.dataset.itemId)
+          if (!Number.isFinite(itemId)) continue
+          if (animatedRef.current.has(itemId)) {
+            observer.unobserve(el)
+            continue
+          }
+          const visible = entry.intersectionRect.height
+          const cardHeight = entry.boundingClientRect.height
+          const viewportHeight = entry.rootBounds?.height ?? window.innerHeight
+          // 超高长图永远到不了 20% 的比例，所以再给一条「可见高度占视口 20%」的兜底
+          const enough = visible >= cardHeight * 0.2 || visible >= viewportHeight * 0.2
+          if (entry.isIntersecting && enough) {
+            animatedRef.current.add(itemId)
+            el.classList.remove('card-pending')
+            observer.unobserve(el)
+          } else if (!entry.isIntersecting) {
+            el.classList.add('card-pending')
+          }
+        }
+        setClassified(true)
+      },
+      { threshold: [0, 0.05, 0.2, 0.5, 1] }
+    )
+    // 首轮要覆盖全部卡片做一次分类；之后只盯还没播放过的
+    const pendingSelector = classified ? '.card.card-pending' : '.card'
+    gridEl.querySelectorAll(pendingSelector).forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [gridEl, items, classified])
 
   if (!loading && items.length === 0) {
     return (
@@ -96,6 +146,7 @@ export default function GalleryGrid({
         <Card
           key={item.id}
           item={item}
+          pending={classified && !animatedRef.current.has(item.id)}
           placement={placements.get(item.id)}
           onOpen={onOpen}
           onQuickFavorite={onQuickFavorite}
@@ -200,12 +251,14 @@ function SkeletonCards(): JSX.Element {
 
 function Card({
   item,
+  pending,
   placement,
   onOpen,
   onQuickFavorite,
   onContextMenu
 }: {
   item: ItemSummary
+  pending: boolean
   placement?: Placement
   onOpen: (id: number) => void
   onQuickFavorite: (item: ItemSummary) => void
@@ -230,7 +283,8 @@ function Card({
 
   return (
     <div
-      className="card"
+      className={'card' + (pending ? ' card-pending' : '')}
+      data-item-id={item.id}
       data-component="GalleryGrid/Card"
       style={geometry}
       onClick={() => onOpen(item.id)}

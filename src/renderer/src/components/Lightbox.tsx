@@ -49,6 +49,16 @@ export default function Lightbox({
   const [delState, setDelState] = useState<'idle' | 'confirm' | 'done'>('idle')
   const [downloading, setDownloading] = useState(false)
   const [dragState, setDragState] = useState<{ active: boolean }>({ active: false })
+  /**
+   * 沉浸模式右下角的标题条，是个四态机：
+   *   hidden → in(0.6s 从右滑入) → hold(2s) → out(0.6s 下滑淡出) → hidden
+   * 只在「已经完全淡出」或「正在淡出」时切图才会重新弹入；
+   * 保持期间切图只换文字并重置 2s 计时。
+   */
+  const [capPhase, setCapPhase] = useState<'hidden' | 'in' | 'hold' | 'out'>('hidden')
+  const [capText, setCapText] = useState('')
+  const [capNonce, setCapNonce] = useState(0)
+  const lastCapId = useRef<number | null>(null)
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
 
@@ -75,6 +85,48 @@ export default function Lightbox({
   useEffect(() => {
     immersivePreference = immersive
   }, [immersive])
+
+  // 进/出沉浸模式时对齐状态：进入时对齐 id，避免一进去就弹框；退出时立刻淡出
+  useEffect(() => {
+    if (immersive) {
+      lastCapId.current = id
+      return
+    }
+    setCapPhase((p) => (p === 'hidden' ? p : 'out'))
+    lastCapId.current = null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [immersive])
+
+  // 切图才是弹入的触发条件
+  useEffect(() => {
+    if (!immersive) return
+    if (lastCapId.current === null) {
+      lastCapId.current = id
+      return
+    }
+    if (lastCapId.current === id) return
+    lastCapId.current = id
+    const text = detail?.title || summaryTitle || '#' + id
+    setCapText(text)
+    setCapPhase((p) => {
+      if (p === 'hold') {
+        setCapNonce((n) => n + 1)
+        return 'hold'
+      }
+      if (p === 'in') return 'in'
+      return 'in'
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, immersive, detail?.title])
+
+  // 相位推进
+  useEffect(() => {
+    if (capPhase === 'hidden') return
+    const delay = capPhase === 'in' ? 600 : capPhase === 'hold' ? 2000 : 600
+    const next = capPhase === 'in' ? 'hold' : capPhase === 'hold' ? 'out' : 'hidden'
+    const timer = setTimeout(() => setCapPhase(next), delay)
+    return () => clearTimeout(timer)
+  }, [capPhase, capNonce])
 
   // 下载启动后轮询直到文件就绪，解决「下载完预览界面不刷新」
   useEffect(() => {
@@ -186,6 +238,7 @@ export default function Lightbox({
   }, [items, index])
 
   const summary = items.find((i) => i.id === id) ?? null
+  const summaryTitle = summary?.title ?? ''
 
   /**
    * 上传者：站点把所有来源都标成「匿名-分享」，没有信息量。
@@ -244,13 +297,19 @@ export default function Lightbox({
               setImmersive(false)
             }}
             title="退出沉浸模式"
+            aria-label="退出沉浸模式"
           >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="16" rx="2" />
               <path d="M15 4v16" />
             </svg>
-            退出沉浸
           </button>
+        )}
+
+        {capPhase !== 'hidden' && (
+          <div className={'lb-caption phase-' + capPhase} data-component="Lightbox/Caption">
+            {capText}
+          </div>
         )}
 
         <button className="lb-nav prev" onClick={() => step(-1)} disabled={!prev} title="上一张 (←)">

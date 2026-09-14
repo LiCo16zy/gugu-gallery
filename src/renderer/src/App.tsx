@@ -147,6 +147,8 @@ export default function App(): JSX.Element {
   const [barHidden, setBarHidden] = useState(false)
   /** 向上滚动且已经离开首屏时，右下角出现回到顶部 */
   const [showToTop, setShowToTop] = useState(false)
+  /** 每换一批结果就 +1：给网格做 key，让它整体重挂载并重播进场动画 */
+  const [listEpoch, setListEpoch] = useState(0)
   const [sortOpen, setSortOpen] = useState(false)
 
   const lastScrollTop = useRef(0)
@@ -239,6 +241,7 @@ export default function App(): JSX.Element {
   // 条件变化 -> 回到第一页
   useEffect(() => {
     setCursor(null)
+    setListEpoch((e) => e + 1)
     void loadPage('reset')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth])
@@ -396,7 +399,7 @@ export default function App(): JSX.Element {
     requestAnimationFrame(() => {
       setReflowing(true)
       if (reflowTimer.current) clearTimeout(reflowTimer.current)
-      reflowTimer.current = setTimeout(() => setReflowing(false), 180)
+      reflowTimer.current = setTimeout(() => setReflowing(false), 1250)
     })
   }, [])
 
@@ -726,6 +729,7 @@ export default function App(): JSX.Element {
             </div>
 
             <GalleryGrid
+              key={listEpoch}
               items={items}
               loading={loading}
               dense={dense}

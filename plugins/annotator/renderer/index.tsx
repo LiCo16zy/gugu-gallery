@@ -31,20 +31,77 @@ import './toolbar.css'
 const manifest = manifestJson as RendererPluginModule['manifest']
 type ToolMode = 'browse' | 'element' | 'region'
 
-/** 鼠标离开工具栏多久后自动上收 */
-const TOOLBAR_HIDE_DELAY = 5000
 /** 说明气泡显示时长 */
 const HINT_DURATION = 5000
-/** 鼠标靠近顶部多少像素内，呼出把手显形 */
-const HANDLE_HOT_ZONE = 88
-/** 把手悬停多久自动展开 */
-const HANDLE_HOVER_DELAY = 400
+/**
+ * 工具栏能被拖到任意位置，但纵向不能低于这里。
+ * 顶栏那一条是窗口拖动区（自绘标题栏的副作用），落在里面的话
+ * 真实鼠标点击会被窗口吞掉 —— 上一轮就是栽在这上面，所以直接禁掉。
+ */
+const TOOLBAR_TOP_SAFE = 60
+
+/** 工具栏位置与形态跨次打开保持 */
+let toolbarPosition: { x: number; y: number } | null = null
+let compactPreference = false
 
 const MODE_LABEL: Record<ToolMode, string> = { browse: '浏览', element: '点选', region: '框选' }
 const MODE_HINT: Record<ToolMode, string> = {
   browse: '浏览模式：正常操作应用，翻到要改的地方后切「点选」或「框选」',
   element: '点选模式：点击任意元素即可写批注（Esc 取消）',
   region: '框选模式：按住左键拖出一个区域写批注（Esc 取消）'
+}
+
+/** 把工具栏夹进视口，且不低于窗口拖动区 */
+function clampDock(x: number, y: number, compact: boolean): { x: number; y: number } {
+  const width = compact ? 196 : 588
+  const height = compact ? 44 : 52
+  return {
+    x: Math.max(4, Math.min(Math.max(4, window.innerWidth - width - 4), x)),
+    y: Math.max(TOOLBAR_TOP_SAFE, Math.min(Math.max(TOOLBAR_TOP_SAFE, window.innerHeight - height - 4), y))
+  }
+}
+
+/* ------------------------------------------------ 简易工具栏上的四个图标 */
+
+/** 浏览：只伸出食指的右手 */
+function IconPointHand(): JSX.Element {
+  return (
+    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.2 11.4V4.6a1.7 1.7 0 0 1 3.4 0v6.8" />
+      <path d="M13.6 11.4V9.6a1.7 1.7 0 0 1 3.4 0v1.8" />
+      <path d="M17 11.4v-1a1.7 1.7 0 0 1 3.4 0v4.4A6.4 6.4 0 0 1 14 21.2h-2.2A6.4 6.4 0 0 1 5.4 14.8v-3.9a1.7 1.7 0 0 1 3.4 0v.6" />
+    </svg>
+  )
+}
+
+/** 点选：被瞄准的元素 */
+function IconPickElement(): JSX.Element {
+  return (
+    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="5" width="14" height="14" rx="2" />
+      <path d="M12 2.4v2.6M12 19v2.6M2.4 12H5M19 12h2.6" />
+    </svg>
+  )
+}
+
+/** 框选：虚线框住的区域 */
+function IconPickRegion(): JSX.Element {
+  return (
+    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" strokeDasharray="3.2 3.2" />
+      <path d="M8.5 12h7" />
+    </svg>
+  )
+}
+
+/** 展开：从简易切回标准工具栏 */
+function IconExpandToolbar(): JSX.Element {
+  return (
+    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 5.5 12 11l6-5.5" />
+      <path d="M6 12.5 12 18l6-5.5" />
+    </svg>
+  )
 }
 
 interface Draft {
@@ -77,33 +134,23 @@ function AnnotatorOverlay({
   const [note, setNote] = useState('')
   const [rounds, setRounds] = useState<RoundInfo[]>([])
   const [scrollTick, setScrollTick] = useState(0)
-  /** 工具栏是否展开；鼠标离开 5s 后自动上收 */
-  const [toolbarOpen, setToolbarOpen] = useState(true)
-  /** 鼠标是否靠近顶部 —— 决定收起后的「呼出把手」是否显形 */
-  const [handleHot, setHandleHot] = useState(false)
+  /** 简易工具栏（4 个图标）还是标准工具栏 */
+  const [compact, setCompact] = useState(compactPreference)
+  /** 拖动后的位置；null 表示默认居中 */
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(toolbarPosition)
   /** 说明气泡：只在点击选项后显示 5s */
   const [hint, setHint] = useState<string | null>(null)
 
   const dragStart = useRef<{ x: number; y: number } | null>(null)
   const modeRef = useRef<ToolMode>(mode)
   modeRef.current = mode
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const expandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dockRef = useRef<HTMLDivElement | null>(null)
+  const posRef = useRef<{ x: number; y: number } | null>(toolbarPosition)
+  const dragState = useRef<{ dx: number; dy: number } | null>(null)
 
   /* ------------------------------------------------------ 工具栏自动收起 */
 
-  const cancelAutoHide = useCallback(() => {
-    if (hideTimer.current) {
-      clearTimeout(hideTimer.current)
-      hideTimer.current = null
-    }
-  }, [])
-
-  const scheduleAutoHide = useCallback(() => {
-    cancelAutoHide()
-    hideTimer.current = setTimeout(() => setToolbarOpen(false), TOOLBAR_HIDE_DELAY)
-  }, [cancelAutoHide])
 
   /** 点击某个选项后弹一句说明，5s 后自动消失 */
   const flashHint = useCallback((text: string) => {
@@ -112,48 +159,51 @@ function AnnotatorOverlay({
     hintTimer.current = setTimeout(() => setHint(null), HINT_DURATION)
   }, [])
 
-  const expandToolbar = useCallback(
-    (withHint?: string) => {
-      setToolbarOpen(true)
-      cancelAutoHide()
-      if (withHint) flashHint(withHint)
-    },
-    [cancelAutoHide, flashHint]
-  )
 
-  // 靠近顶部时让把手显形；远离时如果工具栏开着，重新开始计时
+  const compactRef = useRef(compact)
+  compactRef.current = compact
+
   useEffect(() => {
-    if (!enabled) return
+    if (enabled) return
+    if (hintTimer.current) clearTimeout(hintTimer.current)
+  }, [enabled])
+
+  const switchCompact = useCallback((next: boolean) => {
+    setCompact(next)
+    compactPreference = next
+    setPos((current) => (current ? clampDock(current.x, current.y, next) : current))
+    setHint(next ? '已收起到简易工具栏' : '已展开标准工具栏')
+    if (hintTimer.current) clearTimeout(hintTimer.current)
+    hintTimer.current = setTimeout(() => setHint(null), HINT_DURATION)
+  }, [])
+
+  /** 按住工具栏空白处即可拖动；按钮上不触发，免得点不动 */
+  const startToolbarDrag = useCallback((event: React.MouseEvent) => {
+    if ((event.target as Element).closest('button')) return
+    const el = dockRef.current
+    if (!el) return
+    event.preventDefault()
+    const rect = el.getBoundingClientRect()
+    dragState.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top }
+
     const onMove = (e: MouseEvent): void => {
-      setHandleHot(e.clientY <= HANDLE_HOT_ZONE)
+      const d = dragState.current
+      if (!d) return
+      const next = clampDock(e.clientX - d.dx, e.clientY - d.dy, compactRef.current)
+      setPos(next)
+      posRef.current = next
     }
-    const onLeave = (): void => {
-      setHandleHot(false)
-      scheduleAutoHide()
+    const onUp = (): void => {
+      dragState.current = null
+      toolbarPosition = posRef.current
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.classList.remove('dragging-tool')
     }
-    window.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseleave', onLeave)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseleave', onLeave)
-    }
-  }, [enabled, scheduleAutoHide])
-
-  // 打开标注工具时先展开一次，随后交给自动收起
-  useEffect(() => {
-    if (!enabled) {
-      cancelAutoHide()
-      if (hintTimer.current) clearTimeout(hintTimer.current)
-      return
-    }
-    setToolbarOpen(true)
-    scheduleAutoHide()
-    return () => {
-      cancelAutoHide()
-      if (hintTimer.current) clearTimeout(hintTimer.current)
-      if (expandTimer.current) clearTimeout(expandTimer.current)
-    }
-  }, [enabled, cancelAutoHide, scheduleAutoHide])
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    document.body.classList.add('dragging-tool')
+  }, [])
 
   /* ---------------------------------------------------------- 快捷键与滚动 */
 
@@ -410,94 +460,122 @@ function AnnotatorOverlay({
 
   return (
     <div className="gugu-anno-root">
-      {/* ------------------------------------------------ 收起后的呼出把手 */}
-      <button
-        className={`gugu-anno-handle${toolbarOpen ? ' gone' : ''}${handleHot ? ' hot' : ''}${
-          mode !== 'browse' ? ' capturing' : ''
-        }`}
-        title="展开标注工具栏"
-        onMouseEnter={() => {
-          if (expandTimer.current) clearTimeout(expandTimer.current)
-          expandTimer.current = setTimeout(() => expandToolbar(MODE_HINT[modeRef.current]), HANDLE_HOVER_DELAY)
-        }}
-        onMouseLeave={() => {
-          if (expandTimer.current) {
-            clearTimeout(expandTimer.current)
-            expandTimer.current = null
-          }
-        }}
-        onClick={() => {
-          if (expandTimer.current) {
-            clearTimeout(expandTimer.current)
-            expandTimer.current = null
-          }
-          expandToolbar(MODE_HINT[modeRef.current])
-        }}
-      >
-        <span className="gugu-anno-handle-grip" />
-        <span className="gugu-anno-handle-mode">{MODE_LABEL[mode]}</span>
-        {pendingCount > 0 && <span className="gugu-anno-handle-count">{pendingCount}</span>}
-      </button>
-
-      {/* -------------------------------------------------------- 悬浮工具栏 */}
+      {/* ------------------------------------------------------------ 工具栏 */}
       <div
-        className={`gugu-anno-toolbar${toolbarOpen ? '' : ' collapsed'}`}
-        onMouseEnter={cancelAutoHide}
-        onMouseLeave={scheduleAutoHide}
+        ref={dockRef}
+        className={'gugu-anno-dock' + (pos ? ' placed' : '') + (compact ? ' compact-mode' : '')}
+        style={pos ? { left: pos.x, top: pos.y } : undefined}
       >
-        <span className="gugu-anno-brand">
-          <b>标注模式</b>
-          <em>{pendingCount} 条</em>
-        </span>
-
-        <div className="gugu-anno-seg">
-          {(['browse', 'element', 'region'] as ToolMode[]).map((value) => (
+        {compact ? (
+          /* 简易工具栏：只有 4 个图标，无文字 */
+          <div className="gugu-anno-toolbar compact" onMouseDown={startToolbarDrag} title="按住空白处可拖动">
+            <span className="gugu-anno-grip" aria-hidden />
             <button
-              key={value}
-              className={mode === value ? 'on' : ''}
+              className={'anno-icon-btn' + (mode === 'browse' ? ' on' : '')}
+              title="浏览：不拦截点击，正常使用应用"
+              aria-label="浏览"
               onClick={() => {
-                setMode(value)
+                setMode('browse')
                 setDraft(null)
-                flashHint(MODE_HINT[value])
+                flashHint(MODE_HINT.browse)
               }}
-              title={value === 'browse' ? '不拦截点击，正常使用应用' : '点击 / 拖拽即可添加标注'}
             >
-              {MODE_LABEL[value]}
+              <IconPointHand />
             </button>
-          ))}
-        </div>
+            <button
+              className={'anno-icon-btn' + (mode === 'element' ? ' on' : '')}
+              title="点选元素"
+              aria-label="点选元素"
+              onClick={() => {
+                setMode('element')
+                setDraft(null)
+                flashHint(MODE_HINT.element)
+              }}
+            >
+              <IconPickElement />
+            </button>
+            <button
+              className={'anno-icon-btn' + (mode === 'region' ? ' on' : '')}
+              title="框选区域"
+              aria-label="框选区域"
+              onClick={() => {
+                setMode('region')
+                setDraft(null)
+                flashHint(MODE_HINT.region)
+              }}
+            >
+              <IconPickRegion />
+            </button>
+            <button
+              className="anno-icon-btn"
+              title="展开标准工具栏"
+              aria-label="展开标准工具栏"
+              onClick={() => switchCompact(false)}
+            >
+              <IconExpandToolbar />
+            </button>
+          </div>
+        ) : (
+          <div className="gugu-anno-toolbar" onMouseDown={startToolbarDrag} title="按住空白处可拖动">
+            <span className="gugu-anno-grip" aria-hidden />
+            <span className="gugu-anno-brand">
+              <b>标注模式</b>
+              <em>{pendingCount} 条</em>
+            </span>
 
-        <button
-          className={`gugu-anno-btn${showPins ? ' on' : ''}`}
-          onClick={() => {
-            const next = !showPins
-            setShowPins(next)
-            flashHint(next ? '已显示标注记号' : '已隐藏标注记号')
-          }}
-        >
-          {showPins ? '隐藏标注' : '显示标注'}
-        </button>
-        <button className="gugu-anno-btn primary" onClick={() => setExportOpen(true)} disabled={pendingCount === 0}>
-          导出标注
-        </button>
-        <button
-          className="gugu-anno-btn danger"
-          onClick={() => {
-            if (pendingCount > 0 && !window.confirm(`放弃 ${pendingCount} 条未导出的标注？`)) return
-            setAnnotations([])
-            setDraft(null)
-            flashHint('已清空未导出的标注')
-          }}
-          disabled={pendingCount === 0 && !draft}
-        >
-          清空
-        </button>
-        <button className="gugu-anno-btn" onClick={() => onToggle(false)} title="退出标注（Ctrl+Shift+A）">
-          退出
-        </button>
+            <div className="gugu-anno-seg">
+              {(['browse', 'element', 'region'] as ToolMode[]).map((value) => (
+                <button
+                  key={value}
+                  className={mode === value ? 'on' : ''}
+                  onClick={() => {
+                    setMode(value)
+                    setDraft(null)
+                    flashHint(MODE_HINT[value])
+                  }}
+                  title={value === 'browse' ? '不拦截点击，正常使用应用' : '点击 / 拖拽即可添加标注'}
+                >
+                  {MODE_LABEL[value]}
+                </button>
+              ))}
+            </div>
+
+            <button
+              className={'gugu-anno-btn' + (showPins ? ' on' : '')}
+              onClick={() => {
+                const next = !showPins
+                setShowPins(next)
+                flashHint(next ? '已显示标注记号' : '已隐藏标注记号')
+              }}
+            >
+              {showPins ? '隐藏标注' : '显示标注'}
+            </button>
+            <button className="gugu-anno-btn primary" onClick={() => setExportOpen(true)} disabled={pendingCount === 0}>
+              导出标注
+            </button>
+            <button
+              className="gugu-anno-btn danger"
+              onClick={() => {
+                if (pendingCount > 0 && !window.confirm('放弃 ' + pendingCount + ' 条未导出的标注？')) return
+                setAnnotations([])
+                setDraft(null)
+                flashHint('已清空未导出的标注')
+              }}
+              disabled={pendingCount === 0 && !draft}
+            >
+              清空
+            </button>
+            <button className="gugu-anno-btn" onClick={() => onToggle(false)} title="退出标注（Ctrl+Shift+A）">
+              退出
+            </button>
+            <button className="gugu-anno-btn ghost" onClick={() => switchCompact(true)} title="收起到简易工具栏">
+              收起
+            </button>
+          </div>
+        )}
+
+        {hint && <div className="gugu-anno-hint">{hint}</div>}
       </div>
-
-      {toolbarOpen && hint && <div className="gugu-anno-hint">{hint}</div>}
 
       {/* ------------------------------------------------------------ 高亮 */}
       {hoverRect && mode !== 'browse' && (

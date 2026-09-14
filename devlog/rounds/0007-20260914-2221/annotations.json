@@ -1,0 +1,285 @@
+{
+  "roundId": "0007-20260914-2221",
+  "exportedAt": "2026-09-14T14:21:50.379Z",
+  "view": "gallery",
+  "note": "沉浸模式优化，内容页动画优化",
+  "viewport": {
+    "width": 1348,
+    "height": 716
+  },
+  "devicePixelRatio": 1.4249999523162842,
+  "appVersion": "0.1.0",
+  "annotations": [
+    {
+      "id": "y79vr6a6",
+      "index": 1,
+      "comment": "调整布局重排时的卡片过度动画速度，太快了，变暗（透明）0.6s, 变亮（不透明）0.6s，动画过度平滑，整个过度动画低暗时间(透明度低于30%)不超过0.6s",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789395012213,
+      "rect": {
+        "x": 63.99123001098633,
+        "y": 106.6885986328125,
+        "width": 1274.25439453125,
+        "height": 3237.050537109375
+      },
+      "pageRect": {
+        "x": 63.99123001098633,
+        "y": 106.6885986328125,
+        "width": 1274.25439453125,
+        "height": 3237.050537109375
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
+        "component": "GalleryGrid",
+        "tag": "div",
+        "classes": "grid",
+        "text": "2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（明日方舟）pid 118816127 · 13 浏览3584×6368·2026-09-14白发 · 女仆pid 119512232 · 17 浏览2160×3456·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 14 浏览1600×2000·2026-09-14女孩子 · 插画pid 118770165 · 17 浏览4144×9000·2026-09-13碧蓝档案pid 114882512 · 13 浏览1856×1280·2026-09-13脚底 · 白裤袜pid 117507782 · 18 浏览1158×1637·20",
+        "parentChain": [
+          "main.main",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "start",
+          "gap": "0px 14px",
+          "grid-template-columns": "164.846px 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px",
+          "width": "1274.25px",
+          "height": "3237.05px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "16px 18px 60px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "p4if56ey",
+      "index": 2,
+      "comment": "删除文本，仅保留图标，图标按钮透明，仅保留图标。图标大小放大4px",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789395098731,
+      "rect": {
+        "x": 1231.7105712890625,
+        "y": 13.991228103637695,
+        "width": 102.36842346191406,
+        "height": 33.99123001098633
+      },
+      "pageRect": {
+        "x": 1231.7105712890625,
+        "y": 13.991228103637695,
+        "width": 102.36842346191406,
+        "height": 33.99123001098633
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1) > button.lb-exit-immersive:nth-of-type(1)",
+        "component": "Lightbox/Stage › button.lb-exit-immersive",
+        "tag": "button",
+        "classes": "lb-exit-immersive",
+        "text": "退出沉浸",
+        "parentChain": [
+          "div.lightbox-stage",
+          "div.lightbox.immersive",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "position": "absolute",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "102.368px",
+          "height": "33.9912px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px 14px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(124, 156, 255, 0.24)",
+          "border": "0.701754px solid rgba(124, 156, 255, 0.5)",
+          "border-radius": "9px",
+          "white-space": "normal",
+          "z-index": "5",
+          "transition": "0.16s cubic-bezier(0.22, 0.61, 0.36, 1)"
+        },
+        "attributes": {
+          "title": "退出沉浸模式"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "z8r348b4",
+      "index": 3,
+      "comment": "当进入沉浸模式时，在切换图片时，右下角从右到左平滑弹出标题描述文本框，过渡动画0.6s，文本框的边框透明，背景透明，仅有下边框有4px粗白线。仅在文本框完全淡出界面时，且用户切换到上一张或下一张图片时触发文本框弹入，文本框弹入后保持2s，之后文本框向下平滑滑出界面，过度动画0.6s。文本框保持的2s时间内，用户继续切换图片时，立刻改变文本框内容，并重置保持时间为2s。在文本框淡出动画时，用户切换界面，则从右到左弹出新的文本框。当用户退出沉浸模式时，文本框立刻0.6s淡出。当用户保持沉浸模式时，退出灯箱，文本框立刻0.6s淡出，当用户保持沉浸模式时，进入别的灯箱，文本框不淡入，仅在切换图片时候播放淡入-保持-淡出。\n文本框内容：2845x4500 17.53M [匿名-分享]\n类似这种标题，文字大小 22px",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789395184129,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1348.0701904296875,
+        "height": 716.4912109375
+      },
+      "pageRect": {
+        "x": 0,
+        "y": 0,
+        "width": 1348.0701904296875,
+        "height": 716.4912109375
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app.sidebar-collapsed > div.lightbox.immersive:nth-of-type(2) > div.lightbox-stage:nth-of-type(1)",
+        "component": "Lightbox/Stage",
+        "tag": "div",
+        "classes": "lightbox-stage",
+        "text": "退出沉浸",
+        "parentChain": [
+          "div.lightbox.immersive",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "position": "relative",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "1348.07px",
+          "height": "716.491px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "24px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "overflow": "hidden",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "uel4i1gl",
+      "index": 4,
+      "comment": "向下浏览时，对于用户界面外的卡片，当进入页面内高度超过20%时，播放淡入动画，从全透明平滑过度到不透明，动画时间0.4s，之后不再淡出。\n仅在用户切换分类，切换筛选条件，搜索时触发了页面重排，才会对用户界面以外的卡片进行隐藏，在用户向下滑动过程中播放淡入动画。在用户调整窗口大小，切换左侧边栏，拖动左侧边栏触发页面重排时，不会去隐藏那些已经播放完淡入动画的卡片。\n这里的逻辑该请你自行梳理，实现以上效果的同时要考虑是否可以兼容性能优化，防止在用户浏览一万张图片这个量级时造成卡顿。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789395667640,
+      "rect": {
+        "x": 63.99123001098633,
+        "y": 106.6885986328125,
+        "width": 1274.25439453125,
+        "height": 3237.050537109375
+      },
+      "pageRect": {
+        "x": 63.99123001098633,
+        "y": 106.6885986328125,
+        "width": 1274.25439453125,
+        "height": 3237.050537109375
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "body > div > div.app.sidebar-collapsed > main.main > div.grid:nth-of-type(2)",
+        "component": "GalleryGrid",
+        "tag": "div",
+        "classes": "grid",
+        "text": "2400×936·2026-09-14碧蓝档案pid 112677955 · 8 浏览1024×1024·2026-09-14米浴（赛马娘）pid 119027500 · 9 浏览2160×1080·2026-09-14明日方舟 · 空弦（明日方舟）pid 118816127 · 13 浏览3584×6368·2026-09-14白发 · 女仆pid 119512232 · 17 浏览2160×3456·2026-09-14女孩子 · 碧蓝档案pid 115534247 · 14 浏览1600×2000·2026-09-14女孩子 · 插画pid 118770165 · 17 浏览4144×9000·2026-09-13碧蓝档案pid 114882512 · 13 浏览1856×1280·2026-09-13脚底 · 白裤袜pid 117507782 · 18 浏览1158×1637·20",
+        "parentChain": [
+          "main.main",
+          "div.app.sidebar-collapsed",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "grid",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "start",
+          "gap": "0px 14px",
+          "grid-template-columns": "164.846px 164.846px 164.846px 164.846px 164.846px 164.846px 164.846px",
+          "width": "1274.25px",
+          "height": "3237.05px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "16px 18px 60px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    }
+  ]
+}

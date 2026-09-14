@@ -194,7 +194,9 @@ const SCRIPT = `(async () => {
   }
   const toolbar = document.querySelector('.gugu-anno-toolbar')
   const firstPin = document.querySelector('.gugu-anno-pin')
-  out.toolbarZ = toolbar ? Number(getComputedStyle(toolbar).zIndex) || 0 : -1
+  // 层级现在挂在停靠点（dock）上，工具栏自身不再单独设 z-index
+  const dockEl = document.querySelector('.gugu-anno-dock')
+  out.toolbarZ = dockEl ? Number(getComputedStyle(dockEl).zIndex) || 0 : -1
   out.pinZ = firstPin ? Number(getComputedStyle(firstPin).zIndex) || 0 : -1
   out.toolbarAbovePins = out.toolbarZ > out.pinZ
   out.toolbarHitTest = (() => {
@@ -230,20 +232,57 @@ const SCRIPT = `(async () => {
   await sleep(5200)
   out.hintAfter5s = document.querySelector('.gugu-anno-hint')?.textContent ?? null
 
-  // 9) 工具栏自动上收 + 靠近顶部呼出
-  document.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }))
-  await sleep(5600)
-  out.toolbarCollapsedAfterLeave = Boolean(document.querySelector('.gugu-anno-toolbar.collapsed'))
-  const handle = document.querySelector('.gugu-anno-handle')
-  out.handleExists = Boolean(handle)
-  out.handleOpacityWhenCollapsed = handle ? Number(getComputedStyle(handle).opacity) : -1
-  // 鼠标靠近顶部
-  window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 600, clientY: 10 }))
-  await sleep(400)
-  out.handleOpacityWhenHot = handle ? Number(getComputedStyle(handle).opacity) : -1
-  handle?.click()
-  await sleep(400)
-  out.toolbarReopened = !document.querySelector('.gugu-anno-toolbar.collapsed')
+  // 9) 工具栏：可拖动 + 简易/标准形态互切
+  {
+    const toolbar = document.querySelector('.gugu-anno-toolbar')
+    const dock = document.querySelector('.gugu-anno-dock')
+    const before = dock.getBoundingClientRect()
+    // 从工具栏空白处（左上角内侧）开始拖，避开按钮
+    const sx = before.left + 6
+    const sy = before.top + before.height / 2
+    fire(toolbar, 'mousedown', sx, sy)
+    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: sx + 180, clientY: sy + 140 }))
+    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: sx + 180, clientY: sy + 140 }))
+    await sleep(300)
+    const after = dock.getBoundingClientRect()
+    out.dragMovedX = Math.round(after.left - before.left)
+    out.dragMovedY = Math.round(after.top - before.top)
+    out.dragWorks = Math.abs(out.dragMovedX) > 60 && Math.abs(out.dragMovedY) > 60
+
+    // 试图拖到标题栏里：应被夹在拖动区下方
+    fire(toolbar, 'mousedown', after.left + 6, after.top + after.height / 2)
+    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 2 }))
+    document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 2 }))
+    await sleep(300)
+    out.dockTopAfterDragUp = Math.round(dock.getBoundingClientRect().top)
+    const topbar = document.querySelector('.topbar')
+    out.dragTopClamped = out.dockTopAfterDragUp >= (topbar ? topbar.getBoundingClientRect().bottom : 58)
+
+    // 切到简易工具栏
+    Array.from(document.querySelectorAll('.gugu-anno-toolbar button')).find((b) => b.textContent.trim() === '收起')?.click()
+    await sleep(350)
+    out.compactMode = Boolean(document.querySelector('.gugu-anno-toolbar.compact'))
+    out.compactIconCount = document.querySelectorAll('.gugu-anno-toolbar.compact .anno-icon-btn').length
+    out.compactHasText = (document.querySelector('.gugu-anno-toolbar.compact')?.textContent || '').trim()
+
+    // 简易工具栏上的图标能切模式
+    const iconBtns = Array.from(document.querySelectorAll('.gugu-anno-toolbar.compact .anno-icon-btn'))
+    iconBtns[2]?.click()
+    await sleep(300)
+    out.compactRegionMode = iconBtns[2]?.className.includes('on') === true
+    iconBtns[0]?.click()
+    await sleep(250)
+    out.compactBrowseMode = iconBtns[0]?.className.includes('on') === true
+
+    // 展开回标准
+    iconBtns[3]?.click()
+    await sleep(350)
+    out.expandedBack = !document.querySelector('.gugu-anno-toolbar.compact')
+    out.expandedHasText = Boolean(
+      Array.from(document.querySelectorAll('.gugu-anno-toolbar button')).find((b) => b.textContent.trim() === '导出标注')
+    )
+  }
+  return out
   return out
 })()`
 
@@ -331,7 +370,13 @@ const checks = [
   ['整页截图已落盘', shots.includes('00-full.png')],
   ['每条标注都有裁片', shots.filter((f) => /^\d{3}-/.test(f)).length === 2],
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
-  ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
+  ['工具栏可以拖动', result.dragWorks === true],
+  ['工具栏不会被拖进窗口拖动区', result.dragTopClamped === true],
+  ['可以切到简易工具栏', result.compactMode === true],
+  ['简易工具栏恰好 4 个图标', result.compactIconCount === 4],
+  ['简易工具栏没有文字', result.compactHasText === ''],
+  ['简易工具栏的图标能切模式', result.compactRegionMode === true && result.compactBrowseMode === true],
+  ['能从简易切回标准工具栏', result.expandedBack === true && result.expandedHasText === true],
   ['工具栏整体位于窗口拖动区下方', result.toolbarBelowDragZone === true],
   ['贴边元素的批注框完整落在视口内', result.editorInViewport === true],
   ['批注框的「添加」按钮点得到', result.addButtonHittable === true],
@@ -344,11 +389,6 @@ const checks = [
   ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
   ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],
   ['说明气泡 5s 后自动隐藏', result.hintAfter5s === null],
-  ['鼠标离开后工具栏自动上收', result.toolbarCollapsedAfterLeave === true],
-  ['收起后存在呼出把手', result.handleExists === true],
-  ['收起时把手不可见', result.handleOpacityWhenCollapsed === 0],
-  ['鼠标靠近顶部时把手显形', result.handleOpacityWhenHot === 1],
-  ['点击把手可重新展开工具栏', result.toolbarReopened === true]
 ]
 
 console.log('标注工具自检：')

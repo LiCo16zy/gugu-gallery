@@ -1,42 +1,123 @@
 /* ============================================================================
-   标注工具栏的层级与自动收起
-   单独成文件，是因为这块的行为（置顶、上收、呼出把手）和工具栏内容无关。
+   标注工具栏：层级、位置、拖动与简易形态
+   单独成文件，是因为这块只关心「工具栏放在哪、长什么样」，
+   和工具栏里有哪些按钮无关。
    ========================================================================== */
 
-/* 工具栏必须盖住标注记号：标注多了以后，记号是后渲染的兄弟节点，
-   不给层级就会被压在下面。 */
-/*
- * 工具栏放在顶栏下方（58px 标题栏 + 8px 间隙），刻意避开窗口拖动区。
- *
- * 原因：自绘标题栏把上方的 .topbar 整条设成了 -webkit-app-region: drag，
- * 覆盖层即便写了 no-drag，Chromium 也不一定会从拖动区里把它挖出来 ——
- * 实测表现就是工具栏左半压在搜索框（no-drag）上能点，右半被窗口吞掉点不动。
- * 与其赌实现细节，不如直接让工具栏不落在拖动区里。
- */
-.gugu-anno-toolbar {
+/* 工具栏与说明气泡都挂在同一个「停靠点」上，拖动时一起走 */
+.gugu-anno-dock {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 30;
-  transition:
-    transform 0.22s var(--ease),
-    opacity 0.22s var(--ease);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
 }
-
-.gugu-anno-toolbar.collapsed {
-  transform: translate(-50%, -160%);
-  opacity: 0;
+.gugu-anno-dock.placed {
+  transform: none;
+}
+.gugu-anno-dock > .gugu-anno-toolbar {
+  pointer-events: auto;
+}
+.gugu-anno-dock > .gugu-anno-hint {
   pointer-events: none;
 }
 
-/* 说明气泡跟着工具栏一起走 */
+/*
+ * 工具栏不再自己绝对定位 —— 位置交给停靠点。
+ * 纵向刻意不低于窗口拖动区（自绘标题栏那条），落在里面的话
+ * 真实鼠标点击会被窗口吞掉。
+ */
+.gugu-anno-toolbar {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+  cursor: grab;
+  user-select: none;
+}
+.gugu-anno-toolbar:active {
+  cursor: grabbing;
+}
+
+.gugu-anno-toolbar.compact {
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 12px;
+}
+
+/* 拖动把手：点阵纹理，提示这里可以拖 */
+.gugu-anno-grip {
+  width: 10px;
+  height: 18px;
+  flex: none;
+  align-self: center;
+  border-radius: 3px;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1.3px);
+  background-size: 5px 5px;
+  opacity: 0.32;
+}
+.gugu-anno-toolbar:hover .gugu-anno-grip {
+  opacity: 0.6;
+}
+
+/* 简易工具栏上的图标按钮 */
+.anno-icon-btn {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--anno-dim);
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.anno-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--anno-text);
+}
+.anno-icon-btn.on {
+  background: var(--anno);
+  color: #241704;
+}
+
+.gugu-anno-btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--anno-dim);
+}
+.gugu-anno-btn.ghost:hover {
+  color: var(--anno-text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 说明气泡改为跟随停靠点，不再自己绝对定位 */
+.gugu-anno-hint {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+}
+
+/* --------------------------------------------------------------- 层级 */
+
+/* 工具栏必须盖住标注记号：记号是后渲染的兄弟节点，不给层级就会被压在下面 */
+.gugu-anno-dock {
+  z-index: 30;
+}
 .gugu-anno-hint {
   z-index: 29;
 }
-
-/* 标注记号压在工具栏下面，但仍然可点 */
 .gugu-anno-pin {
   z-index: 10;
 }
-
-/* 编辑框与弹出层继续在工具栏之上 */
 .gugu-anno-editor {
   z-index: 40;
 }
@@ -47,71 +128,9 @@
   z-index: 60;
 }
 
-/* ------------------------------------------------- 收起后的「呼出把手」 */
-
-.gugu-anno-handle {
-  position: absolute;
-  top: 44px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 31;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  height: 22px;
-  padding: 0 12px;
-  border: 1px solid var(--anno-border);
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  background: color-mix(in srgb, var(--anno-panel) 92%, transparent);
-  color: var(--anno-dim);
-  font-size: 11px;
-  cursor: pointer;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 0.2s var(--ease),
-    color 0.16s var(--ease),
-    height 0.16s var(--ease);
-}
-
-/* 只有工具栏收起、且鼠标靠近顶部时才显形 */
-.gugu-anno-handle.gone {
-  opacity: 0;
-  pointer-events: none;
-}
-.gugu-anno-handle.hot:not(.gone) {
-  opacity: 1;
-  pointer-events: auto;
-}
-.gugu-anno-handle.hot:not(.gone):hover {
-  height: 26px;
-  color: var(--anno-text);
-}
-
-.gugu-anno-handle-grip {
-  width: 16px;
-  height: 3px;
-  border-radius: 99px;
-  background: currentColor;
-  opacity: 0.55;
-}
-
-.gugu-anno-handle-mode {
-  font-weight: 600;
-  letter-spacing: 0.2px;
-}
-
-.gugu-anno-handle.capturing .gugu-anno-handle-mode {
-  color: var(--anno);
-}
-
-.gugu-anno-handle-count {
-  padding: 0 5px;
-  border-radius: 99px;
-  background: var(--anno-soft);
-  color: var(--anno);
-  font-variant-numeric: tabular-nums;
+/* 拖动时给个全局提示 */
+body.dragging-tool,
+body.dragging-tool * {
+  cursor: grabbing !important;
+  user-select: none;
 }

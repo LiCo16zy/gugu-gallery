@@ -780,7 +780,11 @@ body.resizing * {
   background: var(--surface);
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: transform 0.18s var(--ease), border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  transition:
+    opacity 0.4s var(--ease),
+    transform 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
   content-visibility: auto;
   contain-intrinsic-size: auto 260px;
 }
@@ -898,18 +902,14 @@ body.resizing * {
   color: #fff;
 }
 
-/* 新卡片逐张渐显：每张卡各自播放，0.06s */
-@keyframes cardIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.card {
-  animation: cardIn 0.06s var(--ease) both;
+/*
+ * 进场淡入：界面之外的卡片先带 card-pending（透明），
+ * 滚到可见高度超过 20% 时由 IntersectionObserver 摘掉这个类，0.4s 淡入。
+ * 用过渡而不是动画，是为了让「已经播放过」的卡片天然保持不透明 ——
+ * 重排（改窗口、开合侧栏）不会让它们重新播一遍。
+ */
+.card.card-pending {
+  opacity: 0;
 }
 
 .card-body {
@@ -1342,27 +1342,27 @@ body.resizing * {
   pointer-events: none;
 }
 
+/* 沉浸模式出口：只有图标，背景透明，避免挡住画面 */
 .lb-exit-immersive {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 12px;
+  right: 12px;
   z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(12, 16, 24, 0.66);
-  color: #e7ebf3;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
   cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: all 0.16s var(--ease);
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+  transition: color 0.16s var(--ease), transform 0.16s var(--ease);
 }
 .lb-exit-immersive:hover {
-  background: rgba(124, 156, 255, 0.24);
-  border-color: rgba(124, 156, 255, 0.5);
+  color: #fff;
+  transform: scale(1.08);
 }
 
 .lb-immersive {
@@ -1386,6 +1386,59 @@ body.resizing * {
   background: var(--accent-soft);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--accent);
+}
+
+/* 沉浸模式右下角的标题条：只有一条 4px 白色下边框 */
+.lb-caption {
+  position: absolute;
+  right: 28px;
+  bottom: 26px;
+  z-index: 4;
+  max-width: min(72%, 940px);
+  padding: 0 2px 12px;
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: #fff;
+  text-align: right;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  border-bottom: 4px solid #fff;
+  background: transparent;
+  pointer-events: none;
+}
+.lb-caption.phase-in {
+  animation: capIn 0.6s var(--ease) both;
+}
+.lb-caption.phase-hold {
+  opacity: 1;
+  transform: none;
+}
+.lb-caption.phase-out {
+  animation: capOut 0.6s var(--ease) both;
+}
+
+/* 从右到左弹入 */
+@keyframes capIn {
+  from {
+    opacity: 0;
+    transform: translateX(72px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 向下滑出 */
+@keyframes capOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(52px);
+  }
 }
 
 /* 下载中的转圈 */
@@ -1882,18 +1935,16 @@ body.resizing * {
  * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
  * 总时长 0.16s，其中透明度低于 30% 的区间控制在 40ms 左右（要求不超过 60ms）。
  */
+/*
+ * 侧栏开合 / 视图密度切换时：先把内容页压暗到背景色，等布局重排完再亮回来。
+ * 变暗 0.6s + 变亮 0.6s，全程线性，透明度低于 30% 的区间合计约 0.36s（要求 ≤ 0.6s）。
+ */
 @keyframes contentReflow {
   0% {
     opacity: 1;
   }
-  12.5% {
-    opacity: 0.3;
-  }
-  25% {
+  50% {
     opacity: 0;
-  }
-  37.5% {
-    opacity: 0.3;
   }
   100% {
     opacity: 1;
@@ -1901,7 +1952,7 @@ body.resizing * {
 }
 
 .main.reflowing {
-  animation: contentReflow 0.16s linear both;
+  animation: contentReflow 1.2s linear both;
 }
 
 /* ------------------------------------------------------------ 右键菜单 */
