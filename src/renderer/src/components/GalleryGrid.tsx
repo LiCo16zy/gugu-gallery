@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ItemSummary } from '@shared/types'
-import { formatBytes, formatDate } from '../api'
+import { formatDate } from '../api'
 import { IconHeart, IconImage } from './Icons'
 
 /** 行高粒度：网格用 4px 的隐式行做像素级定位，卡片之间靠 GAP 撑开 */
@@ -9,9 +9,12 @@ const ROW = 4
 const GAP = 14
 /** 卡片正文固定高度，瀑布流计算依赖它是个常数 */
 const BODY_H = 50
-/** 单栏最小宽度（标准 / 紧凑） */
-const MIN_CARD_NORMAL = 198
-const MIN_CARD_DENSE = 152
+/**
+ * 单栏最小宽度。这两个数是「反推」出来的：
+ * 常见的 1080~1300px 内容区里，250 刚好排出 4 栏，166 排出 6 栏。
+ */
+const MIN_CARD_NORMAL = 250
+const MIN_CARD_DENSE = 160
 /** 宽高比超过这个值就占两栏 */
 const SPAN2_RATIO = 1.5
 
@@ -266,8 +269,6 @@ function Card({
         <div className="card-overlay">
           <div className="dim">
             {item.width && item.height ? item.width + '×' + item.height : '尺寸未知'}
-            <span>·</span>
-            {formatBytes(item.fileBytes ?? item.bytes)}
             <span>·</span>
             {formatDate(item.publishedAt)}
           </div>

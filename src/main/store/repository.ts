@@ -261,7 +261,16 @@ export class Repository {
     const limit = Math.max(1, Math.min(500, query.limit ?? 60))
     const offset = Number.parseInt(query.cursor ?? '0', 10) || 0
 
-    const total = Number(this.db.scalar<number>(`SELECT COUNT(*) FROM items i ${where}`, params) ?? 0)
+    // 计数查询必须带上与 ITEM_SELECT 相同的 LEFT JOIN：
+    // where 里可能引用 f.id（已下载 / 待下载），少了 JOIN 会直接报 no such column
+    const total = Number(
+      this.db.scalar<number>(
+        `SELECT COUNT(*) FROM items i
+         LEFT JOIN files f ON f.item_id = i.id AND f.variant = 'original'
+         ${where}`,
+        params
+      ) ?? 0
+    )
     const order = buildOrder(query.sort ?? 'newest')
     const rows = this.db.all<Row>(`${ITEM_SELECT} ${where} ORDER BY ${order} LIMIT ? OFFSET ?`, [
       ...params,

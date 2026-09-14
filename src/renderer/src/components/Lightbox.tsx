@@ -8,7 +8,7 @@ import {
   IconDownload,
   IconExternal,
   IconFolder,
-  IconStar,
+  IconHeart,
   IconTrash,
   IconZoomIn,
   IconZoomOut
@@ -17,9 +17,14 @@ import {
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 6
 
+/** 沉浸模式跨次打开保持：放模块级，灯箱卸载也不会丢 */
+let immersivePreference = false
+
 interface Props {
   id: number
   items: ItemSummary[]
+  /** 抓取进度：下载此图时用来同步进度条 */
+  progress: { phase: string; downloaded: number; downloadTotal: number | null; bytesDownloaded: number } | null
   onClose: () => void
   onSelect: (id: number) => void
   onToggleTag: (tag: string) => void
@@ -30,6 +35,7 @@ interface Props {
 export default function Lightbox({
   id,
   items,
+  progress,
   onClose,
   onSelect,
   onToggleTag,
@@ -39,6 +45,9 @@ export default function Lightbox({
   const [detail, setDetail] = useState<ItemDetail | null>(null)
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [immersive, setImmersive] = useState(immersivePreference)
+  const [delState, setDelState] = useState<'idle' | 'confirm' | 'done'>('idle')
+  const [downloading, setDownloading] = useState(false)
   const [dragState, setDragState] = useState<{ active: boolean }>({ active: false })
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
@@ -52,6 +61,9 @@ export default function Lightbox({
     setDetail(null)
     setZoom(1)
     setOffset({ x: 0, y: 0 })
+    // 换一张图就把删除确认与下载态复位
+    setDelState('idle')
+    setDownloading(false)
     void api.library.item(id).then((d) => {
       if (alive) setDetail(d)
     })
@@ -59,6 +71,27 @@ export default function Lightbox({
       alive = false
     }
   }, [id])
+
+  useEffect(() => {
+    immersivePreference = immersive
+  }, [immersive])
+
+  // 下载启动后轮询直到文件就绪，解决「下载完预览界面不刷新」
+  useEffect(() => {
+    if (!downloading) return
+    let alive = true
+    const timer = setInterval(() => {
+      void api.library.item(id).then((d) => {
+        if (!alive || !d) return
+        setDetail((prevDetail) => (prevDetail ? { ...prevDetail, ...d } : d))
+        if (d.fileStatus === 'ready') setDownloading(false)
+      })
+    }, 900)
+    return () => {
+      alive = false
+      clearInterval(timer)
+    }
+  }, [downloading, id])
 
   const step = useCallback(
     (delta: number) => {
@@ -173,7 +206,7 @@ export default function Lightbox({
   })()
 
   return (
-    <div className="lightbox" data-component="Lightbox">
+    <div className={'lightbox' + (immersive ? ' immersive' : '')} data-component="Lightbox">
       <div
         ref={stageRef}
         data-component="Lightbox/Stage"
@@ -213,6 +246,17 @@ export default function Lightbox({
       <div className="lightbox-side" data-component="Lightbox/SidePanel">
         <div className="lb-head">
           <h3>{detail?.title || summary?.title || `#${id}`}</h3>
+          <button
+            className={'lb-immersive' + (immersive ? ' on' : '')}
+            onClick={() => setImmersive((v) => !v)}
+            title={immersive ? '退出沉浸模式' : '沉浸模式：隐藏右侧信息栏'}
+            aria-pressed={immersive}
+          >
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M15 4v16" />
+            </svg>
+          </button>
           <button className="lb-close" onClick={onClose} title="关闭 (Esc)">
             <IconClose width={14} height={14} />
           </button>
@@ -267,9 +311,10 @@ export default function Lightbox({
 
         <div className="lb-actions" data-component="Lightbox/Actions">
           <button className="btn sm" onClick={() => void toggleFavorite()}>
-            <IconStar
+            <IconHeart
               width={13}
               height={13}
+              filled={detail?.favorite}
               style={{ color: detail?.favorite ? 'var(--danger)' : undefined }}
             />
             {detail?.favorite ? '已收藏' : '收藏'}
@@ -285,36 +330,49 @@ export default function Lightbox({
             <IconFolder width={13} height={13} />
             打开位置
           </button>
-          <button
-            className="btn sm"
-            disabled={detail?.fileStatus === 'ready'}
-            onClick={async () => {
-              try {
-                await api.crawl.downloadItems([id])
-                onToast('已加入下载队列')
-              } catch (err) {
-                onToast(err instanceof Error ? err.message : '启动下载失败')
-              }
-            }}
-          >
-            <IconDownload width={13} height={13} />
-            下载此图
-          </button>
+          {detail && detail.fileStatus !== 'ready' && (
+            <button
+              className={'btn sm dl-btn' + (downloading ? ' busy' : '')}
+              disabled={downloading}
+              onClick={async () => {
+                try {
+                  await api.crawl.downloadItems([id])
+                  setDownloading(true)
+                  onToast('已加入下载队列')
+                } catch (err) {
+                  onToast(err instanceof Error ? err.message : '启动下载失败')
+                }
+              }}
+            >
+              {downloading ? <span className="spinner" aria-hidden /> : <IconDownload width={13} height={13} />}
+              {downloading ? '下载中' : '下载此图'}
+            </button>
+          )}
           <button className="btn sm" onClick={() => void api.openExternal(detail?.detailUrl ?? '')}>
             <IconExternal width={13} height={13} />
-            原始页面
+            访问网站
           </button>
           <button
-            className="btn sm danger"
+            className={'btn sm danger del-2step' + (delState !== 'idle' ? ' step-' + delState : '')}
+            disabled={delState === 'done' || detail?.fileStatus !== 'ready'}
             onClick={async () => {
-              await api.library.remove([id], true)
-              onChanged(id, { fileStatus: 'none', thumbUrl: null, imageUrl: null })
-              setDetail((d) => (d ? { ...d, fileStatus: 'none', imageUrl: null, thumbUrl: null, relPath: null } : d))
-              onToast('已删除本地文件与索引')
+              if (delState === 'idle') {
+                setDelState('confirm')
+                return
+              }
+              if (delState === 'confirm') {
+                setDelState('done')
+                await api.library.remove([id], true)
+                onChanged(id, { fileStatus: 'none', thumbUrl: null, imageUrl: null })
+                setDetail((d) =>
+                  d ? { ...d, fileStatus: 'none', imageUrl: null, thumbUrl: null, relPath: null } : d
+                )
+              }
             }}
+            title={delState === 'idle' ? '删除本地文件' : undefined}
           >
             <IconTrash width={13} height={13} />
-            删除
+            {delState === 'idle' ? '删除' : delState === 'confirm' ? '你确定吗？' : '已删除'}
           </button>
         </div>
 
@@ -396,6 +454,30 @@ export default function Lightbox({
           </>
         )}
       </div>
+
+      {/* 下载进度：数据直接来自抓取引擎，与抓取页的进度是同一个来源 */}
+      {downloading && (
+        <div className="lb-progress" data-component="Lightbox/Progress" role="status">
+          <span className="k">下载中</span>
+          <div className={'bar' + (progress?.downloadTotal == null ? ' indeterminate' : '')}>
+            <i
+              style={{
+                width:
+                  progress?.downloadTotal && progress.downloadTotal > 0
+                    ? Math.min(100, (progress.downloaded / progress.downloadTotal) * 100) + '%'
+                    : '34%'
+              }}
+            />
+          </div>
+          <span className="n">
+            {progress?.downloadTotal
+              ? progress.downloaded + ' / ' + progress.downloadTotal
+              : progress?.phase === 'downloading'
+                ? '准备中'
+                : '排队中'}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

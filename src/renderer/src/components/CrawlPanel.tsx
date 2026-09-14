@@ -242,7 +242,7 @@ export default function CrawlPanel({
               value={maxItems}
               onChange={(e) => setMaxItems(e.target.value)}
             />
-            <span className="help">先跑 200 张试试水</span>
+            <span className="help">你要一次全榨干吗…</span>
           </div>
           <div className="field">
             <label>只保留含这些标签</label>

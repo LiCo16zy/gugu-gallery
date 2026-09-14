@@ -184,14 +184,61 @@ const SCRIPT = `(async () => {
     await sleep(250)
     out.sortMenuOpen = Boolean(document.querySelector('.sort-menu'))
     const items = Array.from(document.querySelectorAll('.sort-menu .sort-item'))
-    const target = items.find((b) => b.textContent.trim() === '分辨率')
+    const target = items.find((b) => b.textContent.trim() === '浏览量')
     out.sortItemCount = items.length
     target?.click()
     await sleep(1100)
-    out.sortValue = (document.querySelector('.sort-picker .pill')?.textContent || '').includes('分辨率')
-      ? 'resolution'
+    out.sortValue = (document.querySelector('.sort-picker .pill')?.textContent || '').includes('浏览量')
+      ? 'views'
       : 'other'
     out.sortMeta = meta()
+  }
+
+  // 7.5) 横向溢出
+  {
+    const m = document.querySelector('.main')
+    out.mainOverflowX = m ? m.scrollWidth - m.clientWidth : -1
+  }
+
+  // 7.6) 灯箱沉浸模式与删除/下载按钮（先切到「已下载」，保证打开的是本地有文件的图）
+  {
+    const dlPill = qa('.filter-bar .pill').find((b) => b.textContent.trim() === '已下载')
+    dlPill?.click()
+    await sleep(1200)
+    out.downloadedCount = qa('.card').length
+    const firstCard2 = document.querySelector('.card')
+    firstCard2?.click()
+    await sleep(1300)
+    const lb = document.querySelector('.lightbox')
+    const toggle = document.querySelector('.lb-immersive')
+    out.immersiveToggle = Boolean(toggle)
+    const side = document.querySelector('.lightbox-side')
+    const before = side ? getComputedStyle(side).opacity : null
+    toggle?.click()
+    await sleep(700)
+    out.immersiveHidesPanel = lb?.classList.contains('immersive') === true && side ? Number(getComputedStyle(side).opacity) < 0.5 : false
+    out.immersiveOpacityBefore = before
+    toggle?.click()
+    await sleep(700)
+
+    // 删除两步确认
+    const delBtn = document.querySelector('.del-2step')
+    out.deleteSteps = '未测'
+    out.downloadBtnHiddenWhenReady = !document.querySelector('.dl-btn')
+    if (delBtn && !delBtn.disabled) {
+      delBtn.click(); await sleep(300)
+      const first = (delBtn.textContent || '').trim()
+      delBtn.click(); await sleep(400)
+      const second = (delBtn.textContent || '').trim()
+      out.deleteSteps = (first.includes('确定') ? '确认' : first) + '->' + (second.includes('已删除') ? '已删除' : second)
+    } else {
+      out.deleteSteps = delBtn ? '按钮被禁用（本地无文件）' : '无删除按钮'
+    }
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await sleep(600)
+    const clearPill = qa('.filter-bar .pill').find((b) => b.textContent.trim() === '清空筛选')
+    clearPill?.click()
+    await sleep(900)
   }
 
   // 8) 视图密度：合并成了一个按钮
@@ -205,6 +252,7 @@ const SCRIPT = `(async () => {
     out.denseBefore = before
     denseBtn.click()
     await sleep(600)
+    out.normalColumnsAfter = getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length
   }
 
   // 9) 切到设置页并切浅色主题
@@ -284,10 +332,17 @@ const checks = [
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
   ['分类树能展开出二级分类', (result.subItems ?? 0) > 0],
   ['二级分类筛选生效', /共 \d+ 条/.test(result.plateMeta || '')],
-  ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 7],
-  ['切换排序生效', result.sortValue === 'resolution'],
+  ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
+  ['切换排序生效', result.sortValue === 'views'],
+  ['内容页无横向溢出', result.mainOverflowX === 0],
+  ['灯箱有沉浸模式开关', result.immersiveToggle === true],
+  ['沉浸模式能隐藏右栏', result.immersiveHidesPanel === true],
+  ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
+  ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
   ['视图密度只剩一个按钮', result.viewToggleCount === 1],
-  ['微缩视图列数更多', (result.denseColumns ?? 0) >= 4],
+  ['标准视图为 4 栏', result.masonryColumns === 4],
+  ['紧凑视图为 6 栏', result.denseColumns === 6],
+  ['切回标准视图恢复 4 栏', result.normalColumnsAfter === 4],
   ['浅色主题可切换', result.theme === 'light'],
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0]
 ]

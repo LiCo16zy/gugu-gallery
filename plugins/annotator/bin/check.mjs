@@ -124,6 +124,15 @@ const SCRIPT = `(async () => {
     await sleep(450)
   }
   out.pinsBeforeTopCheck = document.querySelectorAll('.gugu-anno-pin').length
+  // 工具栏必须整体落在窗口拖动区下方，否则真实鼠标点击会被窗口吞掉
+  {
+    const tr2 = document.querySelector('.gugu-anno-toolbar').getBoundingClientRect()
+    const topbarEl = document.querySelector('.topbar') || document.querySelector('header')
+    const dragBottom = topbarEl ? topbarEl.getBoundingClientRect().bottom : 58
+    out.dragZoneBottom = Math.round(dragBottom)
+    out.toolbarTopY = Math.round(tr2.top)
+    out.toolbarBelowDragZone = tr2.top >= dragBottom
+  }
   const toolbar = document.querySelector('.gugu-anno-toolbar')
   const firstPin = document.querySelector('.gugu-anno-pin')
   out.toolbarZ = toolbar ? Number(getComputedStyle(toolbar).zIndex) || 0 : -1
@@ -251,6 +260,7 @@ const checks = [
   ['每条标注都有裁片', shots.filter((f) => /^\d{3}-/.test(f)).length === 2],
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0],
   ['有标注记号时工具栏仍自动收起', result.autoCollapsedBeforeCheck === true],
+  ['工具栏整体位于窗口拖动区下方', result.toolbarBelowDragZone === true],
   ['工具栏层级高于标注记号', result.toolbarAbovePins === true],
   ['工具栏中心点命中工具栏本身（未被遮挡）', result.toolbarHitTest === true],
   ['点击选项后出现说明气泡', Boolean(result.hintAfterClick)],

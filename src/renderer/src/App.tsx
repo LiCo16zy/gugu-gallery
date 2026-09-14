@@ -24,6 +24,7 @@ import Toast, { type ToastPayload } from './components/Toast'
 import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
 import { loadedPlugins } from './plugins'
 import {
+  IconArrowUp,
   IconClose,
   IconSearch,
   IconSidebar,
@@ -74,7 +75,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'oldest', label: '最早上传' },
   { value: 'views', label: '浏览量' },
   { value: 'size', label: '文件体积' },
-  { value: 'resolution', label: '分辨率' },
   { value: 'title', label: '标题' },
   { value: 'random', label: '随机' }
 ]
@@ -86,27 +86,25 @@ const SORT_LABEL: Record<SortKey, string> = SORT_OPTIONS.reduce(
 
 /** 视图密度按钮：标准=一个竖长方形，紧凑=两个。切换时图标交叉渐隐 */
 function IconViewToggle({ dense }: { dense: boolean }): JSX.Element {
+  // 空心长方体：标准视图 12×16，紧凑视图两个 8×16、间隔 4
   return (
-    <svg width={15} height={15} viewBox="0 0 24 24" aria-hidden>
-      <rect
-        className="vt-a"
-        x={dense ? 4 : 8.5}
-        y="4"
-        width={dense ? 5.5 : 7}
-        height="16"
-        rx="1.8"
-        fill="currentColor"
-      />
-      <rect
-        className="vt-b"
-        x="14.5"
-        y="4"
-        width="5.5"
-        height="16"
-        rx="1.8"
-        fill="currentColor"
-        style={{ opacity: dense ? 1 : 0, transition: 'opacity 0.08s var(--ease)' }}
-      />
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      aria-hidden
+    >
+      {dense ? (
+        <>
+          <rect x={0} y={2} width={8} height={16} rx={1.6} />
+          <rect x={12} y={2} width={8} height={16} rx={1.6} />
+        </>
+      ) : (
+        <rect x={4} y={2} width={12} height={16} rx={1.8} />
+      )}
     </svg>
   )
 }
@@ -147,6 +145,8 @@ export default function App(): JSX.Element {
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SETTINGS.sidebarWidth)
   /** 向下滚动时把过滤栏藏起来 */
   const [barHidden, setBarHidden] = useState(false)
+  /** 向上滚动且已经离开首屏时，右下角出现回到顶部 */
+  const [showToTop, setShowToTop] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
 
   const lastScrollTop = useRef(0)
@@ -254,7 +254,10 @@ export default function App(): JSX.Element {
       const top = el.scrollTop
       const delta = top - lastScrollTop.current
       if (Math.abs(delta) > 6) {
-        setBarHidden(delta > 0 && top > 96)
+        const down = delta > 0
+        setBarHidden(down && top > 96)
+        // 首屏都看不见了、并且正在往上滑，才给回到顶部
+        setShowToTop(!down && top > 320)
         lastScrollTop.current = top
       }
       if (!loading && cursor && el.scrollHeight - top - el.clientHeight < 900) void loadPage('append')
@@ -316,12 +319,18 @@ export default function App(): JSX.Element {
 
   /* ---------------------------------------------------------------- 交互 */
 
+  /**
+   * 筛选条件的唯一入口。规则只有两条，但必须双向成立：
+   *   1. 「待下载」与其它所有筛选项互斥 —— 选中它会清掉别的，选中别的也会把它清掉
+   *   2. 「已下载」只与「待下载」互斥（可以叠加收藏、横竖图、标签）
+   * 互斥单向做的话会出现「点 A 清了 B，再点 B 却清不掉 A」这种自相矛盾的状态。
+   */
   const patchFilters = useCallback((patch: Partial<Filters>) => {
     setFilters((prev) => {
       const next = { ...prev, ...patch }
       // 换分类时必须清掉二级分类，否则会留下跨分类的无效条件
       if (patch.plate !== undefined) next.word = null
-      // 「待下载」与其他筛选项全部互斥；「已下载」只与「待下载」互斥
+
       if (patch.downloaded === 'never') {
         next.favorite = false
         next.orientation = 'any'
@@ -329,12 +338,27 @@ export default function App(): JSX.Element {
         next.plate = null
         next.word = null
         next.tags = []
-      } else if (patch.downloaded === 'only' && prev.downloaded === 'never') {
-        // 从「待下载」切到「已下载」：其它条件保持原样
+      } else {
+        const turnedOnOther =
+          patch.favorite === true ||
+          (patch.orientation !== undefined && patch.orientation !== 'any') ||
+          (patch.minWidth !== undefined && patch.minWidth > 0) ||
+          (patch.tags !== undefined && patch.tags.length > 0) ||
+          (patch.plate !== undefined && patch.plate !== null)
+        if (turnedOnOther && prev.downloaded === 'never') next.downloaded = 'any'
       }
       return next
     })
   }, [])
+
+  /** 「全部」的判定要把构图与尺寸条件也算进去，否则选了横图还显示「全部」高亮 */
+  const isAllScope =
+    filters.downloaded === 'any' &&
+    !filters.favorite &&
+    !filters.plate &&
+    filters.tags.length === 0 &&
+    filters.orientation === 'any' &&
+    filters.minWidth === 0
 
   const quickFavorite = useCallback(async (item: ItemSummary) => {
     const value = await api.library.favorite(item.id, !item.favorite)
@@ -349,7 +373,7 @@ export default function App(): JSX.Element {
   }, [])
 
   const onSettingsChange = useCallback(
-    async (patch: Partial<AppSettings>) => {
+    async (patch: Partial<AppSettings>, opts?: { silent?: boolean }) => {
       const next = await api.settings.set(patch)
       setSettings(next)
       if (patch.theme) applyTheme(next.theme)
@@ -361,7 +385,7 @@ export default function App(): JSX.Element {
         await refreshMeta()
         await loadPage('reset')
       }
-      showToast('设置已保存', 1600, 'success')
+      if (!opts?.silent) showToast('设置已保存', 1600, 'success')
     },
     [refreshMeta, loadPage]
   )
@@ -392,7 +416,7 @@ export default function App(): JSX.Element {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
       document.body.classList.remove('resizing')
-      void onSettingsChange({ sidebarWidth: latest })
+      void onSettingsChange({ sidebarWidth: latest }, { silent: true })
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -480,7 +504,7 @@ export default function App(): JSX.Element {
           className="brand-mark"
           onClick={() => {
             triggerReflow()
-            void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed })
+            void onSettingsChange({ sidebarCollapsed: !settings.sidebarCollapsed }, { silent: true })
           }}
           title={settings.sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
         >
@@ -519,7 +543,7 @@ export default function App(): JSX.Element {
           />
           {filters.text && (
             <button className="search-clear" onClick={() => patchFilters({ text: '' })}>
-              <IconClose width={12} height={12} />
+              <IconClose width={14} height={14} />
             </button>
           )}
         </div>
@@ -618,9 +642,17 @@ export default function App(): JSX.Element {
               </div>
 
               <button
-                className={`pill${filters.downloaded === 'any' && !filters.favorite && !filters.plate && filters.tags.length === 0 ? ' active' : ''}`}
+                className={`pill${isAllScope ? ' active' : ''}`}
                 onClick={() =>
-                  patchFilters({ downloaded: 'any', favorite: false, plate: null, word: null, tags: [] })
+                  patchFilters({
+                    downloaded: 'any',
+                    favorite: false,
+                    plate: null,
+                    word: null,
+                    tags: [],
+                    orientation: 'any',
+                    minWidth: 0
+                  })
                 }
               >
                 全部
@@ -765,6 +797,7 @@ export default function App(): JSX.Element {
         <Lightbox
           id={openId}
           items={items}
+          progress={progress}
           onClose={() => setOpenId(null)}
           onSelect={setOpenId}
           onToggleTag={(tag) => {
@@ -792,6 +825,17 @@ export default function App(): JSX.Element {
         ) : null
       )}
 
+      {view === 'gallery' && (
+        <button
+          className={'to-top' + (showToTop ? ' show' : '')}
+          onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          title="回到顶部"
+          aria-label="回到顶部"
+        >
+          <IconArrowUp width={17} height={17} />
+        </button>
+      )}
+
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -812,8 +856,6 @@ export default function App(): JSX.Element {
               <dd>收藏 / 复制 pid / 打开于（文件管理器、Pixiv）</dd>
               <dt>灯箱</dt>
               <dd>← → 翻页，Esc 关闭，滚轮缩放，左键拖动</dd>
-              <dt>标注重叠</dt>
-              <dd>左侧资料库与分类树可点击筛选</dd>
             </dl>
             <div className="sep" />
             <dl className="kv" style={{ gridTemplateColumns: '104px 1fr' }}>
@@ -821,12 +863,10 @@ export default function App(): JSX.Element {
               <dd className="mono">{info?.version ?? '—'}</dd>
               <dt>图库目录</dt>
               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
-              <dt>已装载工具</dt>
-              <dd>{loadedPlugins.length > 0 ? loadedPlugins.map((p) => p.manifest.name).join('、') : '无'}</dd>
             </dl>
             <div className="modal-actions">
               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
-                数据来源
+                访问网站
               </button>
               <button className="btn primary" onClick={() => setHelpOpen(false)}>
                 知道了

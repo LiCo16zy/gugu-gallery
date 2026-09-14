@@ -69,21 +69,30 @@ export default function ContextMenu({ x, y, entries, onClose }: Props): JSX.Elem
           <button
             className={'ctx-item' + (entry.danger ? ' danger' : '') + (openKey === entry.key ? ' open' : '')}
             disabled={entry.disabled}
+            onMouseEnter={() => setOpenKey((k) => (entry.children?.length ? entry.key : k))}
+            onMouseLeave={() => setOpenKey((k) => (k === entry.key && entry.children?.length ? null : k))}
             onClick={() => {
-              if (entry.children?.length) {
-                setOpenKey((k) => (k === entry.key ? null : entry.key))
-                return
-              }
+              if (entry.children?.length) return
               entry.onSelect?.()
               onClose()
             }}
           >
             {entry.icon}
             <span>{entry.label}</span>
-            {entry.children?.length ? <span className="ctx-caret">{openKey === entry.key ? '▾' : '▸'}</span> : null}
+            {entry.children?.length ? (
+              <span className="ctx-caret" aria-hidden>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            ) : null}
           </button>
           {entry.children?.length && openKey === entry.key ? (
-            <div className="ctx-sub">
+            <div
+              className="ctx-sub"
+              onMouseEnter={() => setOpenKey(entry.key)}
+              onMouseLeave={() => setOpenKey((k) => (k === entry.key ? null : k))}
+            >
               {entry.children.map((child) => (
                 <button
                   key={child.key}

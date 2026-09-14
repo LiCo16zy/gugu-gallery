@@ -89,6 +89,13 @@ export const IconClose = (p: P) => (
   </svg>
 )
 
+export const IconArrowUp = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 19V5" />
+    <path d="m6 11 6-6 6 6" />
+  </svg>
+)
+
 export const IconChevronLeft = (p: P) => (
   <svg {...base(p)}>
     <path d="m15 5-7 7 7 7" />
