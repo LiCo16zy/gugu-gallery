@@ -26,7 +26,8 @@
     "annotatecheck": "node plugins/annotator/bin/check.mjs",
     "round": "node plugins/devlog/bin/round.mjs",
     "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build:release && electron-builder"
+    "dist": "npm run build:release && electron-builder",
+    "imgdiff": "electron scripts/imgdiff.cjs"
   },
   "dependencies": {
     "sql.js": "^1.13.0"

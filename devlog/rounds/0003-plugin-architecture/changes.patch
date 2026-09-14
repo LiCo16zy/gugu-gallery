@@ -1,0 +1,2907 @@
+# 轮次 0003-plugin-architecture 代码差异
+# 基线 2f88207 -> b170197
+
+diff --git a/README.md b/README.md
+index 4a566bc..e7344a1 100644
+--- a/README.md
++++ b/README.md
+@@ -16,6 +16,7 @@ Electron + React + TypeScript，索引用 WebAssembly 版 SQLite（**零原生
+ - [数据模型](#数据模型)
+ - [爬虫是怎么设计的](#爬虫是怎么设计的)
+ - [命令行模式](#命令行模式)
++- [插件机制](#插件机制)
+ - [页面标注工具](#页面标注工具)
+ - [开发过程档案](#开发过程档案)
+ - [开发与测试](#开发与测试)
+@@ -260,9 +261,32 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
+ 
+ ---
+ 
++## 插件机制
++
++标注工具和开发档案都是**可选插件**，默认不进发布产物 —— 工具代码不该出现在给最终用户的应用里。
++
++```jsonc
++// plugins/plugins.json
++{ "enabled": ["devlog", "annotator"] }   // 去掉哪项，它的代码就完全不会被打包
++```
++
++- 主进程插件产物按需生成在 `out/main/plugins/<id>.js`，运行时动态加载
++- 渲染进程用虚拟模块聚合插件入口，禁用时生成空数组
++- 渲染进程统一走 `window.gugu.plugins.invoke(id, method, payload)` ——
++  **新增插件不需要改 preload / ipc，核心代码零改动**
++- 依赖缺失（`annotator` 需要 `devlog`）会在构建期告警并自动跳过，插件装载失败也不会拖垮应用
++- `npm run build:release` 构建完会**实际扫描产物**，确认没有插件残留：
++  主进程无 `out/main/plugins/`，渲染 bundle 330KB → 303KB，CSS 36.2KB → 25.3KB
++
++完整的插件契约与开发指南见 [`docs/plugin-development.md`](docs/plugin-development.md)，
++插件索引见 [`plugins/README.md`](plugins/README.md)。
++
+ ## 页面标注工具
+ 
+-专门为「审阅界面 → 提修改意见」做的工具，内置在应用里，**按 `Ctrl+Shift+A` 打开**（顶栏右侧也有个笔形按钮）。
++> 这是一个**可选插件**（`plugins/annotator`），发布构建时不会打进应用。
++> 详见 [`plugins/annotator/SKILL.md`](plugins/annotator/SKILL.md)。
++
++专门为「审阅界面 → 提修改意见」做的工具，开发模式下**按 `Ctrl+Shift+A` 打开**（顶栏右侧也有个笔形按钮）。
+ 
+ 用法：
+ 
+@@ -291,13 +315,19 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
+ 
+ ## 开发过程档案
+ 
++> 这也是一个**可选插件**（`plugins/devlog`）。详见 [`plugins/devlog/SKILL.md`](plugins/devlog/SKILL.md)。
++
+ 每一轮迭代的「快照 + 说明 + 前后对照截图」都归档在 `devlog/`，用于回溯与对外展示。
+-完整说明见 [`devlog/README.md`](devlog/README.md)，轮次索引见 `devlog/index.json`。
++轮次索引见 `devlog/index.json`。
++
++**平时改代码只管 commit 就行，不需要每次都建档案。**
++只在有体量的迭代（一批界面修改、一次重构、一个功能从无到有）时才开一轮。
+ 
+ ```bash
+-node scripts/round.mjs list                # 列出所有轮次
+-node scripts/round.mjs new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
+-node scripts/round.mjs finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 tag
++npm run round -- inbox               # 打印最新未收尾轮次的内容（拿到反馈的标准入口）
++npm run round -- list                # 列出所有轮次
++npm run round -- new <slug>          # 开一轮：建目录 + 起始截图 + 元数据
++npm run round -- finalize <轮次ID>   # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 tag
+ ```
+ 
+ 每个轮次目录长这样：
+@@ -328,9 +358,11 @@ npm run e2e        # 真连目标站点跑一次端到端，校验索引与磁
+ npm run uicheck    # 启动真实界面点一遍关键路径（17 项交互断言）
+ npm run annotatecheck  # 驱动标注工具走完「点选 → 批注 → 框选 → 导出」（18 项断言）
+ npm run shot       # 自动截图四个界面到 screenshots/
++npm run build:release  # 无插件构建，并校验产物里确实没有插件代码
++npm run dist       # 打包安装包（自动走无插件构建）
+ ```
+ 
+-三层验证各有分工：
++四层验证各有分工：
+ 
+ | 命令 | 覆盖范围 | 是否需要联网 |
+ | --- | --- | --- |
+@@ -338,6 +370,7 @@ npm run shot       # 自动截图四个界面到 screenshots/
+ | `npm run uicheck` | 渲染、筛选、搜索、灯箱、键盘、主题、分类树 | 否（用本地图库） |
+ | `npm run annotatecheck` | 标注工具的交互与导出产物 | 否（用临时目录） |
+ | `npm run e2e` | 真实抓取 → 下载 → 落盘 → 缩略图 | 是 |
++| `npm run build:release` | 产物里不含任何插件代码 | 否 |
+ 
+ - 单元测试用的是**真实抓下来的 HTML 样本**（`tests/fixtures/`），
+   站点改版时测试会第一时间失败，比人肉发现快。
+@@ -349,33 +382,46 @@ npm run shot       # 自动截图四个界面到 screenshots/
+ ### 代码结构
+ 
+ ```
+-src/
+-├── main/                      Electron 主进程
+-│   ├── index.ts               入口：窗口、自定义协议、截图自检模式
+-│   ├── cli.ts                 无界面 CLI 抓取
+-│   ├── context.ts             依赖装配 + 运行期切换图库
+-│   ├── config.ts              设置持久化（userData/settings.json）
+-│   ├── ipc.ts                 IPC 处理函数（渲染进程的全部能力边界）
+-│   ├── devlog.ts              开发过程档案：轮次目录、截图裁片、Markdown 生成
+-│   ├── crawler/
+-│   │   ├── site.ts            站点常量、URL 规则、base64 编解码
+-│   │   ├── parser.ts          列表页 / 详情页解析 + 图片魔数嗅探
+-│   │   ├── http.ts            重试、限速、并发闸门、完整性校验
+-│   │   └── engine.ts          两阶段流水线调度
+-│   ├── store/
+-│   │   ├── schema.ts          建表 SQL
+-│   │   ├── db.ts              sql.js 封装 + 防抖落盘
+-│   │   └── repository.ts      全部 SQL 集中在这里
+-│   └── media/
+-│       ├── library.ts         磁盘布局与路径安全
+-│       ├── thumbnail.ts       nativeImage 缩略图
+-│       └── downloader 逻辑     在 crawler/engine.ts 内联（与进度上报强耦合）
+-├── preload/index.ts           contextBridge 白名单
+-├── renderer/                  React 界面（无 UI 库，纯手写 CSS 设计系统）
+-│   └── src/devtools/          页面标注工具（点选/框选、元素自省、导出）
+-└── shared/types.ts            两端共享的领域类型与 IPC 契约
++src/                          应用本体 —— 发布产物只含这里
++├── main/                     Electron 主进程
++│   ├── index.ts              入口：窗口、自定义协议、截图自检钩子
++│   ├── cli.ts                无界面 CLI 抓取
++│   ├── context.ts            依赖装配（设置 / 图库 / 库表 / 引擎）
++│   ├── config.ts             设置持久化（userData/settings.json）
++│   ├── ipc.ts                核心 IPC —— 不含任何插件相关通道
++│   ├── plugins.ts            插件宿主
++│   ├── workspace.ts          工作区根目录解析
++│   ├── crawler/              site / parser / http / engine
++│   ├── store/                schema / db(sql.js) / repository
++│   └── media/                library / thumbnail
++├── preload/index.ts          contextBridge 白名单
++├── renderer/                 React 界面（无 UI 库，纯手写 CSS 设计系统）
++│   └── src/
++│       ├── App.tsx           壳：布局、路由、状态、插件插槽
++│       ├── plugins.ts        插件宿主（渲染侧）
++│       ├── api.ts            桥接 + 展示层格式化
++│       ├── styles.css        设计系统
++│       └── components/       Sidebar / GalleryGrid / Lightbox / CrawlPanel / SettingsPanel / Icons
++└── shared/                   两端共享的纯类型
++    ├── types.ts              领域模型
++    ├── bridge.ts             preload 暴露的 API 契约
++    ├── plugin.ts             插件契约
++    └── globals.d.ts          构建期注入的全局声明
++
++plugins/                      可选工具 —— 默认不进发布产物
++├── plugins.json              装载清单
++├── annotator/                页面标注工具（renderer + bin）
++└── devlog/                   开发过程档案（main + shared + bin）
++
++scripts/                      仓库级工具
++├── shot.mjs                  界面截图
++├── uicheck.mjs               界面交互回归
++├── e2e.mjs                   真实站点端到端
++└── release.mjs               无插件发布构建 + 产物校验
+ ```
+ 
++完整分层说明与设计取舍见 [`docs/architecture.md`](docs/architecture.md)。
++
+ **安全边界**：渲染进程没有 Node 集成、开了 `contextIsolation`，只能调用 preload 暴露的
+ 白名单方法；所有文件访问都经过 `Library.resolveInside()` 做越权检查；
+ 页面加载了 CSP，图片只能来自 `gugu:` 自定义协议或本地。
+diff --git a/docs/architecture.md b/docs/architecture.md
+new file mode 100644
+index 0000000..5c24da9
+--- /dev/null
++++ b/docs/architecture.md
+@@ -0,0 +1,103 @@
++# 架构与目录结构
++
++## 一句话
++
++Electron + React + TypeScript 的桌面应用：主进程负责抓取与数据，
++渲染进程只负责画界面；可选工具以插件形式挂载，默认不进发布产物。
++
++## 目录结构
++
++```
++gugu/
++├── src/                       应用本体（发布产物只含这里）
++│   ├── main/                  Electron 主进程
++│   │   ├── index.ts           入口：窗口、自定义协议、截图自检钩子
++│   │   ├── cli.ts             无界面 CLI 抓取
++│   │   ├── context.ts         依赖装配（设置 / 库 / 库表 / 引擎）
++│   │   ├── config.ts          设置持久化
++│   │   ├── ipc.ts             核心 IPC（不含任何插件相关通道）
++│   │   ├── plugins.ts         插件宿主
++│   │   ├── workspace.ts       工作区根目录解析
++│   │   ├── crawler/           site / parser / http / engine
++│   │   ├── store/             schema / db(sql.js) / repository
++│   │   └── media/             library / thumbnail
++│   ├── preload/index.ts       contextBridge 白名单
++│   ├── renderer/              React 界面
++│   │   ├── index.html
++│   │   └── src/
++│   │       ├── App.tsx        壳：布局、路由、状态
++│   │       ├── plugins.ts     插件宿主（渲染侧）
++│   │       ├── api.ts         桥接 + 展示层格式化
++│   │       ├── styles.css     手写设计系统
++│   │       └── components/    Sidebar / GalleryGrid / Lightbox / CrawlPanel / SettingsPanel / Icons
++│   └── shared/                两端共享的纯类型
++│       ├── types.ts           领域模型
++│       ├── bridge.ts          preload 暴露的 API 契约
++│       ├── plugin.ts          插件契约
++│       └── globals.d.ts       构建期注入的全局声明
++├── plugins/                   可选工具（默认不进发布产物）
++├── scripts/                   仓库级工具
++│   ├── shot.mjs               界面截图
++│   ├── uicheck.mjs            界面交互回归
++│   ├── e2e.mjs                真实站点端到端
++│   └── release.mjs            无插件发布构建 + 产物校验
++├── tests/                     单元测试与真实 HTML 样本
++├── docs/                      文档
++├── devlog/                    开发过程档案
++└── data/                      本地运行产物（gitignored）
++```
++
++## 分层与边界
++
++```
++渲染进程 (React)
++   │  只能通过 window.gugu（preload 白名单）访问外部能力
++   ▼
++preload  ──  contextBridge 暴露 GuguBridge
++   │
++   ▼
++主进程
++   ├── ipc.ts        核心能力：设置 / 图库查询 / 抓取控制
++   ├── plugins.ts    插件路由：plugin:list / plugin:invoke
++   ├── crawler/      站点适配 → HTTP（重试/限速/校验）→ 引擎调度
++   ├── store/        SQLite(WASM) 仓储
++   └── media/        磁盘布局、缩略图、下载
++```
++
++**安全边界**：渲染进程没有 Node 集成、开了 `contextIsolation`，
++所有文件访问都过 `Library.resolveInside()` 做越权检查，
++图片只能来自 `gugu:` 自定义协议或本地，页面加载了 CSP。
++
++## 数据流
++
++**抓取**
++
++```
++列表页 ──解析──> items 索引 ──过滤──> 下载队列 ──详情页补全──> 原图下载 ──> 落盘 ──> 缩略图
++```
++
++两阶段的理由：索引极快（1430 页约十几分钟，几乎不耗流量），
++可以先把全站元数据拿下来，再从容决定下载哪些。
++
++**浏览**
++
++```
++React 组件 ──gugu://thumb/<id>──> protocol.handle ──> 本地缩略图流
++           ──gugu://media/<id>──> 同上（查看原图）
++```
++
++## 为什么这么选
++
++| 决定 | 理由 | 代价 |
++| --- | --- | --- |
++| sql.js（WASM SQLite） | 本机没有 MSVC，原生模块装不上；换来零编译 | 整库常驻内存，写盘靠整库导出 |
++| 缩略图用 Electron 的 nativeImage | 免掉 sharp/jimp 这类依赖，1080p→512px 约 10ms | 只能在主进程用 |
++| 无 UI 库，手写 CSS | 设计可控、依赖少 | 样式要自己维护 |
++| 插件默认不进产物 | 工具代码不该出现在给用户的应用里 | 需要一套构建期装载机制 |
++| 分页用 LIMIT/OFFSET | 几万条量级下更快也更简单 | 到百万级要换 keyset |
++
++## 相关文档
++
++- [站点逆向笔记](./site-analysis.md)
++- [插件开发指南](./plugin-development.md)
++- [开发档案说明](../devlog/README.md)
+diff --git a/docs/plugin-development.md b/docs/plugin-development.md
+new file mode 100644
+index 0000000..1640cf6
+--- /dev/null
++++ b/docs/plugin-development.md
+@@ -0,0 +1,133 @@
++# 插件开发指南
++
++插件是**可选的能力扩展**，默认不进发布产物。适合放：开发期工具、协作工具、
++实验性功能、只在内部用的诊断面板。
++
++## 目录约定
++
++```
++plugins/<id>/
++├── plugin.json            必需：清单
++├── SKILL.md               建议：给使用者/智能体的操作手册
++├── README.md              建议：实现说明
++├── shared/                可选：与其它插件共享的类型
++├── main/index.ts          可选：主进程侧（会被编译成独立 chunk）
++├── renderer/index.tsx     可选：渲染进程侧（会被打进界面 bundle）
++└── bin/*.mjs              可选：可复用的命令行程序
++```
++
++在 `plugins/plugins.json` 的 `enabled` 里登记才会被装载。
++
++## plugin.json
++
++```json
++{
++  "id": "my-tool",
++  "name": "我的工具",
++  "version": "1.0.0",
++  "description": "一句话说明它解决什么问题",
++  "dependsOn": ["devlog"],
++  "ui": { "topBarAction": true, "overlay": true }
++}
++```
++
++`dependsOn` 在构建期校验：依赖不在 `enabled` 里就自动跳过并告警，不会让构建失败。
++
++## 主进程侧
++
++```ts
++// plugins/my-tool/main/index.ts
++import type { MainPluginHost, MainPluginModule, PluginManifest } from '@shared/plugin'
++import manifestJson from '../plugin.json'
++
++const manifest = manifestJson as PluginManifest
++
++const plugin: MainPluginModule = {
++  manifest,
++  activate(host: MainPluginHost) {
++    // workspaceRoot 由宿主注入：开发态是仓库根，打包后回退到用户数据目录
++    host.log('工作区: ' + host.workspaceRoot)
++
++    host.method('doSomething', async (payload, ctx) => {
++      // ctx.window    当前主窗口（可能为空）
++      // ctx.libraryRoot 当前图库根目录
++      return { ok: true }
++    })
++  }
++}
++
++export default plugin
++```
++
++渲染进程这样调用：
++
++```ts
++const result = await window.gugu.plugins.invoke('my-tool', 'doSomething', { foo: 1 })
++```
++
++**核心不需要为插件新增任何 IPC 通道**，preload 与 ipc.ts 都不用改。
++
++## 渲染进程侧
++
++```tsx
++// plugins/my-tool/renderer/index.tsx
++import type { PluginOverlayProps, PluginTopBarActionProps, RendererPluginModule } from '@shared/plugin'
++import manifestJson from '../plugin.json'
++
++function TopBarAction({ active, toggle }: PluginTopBarActionProps) { /* ... */ }
++function Overlay({ active, onActiveChange, view, appVersion, onToast }: PluginOverlayProps) { /* ... */ }
++
++const plugin: RendererPluginModule = {
++  manifest: manifestJson as RendererPluginModule['manifest'],
++  TopBarAction,
++  Overlay
++}
++
++export default plugin
++```
++
++两个插槽都是可选的：
++
++- `TopBarAction` —— 顶栏右侧的开关按钮
++- `Overlay` —— 全屏覆盖层，自行决定要不要渲染内容
++
++宿主在 `src/renderer/src/App.tsx` 里遍历所有已加载插件渲染这两个插槽，
++同一时刻只允许一个插件的覆盖层处于 `active`。
++
++## 构建时发生了什么
++
++`electron.vite.config.ts` 读取装载清单后：
++
++1. 主进程：把每个 `plugins/<id>/main/index.ts` 加成独立入口，产物落在 `out/main/plugins/<id>.js`
++2. 渲染进程：生成虚拟模块 `virtual:gugu-plugins`，把所有启用的渲染入口聚合起来
++3. 注入 `__GUGU_PLUGINS__`（清单数组），宿主据此决定运行时加载哪些 chunk
++
++一个插件都不装时，虚拟模块是空数组，主进程也没有插件 chunk —— 产物里就是干净的图库应用。
++
++`scripts/release.mjs` 会在构建后**实际扫描产物**：
++检查 `out/main/plugins/` 是否为空、渲染 bundle 里有没有插件特征串。
++「以为排除了其实没有」这种事必须被自动抓住。
++
++## 开发流程
++
++```bash
++# 开发（装载 plugins.json 里登记的插件）
++npm run dev
++
++# 只装某几个插件调试
++GUGU_PLUGINS=devlog npm run dev
++
++# 确认发布产物里没有插件
++npm run build:release
++```
++
++## 注意事项
++
++- **插件可以读环境变量，但不要依赖主进程的内部模块路径** ——
++  用 `host` 给的上下文，别自己算 `__dirname`
++- **插件异常不应该拖垮应用**：宿主对 `activate()` 做了 try/catch，
++  装载失败的插件会被跳过并打日志
++- **渲染侧插件不要 import 应用源码**（`src/renderer/...`）。
++  需要类型就从 `@shared/*` 拿，需要能力就走 `window.gugu`
++- 插件之间的共享类型放在**被依赖方**的 `shared/` 里，并在 `dependsOn` 中声明，
++  依赖关系在类型层面就是显式的
+diff --git a/electron.vite.config.ts b/electron.vite.config.ts
+index 1bf5987..598b2bc 100644
+--- a/electron.vite.config.ts
++++ b/electron.vite.config.ts
+@@ -1,52 +1,137 @@
+-import { readFileSync } from 'node:fs'
++import { existsSync, readFileSync } from 'node:fs'
+ import { resolve } from 'node:path'
+ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
+ import react from '@vitejs/plugin-react'
++import type { Plugin as VitePlugin } from 'vite'
++
++/* --------------------------------------------------------------- 基础信息 */
+ 
+ // app.getVersion() 在开发态下返回的是 Electron 版本（应用目录不是仓库根），
+ // 所以版本号在构建期直接注入，保证界面与档案里显示的都是真实的应用版本。
+ const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf8')) as { version: string }
+-const define = { __APP_VERSION__: JSON.stringify(pkg.version) }
++
++/* --------------------------------------------------------------- 插件发现 */
++
++interface PluginManifest {
++  id: string
++  name: string
++  version: string
++  description: string
++  dependsOn?: string[]
++  ui?: { topBarAction?: boolean; overlay?: boolean }
++}
++
++const pluginsRoot = resolve('plugins')
++
++/**
++ * 决定这一轮构建装载哪些插件。
++ *   GUGU_PLUGINS=devlog    -> 只装指定插件
++ *   GUGU_PLUGINS=          -> 一个都不装（发布用，产物里不会出现插件代码）
++ *   未设置                  -> 读 plugins/plugins.json
++ */
++function resolveEnabledPluginIds(): string[] {
++  const fromEnv = process.env.GUGU_PLUGINS
++  const ids =
++    fromEnv !== undefined
++      ? fromEnv.split(',').map((s) => s.trim()).filter(Boolean)
++      : ((JSON.parse(readFileSync(resolve(pluginsRoot, 'plugins.json'), 'utf8')) as { enabled?: string[] })
++          .enabled ?? [])
++  return ids.filter((id) => existsSync(resolve(pluginsRoot, id, 'plugin.json')))
++}
++
++function readManifest(id: string): PluginManifest {
++  return JSON.parse(readFileSync(resolve(pluginsRoot, id, 'plugin.json'), 'utf8')) as PluginManifest
++}
++
++const enabledIds = resolveEnabledPluginIds()
++
++/** 依赖缺失的插件会被剔除并告警，避免构建期直接炸掉 */
++const loadableManifests = enabledIds.map(readManifest).filter((m) => {
++  const missing = (m.dependsOn ?? []).filter((dep) => !enabledIds.includes(dep))
++  if (missing.length > 0) {
++    console.warn(`[gugu] 插件 ${m.id} 依赖缺失，已跳过: ${missing.join(', ')}`)
++    return false
++  }
++  return true
++})
++const loadableIds = loadableManifests.map((m) => m.id)
++
++const define = {
++  __APP_VERSION__: JSON.stringify(pkg.version),
++  __GUGU_PLUGINS__: JSON.stringify(loadableManifests)
++}
++
++const alias = {
++  '@shared': resolve('src/shared'),
++  '@main': resolve('src/main'),
++  '@plugins': resolve('plugins')
++}
++
++/* ----------------------------------------------- 渲染侧插件入口（虚拟模块） */
++
++/**
++ * 把启用的插件渲染入口聚合成一个虚拟模块。
++ * 一个插件都不装时这里生成空数组，产物里自然就没有插件的任何代码。
++ */
++function virtualPluginEntries(): VitePlugin {
++  const virtualId = 'virtual:gugu-plugins'
++  const resolvedId = '\0' + virtualId
++  return {
++    name: 'gugu:virtual-plugins',
++    resolveId: (id) => (id === virtualId ? resolvedId : null),
++    load(id) {
++      if (id !== resolvedId) return null
++      const entries = loadableIds
++        .map((pid) => resolve(pluginsRoot, pid, 'renderer', 'index.tsx'))
++        .filter((file) => existsSync(file))
++      const imports = entries
++        .map((file, i) => `import plugin${i} from ${JSON.stringify(file)}`)
++        .join('\n')
++      const list = entries.map((_, i) => `plugin${i}`).join(', ')
++      return `${imports}\nexport const rendererPlugins = [${list}]\n`
++    }
++  }
++}
++
++const mainInput: Record<string, string> = {
++  index: resolve('src/main/index.ts'),
++  cli: resolve('src/main/cli.ts')
++}
++for (const id of loadableIds) {
++  const entry = resolve(pluginsRoot, id, 'main', 'index.ts')
++  if (existsSync(entry)) mainInput[`plugins/${id}`] = entry
++}
++
++/* ------------------------------------------------------------------ 配置 */
+ 
+ export default defineConfig({
+   main: {
+     define,
+     plugins: [externalizeDepsPlugin()],
+-    resolve: {
+-      alias: {
+-        '@shared': resolve('src/shared'),
+-        '@main': resolve('src/main')
+-      }
+-    },
++    resolve: { alias },
+     build: {
+       rollupOptions: {
+-        input: { index: resolve('src/main/index.ts'), cli: resolve('src/main/cli.ts') }
++        input: mainInput,
++        // 插件产物固定为 out/main/plugins/<id>.js，宿主按这个名字动态加载
++        output: { entryFileNames: '[name].js' }
+       }
+     }
+   },
+   preload: {
+     define,
+     plugins: [externalizeDepsPlugin()],
+-    resolve: {
+-      alias: { '@shared': resolve('src/shared') }
+-    },
++    resolve: { alias },
+     build: {
+-      rollupOptions: {
+-        input: { index: resolve('src/preload/index.ts') }
+-      }
++      rollupOptions: { input: { index: resolve('src/preload/index.ts') } }
+     }
+   },
+   renderer: {
+     define,
+     root: resolve('src/renderer'),
+-    resolve: {
+-      alias: { '@shared': resolve('src/shared') }
+-    },
+-    plugins: [react()],
++    resolve: { alias },
++    plugins: [react(), virtualPluginEntries()],
+     build: {
+-      rollupOptions: {
+-        input: { index: resolve('src/renderer/index.html') }
+-      }
++      rollupOptions: { input: { index: resolve('src/renderer/index.html') } }
+     }
+   }
+ })
+diff --git a/package.json b/package.json
+index a74f019..4f6e158 100644
+--- a/package.json
++++ b/package.json
+@@ -13,20 +13,20 @@
+   "scripts": {
+     "dev": "electron-vite dev",
+     "build": "npm run typecheck && electron-vite build",
++    "build:release": "node scripts/release.mjs build",
+     "start": "electron-vite preview",
+     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+     "test": "vitest run",
+     "test:watch": "vitest",
+-    "shot": "node scripts/screenshot.mjs",
+-    "seed": "node scripts/seed-demo.mjs",
+-    "pack": "npm run build && electron-builder --dir",
+-    "dist": "npm run build && electron-builder",
++    "shot": "node scripts/shot.mjs",
+     "crawl": "electron-vite build && electron out/main/cli.js",
+     "crawl:dev": "electron out/main/cli.js",
+     "e2e": "node scripts/e2e.mjs",
+     "uicheck": "node scripts/uicheck.mjs",
+-    "annotatecheck": "node scripts/annotatecheck.mjs",
+-    "annotate": "electron-vite build && electron out/main/index.js"
++    "annotatecheck": "node plugins/annotator/bin/check.mjs",
++    "round": "node plugins/devlog/bin/round.mjs",
++    "pack": "npm run build && electron-builder --dir",
++    "dist": "npm run build:release && electron-builder"
+   },
+   "dependencies": {
+     "sql.js": "^1.13.0"
+@@ -56,9 +56,6 @@
+       "out/**/*",
+       "package.json"
+     ],
+-    "asarUnpack": [
+-      "node_modules/sql.js/dist/*.wasm"
+-    ],
+     "win": {
+       "target": [
+         "nsis"
+diff --git a/plugins/README.md b/plugins/README.md
+new file mode 100644
+index 0000000..c98ca71
+--- /dev/null
++++ b/plugins/README.md
+@@ -0,0 +1,47 @@
++# 插件（可选工具）
++
++这里放的是**开发与协作期**才需要的工具。它们默认**不会进入发布产物** ——
++`npm run dist` 走的是 `scripts/release.mjs`，会把 `GUGU_PLUGINS` 置空，
++构建完还会实际校验产物里没有插件代码。
++
++```
++plugins/
++├── plugins.json              装载清单，构建期读取
++├── annotator/                页面标注工具（依赖 devlog）
++│   ├── plugin.json
++│   ├── SKILL.md              给使用者/智能体的操作手册
++│   ├── README.md
++│   ├── renderer/             界面部分（被渲染进程打包）
++│   └── bin/check.mjs         自检程序
++└── devlog/                   开发过程档案
++    ├── plugin.json
++    ├── SKILL.md
++    ├── README.md
++    ├── shared/types.ts       标注与轮次类型（annotator 复用它）
++    ├── main/                 主进程部分（编译成独立 chunk，运行时按需加载）
++    └── bin/round.mjs         轮次管理程序
++```
++
++## 装载与卸载
++
++`plugins/plugins.json`：
++
++```json
++{ "enabled": ["devlog", "annotator"] }
++```
++
++- 去掉某一项 → 它的代码**完全不会**进入构建产物
++- 依赖缺失（`annotator` 需要 `devlog`）→ 构建期告警并自动跳过，不会炸
++- 临时改动不想动文件时，用环境变量覆盖：`GUGU_PLUGINS=devlog npm run build`
++
++## 现有插件
++
++| 插件 | 作用 | 入口 | 依赖 |
++| --- | --- | --- | --- |
++| `annotator` | 在真实界面上点选/框选写批注，导出成可执行的修改说明 | 应用内 `Ctrl+Shift+A` 或顶栏笔形按钮 | `devlog` |
++| `devlog` | 把每轮迭代的标注、截图与代码差异归档到 `devlog/rounds/` | 无界面，被 annotator 调用，另配 CLI | — |
++
++## 写一个新插件
++
++见 `docs/plugin-development.md`。
++最小插件只需要两个文件：`plugin.json` 和一个 `main/index.ts` 或 `renderer/index.tsx`。
+diff --git a/plugins/annotator/README.md b/plugins/annotator/README.md
+new file mode 100644
+index 0000000..5a18aaf
+--- /dev/null
++++ b/plugins/annotator/README.md
+@@ -0,0 +1,27 @@
++# annotator · 页面标注工具
++
++在真实界面上点选元素 / 框选区域写批注，导出成可执行的修改说明。
++
++- **怎么用**：看 [`SKILL.md`](SKILL.md)
++- **依赖**：`devlog` 插件（`plugin.json` 里用 `dependsOn` 声明，构建期会校验）
++
++## 代码结构
++
++| 文件 | 职责 |
++| --- | --- |
++| `renderer/index.tsx` | 插件入口：顶栏按钮 + 全屏覆盖层、事件拦截、批注编辑、导出 |
++| `renderer/inspect.ts` | 元素自省：选择器、组件名、父级链、关键样式、对比度 |
++| `renderer/annotator.css` | 工具样式（刻意的暖色调，与应用冷色主题区分） |
++| `bin/check.mjs` | 自检程序，程序化驱动全流程 |
++
++## 两个实现要点
++
++**1. 用 document 捕获阶段的监听器拦截，而不是铺一层遮罩**
++
++好处是能直接用 `e.target` 拿到真实元素（遮罩方案得反过来用 `elementFromPoint` 穿透自己），
++而且工具栏、图钉、编辑框这些自己的 UI 不会被误拦截（靠 `closest('.gugu-anno-root')` 放行）。
++
++**2. 位置同时记录视口坐标与文档坐标**
++
++视口坐标用于截图裁切，文档坐标用于滚动后把标注钉在原地；
++导出时再按当前滚动位置换算回视口坐标，保证裁切与标注框对齐。
+diff --git a/plugins/annotator/SKILL.md b/plugins/annotator/SKILL.md
+new file mode 100644
+index 0000000..2135678
+--- /dev/null
++++ b/plugins/annotator/SKILL.md
+@@ -0,0 +1,76 @@
++---
++name: gugu-annotate
++description: 咕咕图库的页面标注工具。当用户要对着界面提修改意见、指出某个元素该怎么改、或需要把界面反馈结构化记录下来时使用。
++---
++
++# 页面标注工具（annotator）
++
++在**真实运行的应用界面**上点选元素或框选区域写批注，导出一份**可执行**的修改说明。
++
++## 何时使用
++
++- 用户说「这个按钮太小」「这块留白太多」「我想让卡片标题更醒目」这类界面意见
++- 需要精确指明是哪个元素（而不是靠文字描述位置）
++- 反馈需要留档，供后续对照「改前 / 改后」
++
++## 为什么不是截图圈一下就行
++
++批注里写「这个按钮太小」是无法执行的。而执行改动的一方**未必看得到截图**
++（比如由模型来改代码）。所以工具会自动采集：
++
++- `data-component` 组件名与父级链 → 直接定位到源码文件
++- 唯一 CSS 选择器
++- 元素可见文本
++- 关键计算样式（字号 / 颜色 / 内边距 / 圆角 / 阴影 / transition…，已过滤掉无信息量的默认值）
++- **WCAG 对比度**（文本色与背景色都不透明时）→「好看」里最硬的一条指标
++- 标注框的坐标与尺寸
++
++## 操作步骤
++
++### 用户侧（在应用里）
++
++1. 按 `Ctrl+Shift+A`，或点顶栏右侧的笔形按钮
++2. 默认在**浏览**模式，不拦截任何点击 —— 正常操作应用，翻到要提意见的那一屏
++3. 切**点选**：悬停实时高亮元素并显示所属组件，点一下即可写批注
++4. 或切**框选**：按住左键拖出矩形，给一整片区域提意见
++5. 每条批注可标**类别**（视觉样式 / 布局结构 / 文案内容 / 交互行为 / 缺陷 / 其它）
++   与**优先级**（必须改 / 建议改 / 锦上添花）
++6. 右下角「标注清单」可回看、跳转、编辑、删除
++7. 点「导出标注」→ 填一句总体说明 → 确认
++
++导出只写 `devlog/` 下的文件，**不改任何代码**，可以放心多点几下。
++
++### 执行侧（拿到批注之后）
++
++```bash
++npm run round -- inbox     # 打印最新一轮的标注原文
++```
++
++读 `annotations.md` 里的组件名定位源码，按「当前样式」对照着改。
++
++## 产物
++
++导出到 `devlog/rounds/<轮次>/`：
++
++| 文件 | 内容 |
++| --- | --- |
++| `annotations.md` | 人读版：每条批注 + 全部采集信息 |
++| `annotations.json` | 机读版：原始数据 |
++| `screenshots/00-full.png` | 导出时的整页截图 |
++| `screenshots/NNN-*.png` | 每条标注自动裁切的局部截图 |
++| `README.md` | 轮次说明骨架 |
++
++## 自检
++
++```bash
++npm run annotatecheck
++```
++
++程序化驱动真实界面走完「打开 → 点选 → 写批注 → 框选 → 导出 → 校验落盘产物」，18 项断言。
++使用临时工作区（`GUGU_WORKSPACE`），不会污染真实档案。
++
++## 常见问题
++
++- **按了没反应**：确认 devlog 插件也在 `plugins/plugins.json` 里 —— annotator 依赖它
++- **导出报「插件未加载」**：同上；或检查构建时 `GUGU_PLUGINS` 是否把插件排除了
++- **截图裁切位置偏了**：多为 devicePixelRatio 取值问题，检查导出时的窗口缩放
+diff --git a/scripts/annotatecheck.mjs b/plugins/annotator/bin/check.mjs
+similarity index 99%
+rename from scripts/annotatecheck.mjs
+rename to plugins/annotator/bin/check.mjs
+index 27d862b..b69a443 100644
+--- a/scripts/annotatecheck.mjs
++++ b/plugins/annotator/bin/check.mjs
+@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path'
+ import { fileURLToPath } from 'node:url'
+ 
+ const here = dirname(fileURLToPath(import.meta.url))
+-const root = resolve(here, '..')
++const root = resolve(here, '../../..')
+ const electronBinary = join(
+   root,
+   'node_modules',
+diff --git a/plugins/annotator/plugin.json b/plugins/annotator/plugin.json
+new file mode 100644
+index 0000000..7d96633
+--- /dev/null
++++ b/plugins/annotator/plugin.json
+@@ -0,0 +1,8 @@
++{
++  "id": "annotator",
++  "name": "页面标注工具",
++  "version": "1.0.0",
++  "description": "在真实界面上点选元素或框选区域写批注，导出成可执行的修改说明",
++  "dependsOn": ["devlog"],
++  "ui": { "topBarAction": true, "overlay": true }
++}
+diff --git a/src/renderer/src/devtools/annotator.css b/plugins/annotator/renderer/annotator.css
+similarity index 100%
+rename from src/renderer/src/devtools/annotator.css
+rename to plugins/annotator/renderer/annotator.css
+diff --git a/src/renderer/src/devtools/Annotator.tsx b/plugins/annotator/renderer/index.tsx
+similarity index 90%
+rename from src/renderer/src/devtools/Annotator.tsx
+rename to plugins/annotator/renderer/index.tsx
+index 575cbfd..b9bfefa 100644
+--- a/src/renderer/src/devtools/Annotator.tsx
++++ b/plugins/annotator/renderer/index.tsx
+@@ -12,8 +12,7 @@
+  *  - 位置同时记「视口坐标」和「文档坐标」：前者用于截图裁切，后者保证滚动后标注还在原地。
+  */
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+-import './annotator.css'
+-import { describeElement, describeRegion, rectOf } from './inspect'
++import type { PluginOverlayProps, PluginTopBarActionProps, RendererPluginModule } from '@shared/plugin'
+ import {
+   CATEGORY_OPTIONS,
+   SEVERITY_OPTIONS,
+@@ -21,20 +20,16 @@ import {
+   type AnnotationCategory,
+   type AnnotationRect,
+   type AnnotationSeverity,
+-  type DevlogRound
+-} from './types'
++  type ExportResult,
++  type RoundInfo
++} from '@plugins/devlog/shared/types'
++import manifestJson from '../plugin.json'
++import { describeElement, describeRegion, rectOf } from './inspect'
++import './annotator.css'
+ 
++const manifest = manifestJson as RendererPluginModule['manifest']
+ type ToolMode = 'browse' | 'element' | 'region'
+ 
+-interface Props {
+-  enabled: boolean
+-  onToggle: (enabled: boolean) => void
+-  /** 当前界面标识，写进档案 */
+-  view: string
+-  appVersion: string
+-  onToast: (message: string) => void
+-}
+-
+ interface Draft {
+   kind: 'element' | 'region'
+   rect: AnnotationRect
+@@ -45,7 +40,14 @@ interface Draft {
+ 
+ const uid = (): string => Math.random().toString(36).slice(2, 10)
+ 
+-export default function Annotator({ enabled, onToggle, view, appVersion, onToast }: Props): JSX.Element | null {
++/** 覆盖层：把插件契约的 active / onActiveChange 映射到内部沿用的命名上 */
++function AnnotatorOverlay({
++  active: enabled,
++  onActiveChange: onToggle,
++  view,
++  appVersion,
++  onToast
++}: PluginOverlayProps): JSX.Element | null {
+   const [mode, setMode] = useState<ToolMode>('browse')
+   const [annotations, setAnnotations] = useState<Annotation[]>([])
+   const [draft, setDraft] = useState<Draft | null>(null)
+@@ -56,7 +58,7 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
+   const [dragRect, setDragRect] = useState<AnnotationRect | null>(null)
+   const [exportOpen, setExportOpen] = useState(false)
+   const [note, setNote] = useState('')
+-  const [rounds, setRounds] = useState<DevlogRound[]>([])
++  const [rounds, setRounds] = useState<RoundInfo[]>([])
+   const [scrollTick, setScrollTick] = useState(0)
+ 
+   const dragStart = useRef<{ x: number; y: number } | null>(null)
+@@ -99,8 +101,8 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
+     // 顺手读一下历史轮次，导出时可以提示进度
+     void (async () => {
+       try {
+-        const list = await window.gugu?.devlog.list()
+-        setRounds((list as DevlogRound[]) ?? [])
++        const list = await window.gugu?.plugins.invoke<RoundInfo[]>('devlog', 'listRounds')
++        setRounds(list ?? [])
+       } catch {
+         setRounds([])
+       }
+@@ -263,8 +265,8 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
+       onToast('还没有任何标注')
+       return
+     }
+-    if (!window.gugu?.devlog) {
+-      onToast('导出能力不可用（未通过 Electron 启动？）')
++    if (!window.gugu?.plugins) {
++      onToast('导出能力不可用：devlog 插件未加载')
+       return
+     }
+     const scrollX = window.scrollX
+@@ -285,16 +287,12 @@ export default function Annotator({ enabled, onToggle, view, appVersion, onToast
+       }))
+     }
+     try {
+-      const result = (await window.gugu.devlog.export(payload)) as {
+-        roundId: string
+-        roundDir: string
+-        files: string[]
+-      }
++      const result = await window.gugu.plugins.invoke<ExportResult>('devlog', 'exportAnnotations', payload)
+       setExportOpen(false)
+       setNote('')
+       onToast(`已导出到 devlog/rounds/${result.roundId}/`)
+-      const list = (await window.gugu.devlog.list()) as DevlogRound[]
+-      setRounds(list)
++      const list = await window.gugu.plugins.invoke<RoundInfo[]>('devlog', 'listRounds')
++      setRounds(list ?? [])
+     } catch (err) {
+       onToast(`导出失败：${err instanceof Error ? err.message : String(err)}`)
+     }
+@@ -623,3 +621,46 @@ function CommentEditor({
+     </div>
+   )
+ }
++
++/* --------------------------------------------------------------- 插件导出 */
++
++/** 顶栏入口图标：内联 SVG，插件不依赖应用的图标组件 */
++function MarkerIcon(): JSX.Element {
++  return (
++    <svg
++      width={15}
++      height={15}
++      viewBox="0 0 24 24"
++      fill="none"
++      stroke="currentColor"
++      strokeWidth={1.8}
++      strokeLinecap="round"
++      strokeLinejoin="round"
++    >
++      <path d="M4 20h16" />
++      <path d="M14.5 3.5 20 9l-9.5 9.5H5v-5.5z" />
++      <path d="M12.5 5.5 18 11" />
++    </svg>
++  )
++}
++
++function AnnotatorTopBarAction({ active, toggle }: PluginTopBarActionProps): JSX.Element {
++  return (
++    <button
++      data-component="annotator/TopBarAction"
++      className={`btn icon ghost${active ? ' annotate-on' : ''}`}
++      title="页面标注工具（Ctrl+Shift+A）"
++      onClick={toggle}
++    >
++      <MarkerIcon />
++    </button>
++  )
++}
++
++const annotatorPlugin: RendererPluginModule = {
++  manifest,
++  TopBarAction: AnnotatorTopBarAction,
++  Overlay: AnnotatorOverlay
++}
++
++export default annotatorPlugin
+diff --git a/src/renderer/src/devtools/inspect.ts b/plugins/annotator/renderer/inspect.ts
+similarity index 98%
+rename from src/renderer/src/devtools/inspect.ts
+rename to plugins/annotator/renderer/inspect.ts
+index 041e04c..930d251 100644
+--- a/src/renderer/src/devtools/inspect.ts
++++ b/plugins/annotator/renderer/inspect.ts
+@@ -5,7 +5,7 @@
+  * 执行改动的人（或模型）很可能看不到图，只能靠这些文字 + 截图裁片定位问题。
+  * 所以选择器、父级链、组件名、关键样式、对比度都要一并记录下来。
+  */
+-import type { AnnotationRect, AnnotationTarget } from './types'
++import type { AnnotationRect, AnnotationTarget } from '@plugins/devlog/shared/types'
+ 
+ /** 只挑和视觉/布局判断相关的属性，避免把几百行计算样式灌进去 */
+ const STYLE_KEYS = [
+diff --git a/plugins/devlog/README.md b/plugins/devlog/README.md
+new file mode 100644
+index 0000000..2ba64c0
+--- /dev/null
++++ b/plugins/devlog/README.md
+@@ -0,0 +1,35 @@
++# devlog · 开发过程档案
++
++把每一轮有体量的迭代归档下来，让开发过程可回溯、可展示。
++
++- **怎么用**：看 [`SKILL.md`](SKILL.md)
++- **目录长什么样**：见仓库根 `devlog/`
++- **宿主契约**：实现 `MainPluginModule`，用 `host.method()` 注册两个方法
++
++## 对外方法
++
++渲染进程通过 `window.gugu.plugins.invoke('devlog', '<method>', payload)` 调用：
++
++| 方法 | 入参 | 返回 |
++| --- | --- | --- |
++| `listRounds` | — | `RoundInfo[]` |
++| `exportAnnotations` | `ExportPayload` | `ExportResult` |
++
++`exportAnnotations` 会：截图整页 → 按 devicePixelRatio 换算并裁切每条标注的局部图 →
++写出 `annotations.json` / `annotations.md` / `README.md` 骨架。
++
++## 代码结构
++
++| 文件 | 职责 |
++| --- | --- |
++| `main/index.ts` | 插件入口，注册方法 |
++| `main/store.ts` | 轮次目录管理与导出落盘 |
++| `main/render.ts` | Markdown / README 生成 |
++| `shared/types.ts` | 标注与轮次类型（annotator 复用） |
++| `bin/round.mjs` | 轮次 CLI：list / new / finalize / inbox |
++
++## 为什么把类型放在 shared
++
++标注工具需要构造 `ExportPayload`，档案工具需要消费它。
++放在 devlog 的 `shared/` 里，annotator 通过 `@plugins/devlog/shared/types` 引用，
++与 `plugin.json` 中 `"dependsOn": ["devlog"]` 的声明一一对应 —— 依赖关系在类型层面就是显式的。
+diff --git a/plugins/devlog/SKILL.md b/plugins/devlog/SKILL.md
+new file mode 100644
+index 0000000..3a3e81a
+--- /dev/null
++++ b/plugins/devlog/SKILL.md
+@@ -0,0 +1,95 @@
++---
++name: gugu-devlog
++description: 咕咕图库的开发过程档案工具。当需要建立或收尾一轮迭代档案、查看某轮的标注与代码差异、或展示项目开发历程时使用。
++---
++
++# 开发过程档案（devlog）
++
++把每一轮**有体量的迭代**归档到 `devlog/rounds/<0000-slug>/`，让整个开发过程可回溯、可展示。
++
++## 何时使用
++
++**要建立轮次**的情形：
++
++- 用户提了一批界面修改意见，准备动手改
++- 做了一次结构性重构、换了技术方案、增删了主要功能
++- 一个功能从无到有做完了
++
++**不要建立轮次**的情形：
++
++- 改错别字、调颜色、修一行 bug —— 直接 commit 就行
++- 每次 commit 都开一轮会把档案淹掉；档案的价值在于「阶段感」
++
++## 前置条件
++
++- 已完成 `npm install` 与 `npm run build`
++- 应用能跑起来（`npm run dev`），且图库目录有数据（默认 `data/demo`）
++
++## 操作步骤
++
++### 1. 开一轮
++
++```bash
++npm run round -- new <slug>
++```
++
++创建 `devlog/rounds/<4位序号>-<slug>/`，采集改动前截图到 `screenshots-before/`，
++写入 README 骨架，并在 `devlog/index.json` 登记。
++
++如果这一轮来自用户的界面标注，则**不需要**手动 new ——
++用户在应用里点「导出标注」时会自动建立轮次目录并写入 `annotations.md`。
++
++### 2. 读反馈
++
++```bash
++npm run round -- inbox
++```
++
++打印最新一个尚未收尾的轮次内容（含逐条标注的完整技术上下文）。
++这是「拿到用户意见」的标准入口。
++
++### 3. 动手改
++
++正常提交代码。commit message 写清楚「为什么」，轮次 README 里再汇总。
++
++### 4. 收尾
++
++```bash
++npm run round -- finalize <轮次ID>
++```
++
++自动完成：
++
++- 采集改动后截图到 `screenshots-after/`（与 before 对照）
++- 生成 `changes.md`（变更文件清单 + 统计）与 `changes.patch`（完整 diff，可 `git apply`）
++- 在 README 追加「过程存档」小节
++- 打 git tag `round/<轮次ID>`
++
++收尾前请**手动补全 README 的「改动 / 验证 / 遗留」三节** ——
++脚本只能采集客观事实，写不出判断和取舍。
++
++### 5. 查看
++
++```bash
++npm run round -- list                        # 所有轮次
++git checkout round/0002-annotation-tooling   # 完整复原某一轮
++```
++
++## 产物格式
++
++```
++devlog/rounds/0002-annotation-tooling/
++├── README.md             背景 / 反馈 / 改动 / 验证 / 遗留
++├── annotations.md        界面标注原文（人读版，含组件名、选择器、当前样式）
++├── annotations.json      界面标注原始数据（机器可读）
++├── changes.md            代码差异概览
++├── changes.patch         完整 diff
++├── screenshots-before/   改动前截图
++└── screenshots-after/    改动后截图
++```
++
++## 常见问题
++
++- **截图是空白的**：截图前会唤起窗口，远程会话下可能截不到；用 `GUGU_SHOT_DELAY` 调大等待时间
++- **轮次编号对不上**：编号 = 目录数量 + 1，手工删过目录就会跳号，属正常
++- **`finalize` 说变更文件为空**：说明这一轮还没有 commit，先提交代码再收尾
+diff --git a/scripts/round.mjs b/plugins/devlog/bin/round.mjs
+similarity index 78%
+rename from scripts/round.mjs
+rename to plugins/devlog/bin/round.mjs
+index 3beed36..6f1f360 100644
+--- a/scripts/round.mjs
++++ b/plugins/devlog/bin/round.mjs
+@@ -1,9 +1,10 @@
+ /**
+  * 轮次档案工具。
+  *
+- *   node scripts/round.mjs list                 列出所有轮次
+- *   node scripts/round.mjs new <slug>           开一轮：建目录 + 起始截图 + 元数据
+- *   node scripts/round.mjs finalize <轮次ID>    收尾：改动截图 + 代码 diff + 更新说明 + 打 tag
++ *   node plugins/devlog/bin/round.mjs list               列出所有轮次
++ *   node plugins/devlog/bin/round.mjs inbox              打印最新未收尾轮次的内容
++ *   node plugins/devlog/bin/round.mjs new <slug>         开一轮：建目录 + 起始截图 + 元数据
++ *   node plugins/devlog/bin/round.mjs finalize <轮次ID>  收尾：改动截图 + 代码 diff + 更新说明 + 打 tag
+  *
+  * 配合界面上的「标注工具」使用：
+  *   标注工具负责产出 annotations.md/json 与逐条裁片，
+@@ -17,7 +18,7 @@ import { dirname, join, resolve } from 'node:path'
+ import { fileURLToPath } from 'node:url'
+ 
+ const here = dirname(fileURLToPath(import.meta.url))
+-const root = resolve(here, '..')
++const root = resolve(here, '../../..')
+ const roundsDir = join(root, 'devlog', 'rounds')
+ const indexPath = join(root, 'devlog', 'index.json')
+ const libraryRoot = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
+@@ -69,7 +70,7 @@ function stamp() {
+ /** 调用主进程的截图模式，把四个界面截到指定目录 */
+ async function capture(targetDir) {
+   await mkdir(targetDir, { recursive: true })
+-  const result = await sh(process.execPath, [join(root, 'scripts', 'screenshot.mjs')], {
++  const result = await sh(process.execPath, [join(root, 'scripts', 'shot.mjs')], {
+     env: {
+       ...process.env,
+       GUGU_SHOT_DIR: targetDir,
+@@ -85,6 +86,42 @@ async function capture(targetDir) {
+ 
+ /* ---------------------------------------------------------------- 子命令 */
+ 
++/** 打印最新一个尚未收尾的轮次，含逐条标注 —— 这是「拿到用户意见」的标准入口 */
++async function cmdInbox() {
++  const dirs = await listRoundDirs()
++  if (dirs.length === 0) {
++    console.log('还没有任何轮次。等用户在界面里导出标注，或先跑 new <slug>。')
++    return
++  }
++  const index = await readIndex()
++  const closed = new Set(index.rounds.filter((r) => r.status === 'closed').map((r) => r.id))
++  const open = dirs.filter((d) => !closed.has(d))
++  const target = (open.length > 0 ? open : dirs).at(-1)
++  const dir = join(roundsDir, target)
++
++  console.log('='.repeat(72))
++  console.log('  轮次 ' + target)
++  console.log('='.repeat(72) + '\n')
++
++  for (const name of ['README.md', 'annotations.md']) {
++    const file = join(dir, name)
++    if (!existsSync(file)) continue
++    console.log('----- ' + name + ' -----\n')
++    console.log((await readFile(file, 'utf8')).trim())
++    console.log('')
++  }
++
++  // 附上截图清单，便于按图索骥
++  for (const sub of ['screenshots', 'screenshots-before', 'screenshots-after']) {
++    const shotsDir = join(dir, sub)
++    if (!existsSync(shotsDir)) continue
++    const files = await readdir(shotsDir)
++    console.log(`----- ${sub}/${' '.repeat(Math.max(0, 22 - sub.length))} ${files.length} 张: ${files.join(', ')}`)
++  }
++
++  if (open.length === 0) console.log('\n（没有未收尾的轮次，已回退到最新一轮）')
++}
++
+ async function cmdList() {
+   const dirs = await listRoundDirs()
+   if (dirs.length === 0) {
+@@ -249,6 +286,9 @@ switch (command) {
+   case 'list':
+     await cmdList()
+     break
++  case 'inbox':
++    await cmdInbox()
++    break
+   case 'new':
+     await cmdNew(rest[0])
+     break
+@@ -258,8 +298,9 @@ switch (command) {
+   default:
+     console.log(`轮次档案工具
+ 
+-  node scripts/round.mjs list                 列出所有轮次
+-  node scripts/round.mjs new <slug>           开一轮（建目录 + 起始截图 + 元数据）
+-  node scripts/round.mjs finalize <轮次ID>    收尾（改动截图 + 代码 diff + 更新说明 + 打 tag）
++  node plugins/devlog/bin/round.mjs list               列出所有轮次
++  node plugins/devlog/bin/round.mjs inbox              打印最新未收尾轮次的内容
++  node plugins/devlog/bin/round.mjs new <slug>         开一轮（建目录 + 起始截图 + 元数据）
++  node plugins/devlog/bin/round.mjs finalize <轮次ID>  收尾（改动截图 + 代码 diff + 更新说明 + 打 tag）
+ `)
+ }
+diff --git a/plugins/devlog/main/index.ts b/plugins/devlog/main/index.ts
+new file mode 100644
+index 0000000..5697066
+--- /dev/null
++++ b/plugins/devlog/main/index.ts
+@@ -0,0 +1,37 @@
++/**
++ * devlog 插件（主进程侧）。
++ *
++ * 只做两件事：把轮次列出来、把一次标注导出成一整个轮次目录。
++ * 注册的方法通过 window.gugu.plugins.invoke('devlog', '<method>') 调用。
++ */
++import type { BrowserWindow } from 'electron'
++import type { MainPluginHost, MainPluginModule, PluginManifest } from '@shared/plugin'
++import type { ExportPayload, ExportResult, RoundInfo } from '../shared/types'
++import { DevlogStore } from './store'
++import manifestJson from '../plugin.json'
++
++const manifest = manifestJson as PluginManifest
++
++let store: DevlogStore | null = null
++
++const plugin: MainPluginModule = {
++  manifest,
++
++  activate(host: MainPluginHost): void {
++    store = new DevlogStore(host.workspaceRoot)
++
++    host.method('listRounds', async (): Promise<RoundInfo[]> => store!.listRounds())
++
++    host.method('exportAnnotations', async (payload, ctx): Promise<ExportResult> => {
++      const data = payload as ExportPayload
++      if (!data || !Array.isArray(data.annotations)) {
++        throw new Error('导出参数不合法：缺少 annotations')
++      }
++      return store!.exportAnnotations(data, ctx.window as BrowserWindow | null)
++    })
++
++    host.log(`轮次档案目录: ${store.roundsDir}`)
++  }
++}
++
++export default plugin
+diff --git a/plugins/devlog/main/render.ts b/plugins/devlog/main/render.ts
+new file mode 100644
+index 0000000..d71f820
+--- /dev/null
++++ b/plugins/devlog/main/render.ts
+@@ -0,0 +1,125 @@
++/** 把一次导出的标注渲染成人可读的 Markdown。 */
++import {
++  CATEGORY_LABEL,
++  SEVERITY_LABEL,
++  type Annotation,
++  type ExportPayload
++} from '../shared/types'
++
++export interface ExportRecord extends ExportPayload {
++  roundId: string
++  exportedAt: string
++  viewport: { width: number; height: number } | null
++}
++
++export function renderRoundReadme(record: ExportRecord): string {
++  const viewport = record.viewport ? `${record.viewport.width}×${record.viewport.height}` : '未知'
++  return `# 轮次 ${record.roundId}
++
++> 由页面标注工具自动生成，请在完成本轮改动后补全下面的小节。
++
++## 背景
++
++<!-- 这一轮要解决什么问题、由谁提出 -->
++
++${record.note ? record.note : '（待补充）'}
++
++## 反馈标注
++
++共 ${record.annotations.length} 条，详见 [\`annotations.md\`](annotations.md) 与 [\`annotations.json\`](annotations.json)。
++
++导出时视口 ${viewport}，界面 ${record.view}，应用版本 ${record.appVersion}。
++
++## 改动
++
++<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
++
++## 验证
++
++<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
++
++## 遗留
++
++<!-- 本轮没做、留待下轮的事项 -->
++`
++}
++
++export function renderMarkdown(record: ExportRecord): string {
++  const lines: string[] = []
++  lines.push(`# 界面标注 · 轮次 ${record.roundId}`)
++  lines.push('')
++  lines.push(`- 导出时间：${record.exportedAt}`)
++  lines.push(`- 所在界面：${record.view}`)
++  if (record.viewport) {
++    lines.push(`- 视口：${record.viewport.width}×${record.viewport.height}（DPR ${record.devicePixelRatio}）`)
++  }
++  lines.push(`- 应用版本：${record.appVersion}`)
++  lines.push(`- 标注条数：${record.annotations.length}`)
++  if (record.note) {
++    lines.push('')
++    lines.push('## 总体说明')
++    lines.push('')
++    lines.push(record.note)
++  }
++  lines.push('')
++  lines.push('## 逐条标注')
++  lines.push('')
++
++  for (const a of record.annotations) {
++    lines.push(...renderOne(a))
++  }
++  return lines.join('\n')
++}
++
++function renderOne(a: Annotation): string[] {
++  const t = a.target
++  const lines: string[] = []
++  lines.push(`### ${a.index}. ${firstLine(a.comment) || '(无标题)'}`)
++  lines.push('')
++  lines.push(
++    `- **类别**：${CATEGORY_LABEL[a.category]} ｜ **优先级**：${SEVERITY_LABEL[a.severity]} ｜ **方式**：${
++      a.kind === 'element' ? '点选元素' : '框选区域'
++    }`
++  )
++  if (t.component) lines.push(`- **组件**：\`${t.component}\``)
++  lines.push(`- **选择器**：\`${t.selector}\``)
++  if (t.parentChain.length > 0) {
++    lines.push(`- **父级链**：${t.parentChain.map((p) => `\`${p}\``).join(' ← ')}`)
++  }
++  if (t.text) lines.push(`- **元素文本**：${truncate(t.text.replace(/\s+/g, ' '), 120)}`)
++  lines.push(
++    `- **位置尺寸**：x=${Math.round(a.rect.x)} y=${Math.round(a.rect.y)} ${Math.round(a.rect.width)}×${Math.round(
++      a.rect.height
++    )}`
++  )
++  const styles = Object.entries(t.styles)
++  if (styles.length > 0) {
++    lines.push(`- **关键样式**：${styles.map(([k, v]) => `${k}: ${v}`).join('; ')}`)
++  }
++  const attrs = Object.entries(t.attributes)
++  if (attrs.length > 0) {
++    lines.push(`- **属性**：${attrs.map(([k, v]) => `${k}="${truncate(v, 40)}"`).join(' ')}`)
++  }
++  lines.push('')
++  lines.push('> ' + a.comment.split('\n').join('\n> '))
++  lines.push('')
++  return lines
++}
++
++export function firstLine(text: string): string {
++  return (text.split('\n')[0] ?? '').trim().slice(0, 60)
++}
++
++export function truncate(text: string, max: number): string {
++  return text.length <= max ? text : `${text.slice(0, max)}…`
++}
++
++/** 文件名片段：清掉半角与全角标点，中文保留 */
++export function slugify(text: string): string {
++  const cleaned = firstLine(text)
++    .replace(/[\\/:*?"<>|：；？！，。、（）【】《》""''…—]/g, '')
++    .replace(/\s+/g, '-')
++    .replace(/-+/g, '-')
++    .replace(/^-|-$/g, '')
++  return cleaned.slice(0, 28) || 'annotation'
++}
+diff --git a/plugins/devlog/main/store.ts b/plugins/devlog/main/store.ts
+new file mode 100644
+index 0000000..8e2bd30
+--- /dev/null
++++ b/plugins/devlog/main/store.ts
+@@ -0,0 +1,140 @@
++/**
++ * 轮次目录管理：把一个带序号的目录当成「一轮迭代」的容器。
++ *
++ * 目录布局（由标注工具与 bin/round.mjs 共同写入）：
++ *   devlog/rounds/<0000-slug>/
++ *     README.md            本轮说明
++ *     annotations.md/.json 界面标注原文
++ *     changes.md/.patch    代码差异
++ *     screenshots/         本轮截图
++ *     screenshots-before/  改动前
++ *     screenshots-after/   改动后
++ */
++import { existsSync } from 'node:fs'
++import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
++import { join } from 'node:path'
++import type { BrowserWindow } from 'electron'
++import type { ExportPayload, ExportResult, RoundInfo } from '../shared/types'
++import { renderMarkdown, renderRoundReadme, slugify, type ExportRecord } from './render'
++
++export class DevlogStore {
++  constructor(private readonly workspaceRoot: string) {}
++
++  get roundsDir(): string {
++    return join(this.workspaceRoot, 'devlog', 'rounds')
++  }
++
++  async listRounds(): Promise<RoundInfo[]> {
++    if (!existsSync(this.roundsDir)) return []
++    const entries = await readdir(this.roundsDir, { withFileTypes: true })
++    const rounds: RoundInfo[] = []
++    for (const entry of entries) {
++      if (!entry.isDirectory()) continue
++      const dir = join(this.roundsDir, entry.name)
++      let annotationCount = 0
++      try {
++        const raw = await readFile(join(dir, 'annotations.json'), 'utf8')
++        annotationCount = (JSON.parse(raw) as { annotations?: unknown[] }).annotations?.length ?? 0
++      } catch {
++        /* 纯代码轮次没有标注文件，正常 */
++      }
++      rounds.push({
++        id: entry.name,
++        dir,
++        createdAt: entry.name.match(/^\d{8}-\d{4}/)?.[0] ?? entry.name,
++        annotationCount,
++        hasScreenshot: existsSync(join(dir, 'screenshots', '00-full.png'))
++      })
++    }
++    return rounds.sort((a, b) => a.id.localeCompare(b.id))
++  }
++
++  /** 下一个轮次目录：<4 位序号>-<yyyyMMdd-HHmm> */
++  async nextRoundDir(): Promise<{ id: string; dir: string }> {
++    const rounds = await this.listRounds()
++    const id = `${String(rounds.length + 1).padStart(4, '0')}-${stamp()}`
++    return { id, dir: join(this.roundsDir, id) }
++  }
++
++  /**
++   * 导出一次标注：整页截图 + 每条标注的裁片 + JSON + Markdown。
++   * 裁切要注意 devicePixelRatio：capturePage 给的是物理像素，标注框是 CSS 像素。
++   */
++  async exportAnnotations(
++    payload: ExportPayload,
++    win: BrowserWindow | null
++  ): Promise<ExportResult> {
++    const { id, dir } = await this.nextRoundDir()
++    const shotsDir = join(dir, 'screenshots')
++    await mkdir(shotsDir, { recursive: true })
++
++    const files: string[] = []
++
++    let fullImage: Electron.NativeImage | null = null
++    if (win && !win.isDestroyed()) {
++      win.webContents.invalidate()
++      await sleep(320)
++      fullImage = await win.webContents.capturePage()
++      await writeFile(join(shotsDir, '00-full.png'), fullImage.toPNG())
++      files.push('screenshots/00-full.png')
++    }
++
++    const dpr = payload.devicePixelRatio || 1
++    for (const anno of payload.annotations) {
++      if (!fullImage) break
++      const name = `${String(anno.index).padStart(3, '0')}-${slugify(anno.comment)}.png`
++      try {
++        const size = fullImage.getSize()
++        const x = clamp(Math.round(anno.rect.x * dpr) - 12, 0, size.width)
++        const y = clamp(Math.round(anno.rect.y * dpr) - 12, 0, size.height)
++        const width = clamp(Math.round(anno.rect.width * dpr) + 24, 1, size.width - x)
++        const height = clamp(Math.round(anno.rect.height * dpr) + 24, 1, size.height - y)
++        const crop = fullImage.crop({ x, y, width, height })
++        if (!crop.isEmpty()) {
++          await writeFile(join(shotsDir, name), crop.toPNG())
++          files.push(`screenshots/${name}`)
++        }
++      } catch {
++        /* 单条裁切失败不影响整体导出 */
++      }
++    }
++
++    const record: ExportRecord = {
++      roundId: id,
++      exportedAt: new Date().toISOString(),
++      view: payload.view,
++      note: payload.note,
++      viewport: payload.annotations[0]?.viewport ?? null,
++      devicePixelRatio: dpr,
++      appVersion: payload.appVersion,
++      annotations: payload.annotations
++    }
++
++    await writeFile(join(dir, 'annotations.json'), JSON.stringify(record, null, 2), 'utf8')
++    files.push('annotations.json')
++
++    await writeFile(join(dir, 'annotations.md'), renderMarkdown(record), 'utf8')
++    files.push('annotations.md')
++
++    if (!existsSync(join(dir, 'README.md'))) {
++      await writeFile(join(dir, 'README.md'), renderRoundReadme(record), 'utf8')
++      files.push('README.md')
++    }
++
++    return { roundId: id, roundDir: dir, files }
++  }
++}
++
++function clamp(value: number, min: number, max: number): number {
++  return Math.max(min, Math.min(max, value))
++}
++
++function sleep(ms: number): Promise<void> {
++  return new Promise((resolve) => setTimeout(resolve, ms))
++}
++
++function stamp(): string {
++  const d = new Date()
++  const pad = (n: number): string => String(n).padStart(2, '0')
++  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
++}
+diff --git a/plugins/devlog/plugin.json b/plugins/devlog/plugin.json
+new file mode 100644
+index 0000000..4cffd73
+--- /dev/null
++++ b/plugins/devlog/plugin.json
+@@ -0,0 +1,7 @@
++{
++  "id": "devlog",
++  "name": "开发过程档案",
++  "version": "1.0.0",
++  "description": "把每轮迭代的标注、截图与代码差异归档到 devlog/，供回溯与对外展示",
++  "ui": {}
++}
+diff --git a/src/renderer/src/devtools/types.ts b/plugins/devlog/shared/types.ts
+similarity index 64%
+rename from src/renderer/src/devtools/types.ts
+rename to plugins/devlog/shared/types.ts
+index 7e6db4e..b87fe4a 100644
+--- a/src/renderer/src/devtools/types.ts
++++ b/plugins/devlog/shared/types.ts
+@@ -1,4 +1,8 @@
+-/** 标注工具的共享类型（渲染进程侧）。主进程有一份对应的镜像定义。 */
++/**
++ * 标注与轮次的领域类型。
++ * 放在 devlog 插件里，标注工具通过 @plugins/devlog/shared/types 复用，
++ * 与 plugin.json 里 "dependsOn": ["devlog"] 的依赖声明保持一致。
++ */
+ 
+ export interface AnnotationRect {
+   x: number
+@@ -39,7 +43,17 @@ export interface Annotation {
+   target: AnnotationTarget
+ }
+ 
+-export interface DevlogRound {
++export interface ExportPayload {
++  annotations: Annotation[]
++  /** 本轮的整体说明 */
++  note: string
++  /** 标注时所在的界面 */
++  view: string
++  devicePixelRatio: number
++  appVersion: string
++}
++
++export interface RoundInfo {
+   id: string
+   dir: string
+   createdAt: string
+@@ -47,6 +61,12 @@ export interface DevlogRound {
+   hasScreenshot: boolean
+ }
+ 
++export interface ExportResult {
++  roundId: string
++  roundDir: string
++  files: string[]
++}
++
+ export const CATEGORY_OPTIONS: { value: AnnotationCategory; label: string }[] = [
+   { value: 'style', label: '视觉样式' },
+   { value: 'layout', label: '布局结构' },
+@@ -61,3 +81,18 @@ export const SEVERITY_OPTIONS: { value: AnnotationSeverity; label: string }[] =
+   { value: 'should', label: '建议改' },
+   { value: 'nice', label: '锦上添花' }
+ ]
++
++export const CATEGORY_LABEL: Record<AnnotationCategory, string> = {
++  style: '视觉样式',
++  layout: '布局结构',
++  content: '文案内容',
++  behavior: '交互行为',
++  bug: '缺陷',
++  other: '其它'
++}
++
++export const SEVERITY_LABEL: Record<AnnotationSeverity, string> = {
++  must: '必须改',
++  should: '建议改',
++  nice: '锦上添花'
++}
+diff --git a/plugins/plugins.json b/plugins/plugins.json
+new file mode 100644
+index 0000000..179ace7
+--- /dev/null
++++ b/plugins/plugins.json
+@@ -0,0 +1,4 @@
++{
++  "$comment": "应用的插件装载清单。构建期读取；移除某项后其代码不会进入发布产物。",
++  "enabled": ["devlog", "annotator"]
++}
+diff --git a/scripts/release.mjs b/scripts/release.mjs
+new file mode 100644
+index 0000000..0403dbf
+--- /dev/null
++++ b/scripts/release.mjs
+@@ -0,0 +1,75 @@
++/**
++ * 发布构建：显式地把所有插件排除在外。
++ *
++ *   node scripts/release.mjs build     # 只构建
++ *   node scripts/release.mjs pack      # 构建 + 免安装目录
++ *   node scripts/release.mjs dist      # 构建 + 安装包
++ *
++ * 插件是开发/协作期的工具，不该出现在给最终用户的应用里 ——
++ * 构建完成后本脚本会实际检查产物里是否残留插件代码，避免「以为排除了其实没有」。
++ */
++import { spawn } from 'node:child_process'
++import { existsSync } from 'node:fs'
++import { readdir, readFile } from 'node:fs/promises'
++import { dirname, join, resolve } from 'node:path'
++import { fileURLToPath } from 'node:url'
++
++const here = dirname(fileURLToPath(import.meta.url))
++const root = resolve(here, '..')
++
++const mode = process.argv[2] ?? 'build'
++
++function sh(cmd, args, opts = {}) {
++  return new Promise((resolvePromise) => {
++    const child = spawn(cmd, args, { cwd: root, stdio: 'inherit', shell: process.platform === 'win32', ...opts })
++    child.on('exit', (code) => resolvePromise(code ?? 1))
++  })
++}
++
++console.log('== 发布构建（不装载任何插件）')
++const buildCode = await sh('npx', ['electron-vite', 'build'], {
++  env: { ...process.env, GUGU_PLUGINS: '' }
++})
++if (buildCode !== 0) {
++  console.error('构建失败')
++  process.exit(buildCode)
++}
++
++console.log('\n== 检查产物里是否残留插件代码')
++const problems = []
++
++// 1) 主进程不应该有插件 chunk
++const pluginChunkDir = join(root, 'out', 'main', 'plugins')
++if (existsSync(pluginChunkDir)) {
++  const files = await readdir(pluginChunkDir)
++  if (files.length > 0) problems.push(`out/main/plugins 下仍有 ${files.length} 个插件产物: ${files.join(', ')}`)
++}
++
++// 2) 渲染进程 bundle 不应包含插件的类名/文案特征串
++const assetsDir = join(root, 'out', 'renderer', 'assets')
++if (existsSync(assetsDir)) {
++  const markers = ['gugu-anno-toolbar', 'gugu-anno-editor', 'annotations.json', '页面标注工具']
++  for (const file of await readdir(assetsDir)) {
++    if (!file.endsWith('.js') && !file.endsWith('.css')) continue
++    const content = await readFile(join(assetsDir, file), 'utf8')
++    for (const marker of markers) {
++      if (content.includes(marker)) problems.push(`${file} 里出现了插件特征串: ${marker}`)
++    }
++  }
++}
++
++if (problems.length > 0) {
++  console.error('✗ 产物检查未通过：')
++  for (const p of problems) console.error('  - ' + p)
++  process.exit(1)
++}
++console.log('✓ 产物中没有任何插件代码')
++
++if (mode === 'pack' || mode === 'dist') {
++  console.log(`\n== 打包（${mode === 'dist' ? '安装包' : '免安装目录'}）`)
++  const args = mode === 'dist' ? [] : ['--dir']
++  const code = await sh('npx', ['electron-builder', ...args])
++  process.exit(code)
++}
++
++console.log('\n完成。产物在 out/')
+diff --git a/scripts/screenshot.mjs b/scripts/shot.mjs
+similarity index 100%
+rename from scripts/screenshot.mjs
+rename to scripts/shot.mjs
+diff --git a/src/main/context.ts b/src/main/context.ts
+index e39c4e5..5b12a1b 100644
+--- a/src/main/context.ts
++++ b/src/main/context.ts
+@@ -8,12 +8,10 @@ import { Database } from './store/db'
+ import { Repository } from './store/repository'
+ import { Library } from './media/library'
+ import { SettingsStore } from './config'
+-import { DevlogStore } from './devlog'
+ import type { AppSettings, CrawlProgress } from '@shared/types'
+ 
+ export class AppContext {
+   readonly settings: SettingsStore
+-  readonly devlog: DevlogStore
+   private db!: Database
+   private repo!: Repository
+   private lib!: Library
+@@ -23,7 +21,6 @@ export class AppContext {
+ 
+   constructor() {
+     this.settings = new SettingsStore()
+-    this.devlog = new DevlogStore(DevlogStore.resolveRoot())
+   }
+ 
+   async init(): Promise<void> {
+@@ -113,4 +110,4 @@ async function applyProxy(proxy: string): Promise<void> {
+ }
+ 
+ const electronFetch: typeof fetch = (input, init) =>
+-  net.fetch(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url, init)
++  net.fetch(typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url, init)
+\ No newline at end of file
+diff --git a/src/main/devlog.ts b/src/main/devlog.ts
+deleted file mode 100644
+index 3625148..0000000
+--- a/src/main/devlog.ts
++++ /dev/null
+@@ -1,336 +0,0 @@
+-/**
+- * 开发过程档案（devlog）。
+- *
+- * 每做一轮改动就是一个「轮次」，落在 devlog/rounds/<编号>-<时间戳>/ 下，
+- * 内含：用户标注原文、逐条标注的截图裁片、当轮改动说明、代码差异。
+- * 目的是让整个项目的演进过程可回溯、可展示。
+- *
+- * 标注由界面上的「标注工具」产生，导出时主进程负责截图与落盘。
+- */
+-import { existsSync } from 'node:fs'
+-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+-import { join } from 'node:path'
+-import { app, type BrowserWindow } from 'electron'
+-
+-export interface AnnotationRect {
+-  x: number
+-  y: number
+-  width: number
+-  height: number
+-}
+-
+-export interface AnnotationTarget {
+-  selector: string
+-  component: string | null
+-  tag: string
+-  classes: string
+-  text: string
+-  parentChain: string[]
+-  styles: Record<string, string>
+-  attributes: Record<string, string>
+-}
+-
+-export interface Annotation {
+-  id: string
+-  index: number
+-  comment: string
+-  category: 'style' | 'layout' | 'content' | 'behavior' | 'bug' | 'other'
+-  severity: 'must' | 'should' | 'nice'
+-  kind: 'element' | 'region'
+-  createdAt: number
+-  rect: AnnotationRect
+-  viewport: { width: number; height: number }
+-  target: AnnotationTarget
+-}
+-
+-export interface ExportPayload {
+-  annotations: Annotation[]
+-  /** 本轮的整体说明，可选 */
+-  note: string
+-  /** 标注时所在界面（gallery / lightbox / crawl / settings …） */
+-  view: string
+-  devicePixelRatio: number
+-  appVersion: string
+-}
+-
+-export interface RoundInfo {
+-  id: string
+-  dir: string
+-  createdAt: string
+-  annotationCount: number
+-  hasScreenshot: boolean
+-}
+-
+-const CATEGORY_LABEL: Record<Annotation['category'], string> = {
+-  style: '视觉样式',
+-  layout: '布局结构',
+-  content: '文案内容',
+-  behavior: '交互行为',
+-  bug: '缺陷',
+-  other: '其它'
+-}
+-
+-const SEVERITY_LABEL: Record<Annotation['severity'], string> = {
+-  must: '必须改',
+-  should: '建议改',
+-  nice: '锦上添花'
+-}
+-
+-export class DevlogStore {
+-  constructor(private readonly root: string) {}
+-
+-  /**
+-   * 档案根目录的定位顺序：
+-   *   1. GUGU_WORKSPACE 环境变量（显式指定）
+-   *   2. 应用目录下的 devlog/（开发态就是仓库根）
+-   *   3. 用户数据目录（打包后 asar 不可写时的兜底，保证导出永远能成功）
+-   */
+-  static resolveRoot(): string {
+-    const fromEnv = process.env.GUGU_WORKSPACE
+-    if (fromEnv) return fromEnv
+-    const appPath = app.getAppPath()
+-    if (!appPath.includes('app.asar') && existsSync(join(appPath, 'devlog'))) return appPath
+-    return join(app.getPath('userData'), 'devlog-workspace')
+-  }
+-
+-  get roundsDir(): string {
+-    return join(this.root, 'devlog', 'rounds')
+-  }
+-
+-  async listRounds(): Promise<RoundInfo[]> {
+-    if (!existsSync(this.roundsDir)) return []
+-    const entries = await readdir(this.roundsDir, { withFileTypes: true })
+-    const rounds: RoundInfo[] = []
+-    for (const entry of entries) {
+-      if (!entry.isDirectory()) continue
+-      const dir = join(this.roundsDir, entry.name)
+-      let annotationCount = 0
+-      try {
+-        const raw = await readFile(join(dir, 'annotations.json'), 'utf8')
+-        const parsed = JSON.parse(raw) as { annotations?: unknown[] }
+-        annotationCount = parsed.annotations?.length ?? 0
+-      } catch {
+-        /* 没有标注文件也正常（纯代码轮次） */
+-      }
+-      rounds.push({
+-        id: entry.name,
+-        dir,
+-        createdAt: entry.name.match(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/)?.[0] ?? entry.name,
+-        annotationCount,
+-        hasScreenshot: existsSync(join(dir, 'screenshots', '00-full.png'))
+-      })
+-    }
+-    return rounds.sort((a, b) => a.id.localeCompare(b.id))
+-  }
+-
+-  /** 下一个轮次目录：<4 位序号>-<yyyyMMdd-HHmm> */
+-  async nextRoundDir(): Promise<{ id: string; dir: string }> {
+-    const rounds = await this.listRounds()
+-    const nextNumber = rounds.length + 1
+-    const id = `${String(nextNumber).padStart(4, '0')}-${stamp()}`
+-    return { id, dir: join(this.roundsDir, id) }
+-  }
+-
+-  /**
+-   * 导出一次标注：整页截图 + 每条标注的裁片 + JSON + Markdown。
+-   * 截图裁切要注意 devicePixelRatio：capturePage 给的是物理像素，标注框是 CSS 像素。
+-   */
+-  async exportAnnotations(
+-    payload: ExportPayload,
+-    win: BrowserWindow | null
+-  ): Promise<{ roundId: string; roundDir: string; files: string[] }> {
+-    const { id, dir } = await this.nextRoundDir()
+-    const shotsDir = join(dir, 'screenshots')
+-    await mkdir(shotsDir, { recursive: true })
+-
+-    const files: string[] = []
+-
+-    // 1) 整页截图
+-    let fullImage: Electron.NativeImage | null = null
+-    if (win && !win.isDestroyed()) {
+-      win.webContents.invalidate()
+-      await sleep(320)
+-      fullImage = await win.webContents.capturePage()
+-      await writeFile(join(shotsDir, '00-full.png'), fullImage.toPNG())
+-      files.push('screenshots/00-full.png')
+-    }
+-
+-    // 2) 每条标注裁片
+-    const dpr = payload.devicePixelRatio || 1
+-    for (const anno of payload.annotations) {
+-      if (!fullImage) break
+-      const name = `${String(anno.index).padStart(3, '0')}-${slugify(anno.comment)}.png`
+-      try {
+-        const size = fullImage.getSize()
+-        const x = clamp(Math.round(anno.rect.x * dpr) - 12, 0, size.width)
+-        const y = clamp(Math.round(anno.rect.y * dpr) - 12, 0, size.height)
+-        const width = clamp(Math.round(anno.rect.width * dpr) + 24, 1, size.width - x)
+-        const height = clamp(Math.round(anno.rect.height * dpr) + 24, 1, size.height - y)
+-        const crop = fullImage.crop({ x, y, width, height })
+-        if (!crop.isEmpty()) {
+-          await writeFile(join(shotsDir, name), crop.toPNG())
+-          files.push(`screenshots/${name}`)
+-        }
+-      } catch {
+-        /* 裁切失败不影响主体导出 */
+-      }
+-    }
+-
+-    // 3) 原始数据
+-    const record = {
+-      roundId: id,
+-      exportedAt: new Date().toISOString(),
+-      view: payload.view,
+-      note: payload.note,
+-      viewport: payload.annotations[0]?.viewport ?? null,
+-      devicePixelRatio: dpr,
+-      appVersion: payload.appVersion,
+-      annotations: payload.annotations
+-    }
+-    await writeFile(join(dir, 'annotations.json'), JSON.stringify(record, null, 2), 'utf8')
+-    files.push('annotations.json')
+-
+-    // 4) 人能读的 Markdown
+-    await writeFile(join(dir, 'annotations.md'), renderMarkdown(record), 'utf8')
+-    files.push('annotations.md')
+-
+-    // 5) 轮次说明骨架，供后续填写
+-    if (!existsSync(join(dir, 'README.md'))) {
+-      await writeFile(join(dir, 'README.md'), renderRoundReadme(record), 'utf8')
+-      files.push('README.md')
+-    }
+-
+-    return { roundId: id, roundDir: dir, files }
+-  }
+-}
+-
+-/* ------------------------------------------------------------------ 渲染 */
+-
+-interface ExportRecord {
+-  roundId: string
+-  exportedAt: string
+-  view: string
+-  note: string
+-  viewport: { width: number; height: number } | null
+-  devicePixelRatio: number
+-  appVersion: string
+-  annotations: Annotation[]
+-}
+-
+-function renderRoundReadme(record: ExportRecord): string {
+-  const viewport = record.viewport ? `${record.viewport.width}×${record.viewport.height}` : '未知'
+-  return `# 轮次 ${record.roundId}
+-
+-> 由界面上的「标注工具」自动生成，请在完成本轮改动后补全下面的小节。
+-
+-## 背景
+-
+-<!-- 这一轮要解决什么问题、由谁提出 -->
+-
+-${record.note ? record.note : '（待补充）'}
+-
+-## 反馈标注
+-
+-共 ${record.annotations.length} 条，详见 [\`annotations.md\`](annotations.md) 与 [\`annotations.json\`](annotations.json)。
+-
+-导出时视口 ${viewport}，界面 ${record.view}，应用版本 ${record.appVersion}。
+-
+-## 改动
+-
+-<!-- 逐条说明做了什么，以及为什么这么做（含取舍） -->
+-
+-## 验证
+-
+-<!-- 跑了哪些测试、截图证据、以及没能验证到的部分 -->
+-
+-## 遗留
+-
+-<!-- 本轮没做、留待下轮的事项 -->
+-`
+-}
+-
+-function renderMarkdown(record: ExportRecord): string {
+-  const lines: string[] = []
+-  lines.push(`# 界面标注 · 轮次 ${record.roundId}`)
+-  lines.push('')
+-  lines.push(`- 导出时间：${record.exportedAt}`)
+-  lines.push(`- 所在界面：${record.view}`)
+-  if (record.viewport) lines.push(`- 视口：${record.viewport.width}×${record.viewport.height}（DPR ${record.devicePixelRatio}）`)
+-  lines.push(`- 应用版本：${record.appVersion}`)
+-  lines.push(`- 标注条数：${record.annotations.length}`)
+-  if (record.note) {
+-    lines.push('')
+-    lines.push('## 总体说明')
+-    lines.push('')
+-    lines.push(record.note)
+-  }
+-  lines.push('')
+-  lines.push('## 逐条标注')
+-  lines.push('')
+-
+-  for (const a of record.annotations) {
+-    const t = a.target
+-    lines.push(`### ${a.index}. ${firstLine(a.comment) || '(无标题)'}`)
+-    lines.push('')
+-    lines.push(
+-      `- **类别**：${CATEGORY_LABEL[a.category]} ｜ **优先级**：${SEVERITY_LABEL[a.severity]} ｜ **方式**：${
+-        a.kind === 'element' ? '点选元素' : '框选区域'
+-      }`
+-    )
+-    if (t.component) lines.push(`- **组件**：\`${t.component}\``)
+-    lines.push(`- **选择器**：\`${t.selector}\``)
+-    if (t.parentChain.length > 0) lines.push(`- **父级链**：${t.parentChain.map((p) => `\`${p}\``).join(' ← ')}`)
+-    if (t.text) lines.push(`- **元素文本**：${truncate(t.text.replace(/\s+/g, ' '), 120)}`)
+-    lines.push(
+-      `- **位置尺寸**：x=${Math.round(a.rect.x)} y=${Math.round(a.rect.y)} ${Math.round(a.rect.width)}×${Math.round(
+-        a.rect.height
+-      )}`
+-    )
+-    const styleEntries = Object.entries(t.styles)
+-    if (styleEntries.length > 0) {
+-      lines.push(`- **关键样式**：${styleEntries.map(([k, v]) => `${k}: ${v}`).join('; ')}`)
+-    }
+-    const attrEntries = Object.entries(t.attributes)
+-    if (attrEntries.length > 0) {
+-      lines.push(`- **属性**：${attrEntries.map(([k, v]) => `${k}="${truncate(v, 40)}"`).join(' ')}`)
+-    }
+-    lines.push('')
+-    lines.push('> ' + a.comment.split('\n').join('\n> '))
+-    lines.push('')
+-  }
+-  return lines.join('\n')
+-}
+-
+-/* ------------------------------------------------------------------ 工具 */
+-
+-function clamp(value: number, min: number, max: number): number {
+-  return Math.max(min, Math.min(max, value))
+-}
+-
+-function sleep(ms: number): Promise<void> {
+-  return new Promise((resolve) => setTimeout(resolve, ms))
+-}
+-
+-function firstLine(text: string): string {
+-  return (text.split('\n')[0] ?? '').trim().slice(0, 60)
+-}
+-
+-function truncate(text: string, max: number): string {
+-  return text.length <= max ? text : `${text.slice(0, max)}…`
+-}
+-
+-function slugify(text: string): string {
+-  const cleaned = firstLine(text)
+-    // 半角与全角标点都可能出现在文件名里，统一清掉；中文本身保留
+-    .replace(/[\\/:*?"<>|：；？！，。、（）【】《》""''…—]/g, '')
+-    .replace(/\s+/g, '-')
+-    .replace(/-+/g, '-')
+-    .replace(/^-|-$/g, '')
+-  return cleaned.slice(0, 28) || 'annotation'
+-}
+-
+-function stamp(): string {
+-  const d = new Date()
+-  const pad = (n: number): string => String(n).padStart(2, '0')
+-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
+-}
+diff --git a/src/main/index.ts b/src/main/index.ts
+index a567f18..1229604 100644
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -8,6 +8,8 @@ import { Readable } from 'node:stream'
+ import { app, BrowserWindow, protocol, shell } from 'electron'
+ import { AppContext } from './context'
+ import { registerIpc } from './ipc'
++import { PluginRegistry } from './plugins'
++import { resolveWorkspaceRoot } from './workspace'
+ 
+ const MIME: Record<string, string> = {
+   '.jpg': 'image/jpeg',
+@@ -23,6 +25,14 @@ const MIME: Record<string, string> = {
+ let mainWindow: BrowserWindow | null = null
+ const ctx = new AppContext()
+ 
++// 插件是可选的：一个都没装时这里退化成空注册表，核心逻辑不受影响
++const pluginRegistry = new PluginRegistry()
++const pluginHost = {
++  workspaceRoot: '',
++  getLibraryRoot: () => ctx.library.root,
++  getWindow: () => mainWindow
++}
++
+ // 自定义协议必须在使用前登记为特权协议，否则 fetch/stream 都不可用
+ protocol.registerSchemesAsPrivileged([
+   {
+@@ -50,6 +60,10 @@ async function bootstrap(): Promise<void> {
+   await app.whenReady()
+   await ctx.init()
+ 
++  pluginHost.workspaceRoot = resolveWorkspaceRoot()
++  await pluginRegistry.load(pluginHost)
++  pluginRegistry.registerIpc(pluginHost)
++
+   registerMediaProtocol()
+   registerIpc(ctx, () => mainWindow)
+ 
+@@ -244,5 +258,6 @@ app.on('window-all-closed', () => {
+ })
+ 
+ app.on('before-quit', () => {
++  void pluginRegistry.deactivateAll()
+   void ctx.dispose()
+-})
++})
+\ No newline at end of file
+diff --git a/src/main/ipc.ts b/src/main/ipc.ts
+index 28c9607..afcf96d 100644
+--- a/src/main/ipc.ts
++++ b/src/main/ipc.ts
+@@ -16,7 +16,6 @@ import type {
+   TargetInput
+ } from '@shared/types'
+ import type { AppContext } from './context'
+-import type { ExportPayload } from './devlog'
+ import { defaultLibraryRoot } from './config'
+ 
+ export const IPC = {
+@@ -44,9 +43,7 @@ export const IPC = {
+   sourcesList: 'sources:list',
+   sourcesRemove: 'sources:remove',
+   sourcesToggle: 'sources:toggle',
+-  progressEvent: 'crawl:progress-event',
+-  devlogList: 'devlog:list',
+-  devlogExport: 'devlog:export'
++  progressEvent: 'crawl:progress-event'
+ } as const
+ 
+ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | null): void {
+@@ -166,12 +163,6 @@ export function registerIpc(ctx: AppContext, getWindow: () => BrowserWindow | nu
+     return true
+   })
+ 
+-  handle(IPC.devlogList, () => ctx.devlog.listRounds())
+-
+-  handle(IPC.devlogExport, (payload: ExportPayload) =>
+-    ctx.devlog.exportAnnotations(payload, getWindow())
+-  )
+-
+   // 引擎进度 -> 渲染进程
+   ctx.onProgress((progress, logs) => emitProgress(getWindow(), progress, logs))
+ }
+@@ -185,4 +176,4 @@ function emitProgress(
+   win.webContents.send(IPC.progressEvent, { progress, logs })
+ }
+ 
+-export type { TargetInput }
++export type { TargetInput }
+\ No newline at end of file
+diff --git a/src/main/plugins.ts b/src/main/plugins.ts
+new file mode 100644
+index 0000000..a44bd54
+--- /dev/null
++++ b/src/main/plugins.ts
+@@ -0,0 +1,123 @@
++/**
++ * 插件宿主（主进程侧）。
++ *
++ * 核心应用不知道任何具体插件的存在：宿主只认「插件注册了哪些方法」。
++ * 插件产物在 out/main/plugins/<id>.js，由构建期按 plugins.json 决定是否生成；
++ * 找不到文件就跳过，所以关掉插件时这里完全不会报错。
++ */
++import { existsSync } from 'node:fs'
++import { join } from 'node:path'
++import { pathToFileURL } from 'node:url'
++import { ipcMain } from 'electron'
++import type {
++  MainPluginHost,
++  MainPluginModule,
++  PluginInvokeContext,
++  PluginManifest,
++  PluginMethodHandler
++} from '@shared/plugin'
++
++declare const __GUGU_PLUGINS__: PluginManifest[]
++
++export const PLUGIN_IPC = {
++  list: 'plugin:list',
++  invoke: 'plugin:invoke'
++} as const
++
++interface LoadedPlugin {
++  manifest: PluginManifest
++  module: MainPluginModule
++  methods: Map<string, PluginMethodHandler>
++}
++
++export interface PluginHostOptions {
++  workspaceRoot: string
++  getLibraryRoot: () => string
++  getWindow: () => unknown
++}
++
++export class PluginRegistry {
++  private plugins = new Map<string, LoadedPlugin>()
++  private manifests: PluginManifest[] = []
++
++  get list(): PluginManifest[] {
++    return this.manifests
++  }
++
++  async load(options: PluginHostOptions): Promise<void> {
++    for (const manifest of __GUGU_PLUGINS__) {
++      const entry = join(__dirname, 'plugins', `${manifest.id}.js`)
++      if (!existsSync(entry)) {
++        console.warn(`[gugu] 插件 ${manifest.id} 没有构建产物，已跳过`)
++        continue
++      }
++      try {
++        const url = pathToFileURL(entry).href
++        const mod = (await import(/* @vite-ignore */ url)) as { default?: MainPluginModule } & Partial<MainPluginModule>
++        const plugin: MainPluginModule = mod.default ?? (mod as MainPluginModule)
++        if (typeof plugin?.activate !== 'function') {
++          console.warn(`[gugu] 插件 ${manifest.id} 没有导出 activate()，已跳过`)
++          continue
++        }
++
++        const loaded: LoadedPlugin = {
++          manifest: plugin.manifest ?? manifest,
++          module: plugin,
++          methods: new Map()
++        }
++
++        const hostApi: MainPluginHost = {
++          manifest: loaded.manifest,
++          workspaceRoot: options.workspaceRoot,
++          method: (name, handler) => {
++            loaded.methods.set(name, handler)
++          },
++          log: (message) => console.log(`[${loaded.manifest.id}] ${message}`)
++        }
++
++        await plugin.activate(hostApi)
++        this.plugins.set(loaded.manifest.id, loaded)
++        this.manifests.push(loaded.manifest)
++        console.log(`[gugu] 已装载插件 ${loaded.manifest.id}（${loaded.methods.size} 个方法）`)
++      } catch (err) {
++        // 插件坏了不能拖垮应用
++        console.error(`[gugu] 插件 ${manifest.id} 装载失败:`, err instanceof Error ? err.message : err)
++      }
++    }
++  }
++
++  /** 渲染进程调用插件方法的唯一入口 */
++  async invoke(pluginId: string, method: string, payload: unknown, options: PluginHostOptions): Promise<unknown> {
++    const plugin = this.plugins.get(pluginId)
++    if (!plugin) throw new Error(`插件未加载: ${pluginId}`)
++    const handler = plugin.methods.get(method)
++    if (!handler) throw new Error(`插件 ${pluginId} 没有方法: ${method}`)
++
++    const ctx: PluginInvokeContext = {
++      window: options.getWindow(),
++      workspaceRoot: options.workspaceRoot,
++      libraryRoot: options.getLibraryRoot(),
++      log: (message) => console.log(`[${pluginId}] ${message}`)
++    }
++    return handler(payload, ctx)
++  }
++
++  registerIpc(options: PluginHostOptions): void {
++    ipcMain.handle(PLUGIN_IPC.list, () => this.manifests)
++    ipcMain.handle(PLUGIN_IPC.invoke, (_event, pluginId: string, method: string, payload: unknown) =>
++      this.invoke(pluginId, method, payload, options)
++    )
++  }
++
++  async deactivateAll(): Promise<void> {
++    for (const plugin of this.plugins.values()) {
++      try {
++        await plugin.module.deactivate?.()
++      } catch {
++        /* 退出阶段的异常忽略 */
++      }
++    }
++    this.plugins.clear()
++    this.manifests = []
++  }
++}
+diff --git a/src/main/workspace.ts b/src/main/workspace.ts
+new file mode 100644
+index 0000000..224ddf2
+--- /dev/null
++++ b/src/main/workspace.ts
+@@ -0,0 +1,22 @@
++/**
++ * 工作区根目录：插件的产物（轮次档案、导出文件等）默认落在这里。
++ *
++ * 定位顺序：
++ *   1. GUGU_WORKSPACE 环境变量（显式指定，测试与多实例隔离用）
++ *   2. 应用目录（开发态就是仓库根；打包后是 asar，不可写）
++ *   3. 用户数据目录（兜底，保证插件永远有地方可写）
++ */
++import { existsSync } from 'node:fs'
++import { join } from 'node:path'
++import { app } from 'electron'
++
++export function resolveWorkspaceRoot(): string {
++  const fromEnv = process.env.GUGU_WORKSPACE
++  if (fromEnv) return fromEnv
++
++  const appPath = app.getAppPath()
++  const isPacked = appPath.includes('app.asar')
++  if (!isPacked && existsSync(join(appPath, 'package.json'))) return appPath
++
++  return join(app.getPath('userData'), 'workspace')
++}
+diff --git a/src/preload/index.ts b/src/preload/index.ts
+index d372b56..8160dda 100644
+--- a/src/preload/index.ts
++++ b/src/preload/index.ts
+@@ -1,6 +1,9 @@
+ /**
+  * 预加载脚本：通过 contextBridge 暴露一组白名单 API。
+  * 渲染进程永远拿不到 ipcRenderer / require / fs。
++ *
++ * 插件能力统一走 plugins.invoke(id, method, payload)，
++ * 核心不需要为每个插件单独开通道，插件也不需要改这里。
+  */
+ import { contextBridge, ipcRenderer } from 'electron'
+ 
+@@ -29,9 +32,12 @@ const IPC = {
+   sourcesList: 'sources:list',
+   sourcesRemove: 'sources:remove',
+   sourcesToggle: 'sources:toggle',
+-  progressEvent: 'crawl:progress-event',
+-  devlogList: 'devlog:list',
+-  devlogExport: 'devlog:export'
++  progressEvent: 'crawl:progress-event'
++} as const
++
++const pluginIpc = {
++  list: 'plugin:list',
++  invoke: 'plugin:invoke'
+ } as const
+ 
+ const api = {
+@@ -71,9 +77,10 @@ const api = {
+     remove: (id: number) => ipcRenderer.invoke(IPC.sourcesRemove, id),
+     toggle: (id: number, enabled: boolean) => ipcRenderer.invoke(IPC.sourcesToggle, id, enabled)
+   },
+-  devlog: {
+-    list: () => ipcRenderer.invoke(IPC.devlogList),
+-    export: (payload: unknown) => ipcRenderer.invoke(IPC.devlogExport, payload)
++  plugins: {
++    list: () => ipcRenderer.invoke(pluginIpc.list),
++    invoke: (pluginId: string, method: string, payload?: unknown) =>
++      ipcRenderer.invoke(pluginIpc.invoke, pluginId, method, payload)
+   },
+   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url)
+ }
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index 5d891f4..205c99e 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -19,8 +19,8 @@ import GalleryGrid from './components/GalleryGrid'
+ import Lightbox from './components/Lightbox'
+ import CrawlPanel from './components/CrawlPanel'
+ import SettingsPanel from './components/SettingsPanel'
+-import Annotator from './devtools/Annotator'
+-import { IconGrid, IconMarker, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
++import { loadedPlugins } from './plugins'
++import { IconGrid, IconRows, IconSearch, IconSidebar, IconClose } from './components/Icons'
+ 
+ export type View = 'gallery' | 'crawl' | 'settings'
+ 
+@@ -68,7 +68,8 @@ export default function App(): JSX.Element {
+   const [view, setView] = useState<View>('gallery')
+   const [openId, setOpenId] = useState<number | null>(null)
+ 
+-  const [annotateOn, setAnnotateOn] = useState(false)
++  /** 当前展开的工具插件 id；插件全部关闭时这里恒为 null */
++  const [activeTool, setActiveTool] = useState<string | null>(null)
+   const [progress, setProgress] = useState<CrawlProgress | null>(null)
+   const [logs, setLogs] = useState<CrawlLogLine[]>([])
+   const [toast, setToast] = useState<string | null>(null)
+@@ -313,13 +314,15 @@ export default function App(): JSX.Element {
+           </button>
+         </div>
+ 
+-        <button
+-          className={`btn icon ghost${annotateOn ? ' annotate-on' : ''}`}
+-          title="页面标注工具（Ctrl+Shift+A）"
+-          onClick={() => setAnnotateOn((v) => !v)}
+-        >
+-          <IconMarker />
+-        </button>
++        {loadedPlugins.map((plugin) =>
++          plugin.TopBarAction ? (
++            <plugin.TopBarAction
++              key={plugin.manifest.id}
++              active={activeTool === plugin.manifest.id}
++              toggle={() => setActiveTool((current) => (current === plugin.manifest.id ? null : plugin.manifest.id))}
++            />
++          ) : null
++        )}
+ 
+         <div className="seg">
+           <button className={view === 'gallery' ? 'active' : ''} onClick={() => setView('gallery')}>
+@@ -518,13 +521,18 @@ export default function App(): JSX.Element {
+         />
+       )}
+ 
+-      <Annotator
+-        enabled={annotateOn}
+-        onToggle={setAnnotateOn}
+-        view={openId != null ? 'lightbox' : view}
+-        appVersion={info?.version ?? ''}
+-        onToast={setToast}
+-      />
++      {loadedPlugins.map((plugin) =>
++        plugin.Overlay ? (
++          <plugin.Overlay
++            key={plugin.manifest.id}
++            active={activeTool === plugin.manifest.id}
++            onActiveChange={(active) => setActiveTool(active ? plugin.manifest.id : null)}
++            view={openId != null ? 'lightbox' : view}
++            appVersion={info?.version ?? ''}
++            onToast={setToast}
++          />
++        ) : null
++      )}
+ 
+       {toast && <div className="toast">{toast}</div>}
+     </div>
+diff --git a/src/renderer/src/api.ts b/src/renderer/src/api.ts
+index c8d227c..931a391 100644
+--- a/src/renderer/src/api.ts
++++ b/src/renderer/src/api.ts
+@@ -1,129 +1,23 @@
+ /**
+- * 渲染进程访问主进程能力的唯一入口（全部通过 preload 的 contextBridge）。
+- * 这里只做类型收敛与展示层格式化，不含任何业务逻辑。
++ * 渲染进程访问主进程能力的入口。
++ *
++ * 契约定义在 @shared/bridge，这样插件界面也能用同一份类型，
++ * 不需要反过来依赖应用源码（插件只依赖 preload 暴露的 window.gugu）。
+  */
+-import type {
+-  AppInfo,
+-  AppSettings,
+-  CrawlProgress,
+-  CrawlRequest,
+-  Facet,
+-  GalleryPage,
+-  GalleryQuery,
+-  ItemDetail,
+-  LibraryStats,
+-  PlateFacet,
+-  SourceRef
+-} from '@shared/types'
+-import { DEFAULT_SETTINGS } from '@shared/types'
++import type { GuguBridge } from '@shared/bridge'
+ 
+-export interface CrawlSiteInfo {
+-  plates: { name: string; words: string[] }[]
+-  fetchedAt: number
+-}
+-
+-export interface GuguBridge {
+-  appInfo(): Promise<AppInfo>
+-  settings: {
+-    get(): Promise<AppSettings>
+-    set(patch: Partial<AppSettings>): Promise<AppSettings>
+-  }
+-  library: {
+-    stats(): Promise<LibraryStats>
+-    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[] }>
+-    query(query: GalleryQuery): Promise<GalleryPage>
+-    item(id: number): Promise<ItemDetail | null>
+-    favorite(id: number, value: boolean): Promise<boolean>
+-    rating(id: number, value: number): Promise<number>
+-    remove(ids: number[], deleteFiles: boolean): Promise<number>
+-    reveal(id: number): Promise<boolean>
+-    pickRoot(): Promise<string | null>
+-  }
+-  crawl: {
+-    siteInfo(): Promise<CrawlSiteInfo>
+-    start(request: CrawlRequest): Promise<number>
+-    pause(): Promise<boolean>
+-    resume(): Promise<boolean>
+-    cancel(): Promise<boolean>
+-    downloadItems(ids: number[]): Promise<number>
+-    progress(): Promise<CrawlProgress | null>
+-    jobs(): Promise<JobRow[]>
+-    onProgress(cb: (payload: { progress: CrawlProgress; logs: CrawlProgress['logs'] }) => void): () => void
+-  }
+-  sources: {
+-    list(): Promise<SourceRef[]>
+-    remove(id: number): Promise<boolean>
+-    toggle(id: number, enabled: boolean): Promise<boolean>
+-  }
+-  devlog: {
+-    list(): Promise<unknown>
+-    export(payload: unknown): Promise<unknown>
+-  }
+-  openExternal(url: string): Promise<void>
+-}
+-
+-export interface JobRow {
+-  id: number
+-  phase: string
+-  summary: string
+-  stats: string
+-  started_at: string
+-  finished_at: string | null
+-}
+-
+-declare global {
+-  interface Window {
+-    gugu?: GuguBridge
+-  }
+-}
++export type { GuguBridge }
++export type { CrawlSiteInfo, JobRow } from '@shared/bridge'
+ 
+-const bridge = (): GuguBridge => {
+-  if (!window.gugu) throw new Error('主进程桥接不可用：请通过 Electron 启动本应用')
+-  return window.gugu
++const unavailable = (): never => {
++  throw new Error('主进程桥接不可用：请通过 Electron 启动本应用')
+ }
+ 
+-export const api: GuguBridge = {
+-  appInfo: () => bridge().appInfo(),
+-  settings: {
+-    get: async () => {
+-      if (!window.gugu) return DEFAULT_SETTINGS
+-      return bridge().settings.get()
+-    },
+-    set: (patch) => bridge().settings.set(patch)
+-  },
+-  library: {
+-    stats: () => bridge().library.stats(),
+-    facets: () => bridge().library.facets(),
+-    query: (query) => bridge().library.query(query),
+-    item: (id) => bridge().library.item(id),
+-    favorite: (id, value) => bridge().library.favorite(id, value),
+-    rating: (id, value) => bridge().library.rating(id, value),
+-    remove: (ids, deleteFiles) => bridge().library.remove(ids, deleteFiles),
+-    reveal: (id) => bridge().library.reveal(id),
+-    pickRoot: () => bridge().library.pickRoot()
+-  },
+-  crawl: {
+-    siteInfo: () => bridge().crawl.siteInfo(),
+-    start: (request) => bridge().crawl.start(request),
+-    pause: () => bridge().crawl.pause(),
+-    resume: () => bridge().crawl.resume(),
+-    cancel: () => bridge().crawl.cancel(),
+-    downloadItems: (ids) => bridge().crawl.downloadItems(ids),
+-    progress: () => bridge().crawl.progress(),
+-    jobs: () => bridge().crawl.jobs(),
+-    onProgress: (cb) => bridge().crawl.onProgress(cb)
+-  },
+-  sources: {
+-    list: () => bridge().sources.list(),
+-    remove: (id) => bridge().sources.remove(id),
+-    toggle: (id, enabled) => bridge().sources.toggle(id, enabled)
+-  },
+-  devlog: {
+-    list: () => bridge().devlog.list(),
+-    export: (payload) => bridge().devlog.export(payload)
+-  },
+-  openExternal: (url) => bridge().openExternal(url)
+-}
++/** 没有 bridge 时退化成会在调用时报错的空壳，避免模块加载阶段直接崩掉 */
++export const api: GuguBridge =
++  typeof window !== 'undefined' && window.gugu
++    ? window.gugu
++    : (new Proxy({} as GuguBridge, { get: () => unavailable }) as GuguBridge)
+ 
+ /* ------------------------------------------------------------ 展示层格式化 */
+ 
+@@ -178,6 +72,5 @@ export const formatRelative = (value: string | null | undefined): string => {
+ 
+ export const megapixels = (width: number | null, height: number | null): string => {
+   if (!width || !height) return '—'
+-  const mp = (width * height) / 1_000_000
+-  return `${mp.toFixed(1)} MP`
++  return `${((width * height) / 1_000_000).toFixed(1)} MP`
+ }
+diff --git a/src/renderer/src/plugins.ts b/src/renderer/src/plugins.ts
+new file mode 100644
+index 0000000..7aa1621
+--- /dev/null
++++ b/src/renderer/src/plugins.ts
+@@ -0,0 +1,26 @@
++/**
++ * 插件宿主（渲染进程侧）。
++ *
++ * 汇总构建期按 plugins.json 生成的插件入口。一个插件都没装时，
++ * 这里就是一个空数组，界面自然退化成「没有工具按钮」的纯图库应用。
++ */
++import { rendererPlugins } from 'virtual:gugu-plugins'
++import type { LoadedRendererPlugin, RendererPluginModule } from '@shared/plugin'
++
++export type { LoadedRendererPlugin }
++
++export const loadedPlugins: LoadedRendererPlugin[] = (rendererPlugins ?? [])
++  .filter((plugin): plugin is RendererPluginModule => Boolean(plugin?.manifest?.id))
++  .map((plugin) => ({
++    manifest: plugin.manifest,
++    TopBarAction: plugin.TopBarAction,
++    Overlay: plugin.Overlay
++  }))
++
++/** 便于面板/关于页展示当前装载了哪些工具 */
++export const pluginSummaries = loadedPlugins.map((p) => ({
++  id: p.manifest.id,
++  name: p.manifest.name,
++  version: p.manifest.version,
++  description: p.manifest.description
++}))
+diff --git a/src/shared/bridge.ts b/src/shared/bridge.ts
+new file mode 100644
+index 0000000..4c7966e
+--- /dev/null
++++ b/src/shared/bridge.ts
+@@ -0,0 +1,72 @@
++/**
++ * preload 通过 contextBridge 暴露给渲染进程的 API 契约。
++ * 放在 shared 里，是为了让「核心界面」和「插件界面」拿到同一份类型定义，
++ * 插件不必反过来依赖应用源码。
++ */
++import type { AppInfo, AppSettings, CrawlProgress, GalleryPage, GalleryQuery, ItemDetail, LibraryStats, PlateFacet, SourceRef, Facet } from './types'
++import type { PluginManifest } from './plugin'
++
++export interface JobRow {
++  id: number
++  phase: string
++  summary: string
++  stats: string
++  started_at: string
++  finished_at: string | null
++}
++
++export interface CrawlSiteInfo {
++  plates: { name: string; words: string[] }[]
++  fetchedAt: number
++}
++
++/** 插件桥：核心对插件的唯一入口，新增插件不需要改这里 */
++export interface PluginBridge {
++  /** 当前已加载的插件清单 */
++  list(): Promise<PluginManifest[]>
++  /** 调用某个插件注册的方法 */
++  invoke<T = unknown>(pluginId: string, method: string, payload?: unknown): Promise<T>
++}
++
++export interface GuguBridge {
++  appInfo(): Promise<AppInfo>
++  settings: {
++    get(): Promise<AppSettings>
++    set(patch: Partial<AppSettings>): Promise<AppSettings>
++  }
++  library: {
++    stats(): Promise<LibraryStats>
++    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[] }>
++    query(query: GalleryQuery): Promise<GalleryPage>
++    item(id: number): Promise<ItemDetail | null>
++    favorite(id: number, value: boolean): Promise<boolean>
++    rating(id: number, value: number): Promise<number>
++    remove(ids: number[], deleteFiles: boolean): Promise<number>
++    reveal(id: number): Promise<boolean>
++    pickRoot(): Promise<string | null>
++  }
++  crawl: {
++    siteInfo(): Promise<CrawlSiteInfo>
++    start(request: unknown): Promise<number>
++    pause(): Promise<boolean>
++    resume(): Promise<boolean>
++    cancel(): Promise<boolean>
++    downloadItems(ids: number[]): Promise<number>
++    progress(): Promise<CrawlProgress | null>
++    jobs(): Promise<JobRow[]>
++    onProgress(cb: (payload: { progress: CrawlProgress; logs: CrawlProgress['logs'] }) => void): () => void
++  }
++  sources: {
++    list(): Promise<SourceRef[]>
++    remove(id: number): Promise<boolean>
++    toggle(id: number, enabled: boolean): Promise<boolean>
++  }
++  plugins: PluginBridge
++  openExternal(url: string): Promise<void>
++}
++
++declare global {
++  interface Window {
++    gugu?: GuguBridge
++  }
++}
+diff --git a/src/shared/globals.d.ts b/src/shared/globals.d.ts
+index 7faebc9..57f052b 100644
+--- a/src/shared/globals.d.ts
++++ b/src/shared/globals.d.ts
+@@ -1,2 +1,9 @@
+ /** 构建期由 electron.vite.config.ts 注入 */
+ declare const __APP_VERSION__: string
++declare const __GUGU_PLUGINS__: import('./plugin').PluginManifest[]
++
++/** 由 electron.vite.config.ts 按 plugins.json 生成的渲染侧插件入口 */
++declare module 'virtual:gugu-plugins' {
++  import type { RendererPluginModule } from './plugin'
++  export const rendererPlugins: RendererPluginModule[]
++}
+diff --git a/src/shared/plugin.ts b/src/shared/plugin.ts
+new file mode 100644
+index 0000000..14142d1
+--- /dev/null
++++ b/src/shared/plugin.ts
+@@ -0,0 +1,88 @@
++/**
++ * 插件契约（主进程 / 渲染进程共用）。
++ *
++ * 设计目标：核心应用不应该知道任何具体插件的存在。
++ *  - 主进程只认「注册方法」这一件事，渲染进程只认「给我一个按钮和一个覆盖层」。
++ *  - 新增插件 = 在 plugins/ 下建目录 + 在 plugins.json 里登记，不需要动核心代码。
++ *  - 关闭插件时，构建产物里不会出现它的任何代码（见 electron.vite.config.ts）。
++ */
++import type { ComponentType } from 'react'
++
++/** 插件目录下的 plugin.json */
++export interface PluginManifest {
++  id: string
++  name: string
++  version: string
++  description: string
++  /** 依赖的其它插件 id；缺失时该插件不会被加载 */
++  dependsOn?: string[]
++  /** 界面入口形态，宿主据此决定渲染什么 */
++  ui?: {
++    /** 顶栏右侧的开关按钮 */
++    topBarAction?: boolean
++    /** 全屏覆盖层 */
++    overlay?: boolean
++  }
++}
++
++/* ------------------------------------------------------------- 主进程侧 */
++
++/** 插件方法被调用时拿到的上下文 */
++export interface PluginInvokeContext {
++  /** 当前主窗口，可能为空 */
++  window: unknown
++  /** 仓库/工作区根目录（打包态下回退到用户数据目录） */
++  workspaceRoot: string
++  /** 当前图库根目录 */
++  libraryRoot: string
++  log: (message: string) => void
++}
++
++export type PluginMethodHandler = (payload: unknown, ctx: PluginInvokeContext) => unknown | Promise<unknown>
++
++/** 宿主交给插件的装配接口 */
++export interface MainPluginHost {
++  readonly manifest: PluginManifest
++  readonly workspaceRoot: string
++  /** 注册一个可以从渲染进程调用的方法 */
++  method(name: string, handler: PluginMethodHandler): void
++  log(message: string): void
++}
++
++export interface MainPluginModule {
++  manifest: PluginManifest
++  /** 应用就绪后被调用一次 */
++  activate(host: MainPluginHost): void | Promise<void>
++  /** 应用退出前调用 */
++  deactivate?(): void | Promise<void>
++}
++
++/* ------------------------------------------------------------- 渲染进程侧 */
++
++export interface PluginTopBarActionProps {
++  active: boolean
++  toggle: () => void
++}
++
++export interface PluginOverlayProps {
++  active: boolean
++  onActiveChange: (active: boolean) => void
++  /** 当前界面标识（gallery / lightbox / crawl / settings） */
++  view: string
++  appVersion: string
++  onToast: (message: string) => void
++}
++
++/** 渲染侧插件模块：两个插槽都是可选的 */
++export interface RendererPluginModule {
++  manifest: PluginManifest
++  TopBarAction?: ComponentType<PluginTopBarActionProps>
++  Overlay?: ComponentType<PluginOverlayProps>
++}
++
++/** 运行时装配好的渲染侧插件 */
++export interface LoadedRendererPlugin {
++  manifest: PluginManifest
++  TopBarAction?: ComponentType<PluginTopBarActionProps>
++  Overlay?: ComponentType<PluginOverlayProps>
++}
+diff --git a/tsconfig.node.json b/tsconfig.node.json
+index c569b12..1508ccc 100644
+--- a/tsconfig.node.json
++++ b/tsconfig.node.json
+@@ -19,8 +19,19 @@
+     "baseUrl": ".",
+     "paths": {
+       "@shared/*": ["src/shared/*"],
+-      "@main/*": ["src/main/*"]
++      "@main/*": ["src/main/*"],
++      "@plugins/*": ["plugins/*"]
+     }
+   },
+-  "include": ["src/main/**/*", "src/preload/**/*", "src/shared/**/*", "scripts/**/*", "electron.vite.config.ts", "vitest.config.ts"]
++  "include": [
++    "src/main/**/*",
++    "src/preload/**/*",
++    "src/shared/**/*",
++    "plugins/*/main/**/*",
++    "plugins/*/shared/**/*",
++    "plugins/*/plugin.json",
++    "scripts/**/*",
++    "electron.vite.config.ts",
++    "vitest.config.ts"
++  ]
+ }
+diff --git a/tsconfig.web.json b/tsconfig.web.json
+index ae1ff56..12c72bd 100644
+--- a/tsconfig.web.json
++++ b/tsconfig.web.json
+@@ -11,13 +11,21 @@
+     "noUnusedParameters": true,
+     "skipLibCheck": true,
+     "esModuleInterop": true,
++    "resolveJsonModule": true,
+     "isolatedModules": true,
+     "verbatimModuleSyntax": true,
+     "noEmit": true,
+     "baseUrl": ".",
+     "paths": {
+-      "@shared/*": ["src/shared/*"]
++      "@shared/*": ["src/shared/*"],
++      "@plugins/*": ["plugins/*"]
+     }
+   },
+-  "include": ["src/renderer/**/*", "src/shared/**/*", "src/preload/api.d.ts"]
++  "include": [
++    "src/renderer/**/*",
++    "src/shared/**/*",
++    "plugins/*/renderer/**/*",
++    "plugins/*/shared/**/*",
++    "plugins/*/plugin.json"
++  ]
+ }

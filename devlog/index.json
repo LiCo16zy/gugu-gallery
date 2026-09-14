@@ -27,6 +27,19 @@
       "status": "closed",
       "summary": "交付页面标注工具（点选/框选/元素自省/导出）与 devlog 轮次档案工具链；顺带修掉版本号取错与文件名标点两个问题。",
       "hasAnnotations": false
+    },
+    {
+      "id": "0003-plugin-architecture",
+      "slug": "plugin-architecture",
+      "title": "插件化与目录重组",
+      "createdAt": "2026-09-14 14:35",
+      "finishedAt": "2026-09-14 14:45",
+      "baseCommit": "2f88207",
+      "endCommit": "b170197",
+      "branch": "master",
+      "status": "closed",
+      "summary": "引入插件宿主，把标注工具与开发档案抽成可选插件；重组 src/plugins/scripts 三段目录；补齐 SKILL 与可复用程序；发布产物经自动校验确认不含插件代码。",
+      "hasAnnotations": false
     }
   ]
 }
