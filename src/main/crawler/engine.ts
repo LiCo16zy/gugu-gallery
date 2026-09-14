@@ -120,10 +120,42 @@ export class CrawlEngine {
     this.http.configure({ cookie })
     try {
       const { html } = await this.http.getHtml(`${SITE_ORIGIN}/`)
-      if (html.includes('泳装类分享')) return { ok: true, message: '登录态有效' }
-      return { ok: false, message: '站点没返回登录后的栏目，凭据可能已失效' }
+      const state = this.loginState(html)
+      if (state === 'in') return { ok: true, message: '登录态有效' }
+      if (state === 'out') {
+        return { ok: false, message: '站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期' }
+      }
+      return { ok: false, message: '没法确认登录态：首页里既没有登录入口也没有退出入口' }
     } catch (err) {
       return { ok: false, message: `校验失败：${err instanceof Error ? err.message : String(err)}` }
+    }
+  }
+
+  /**
+   * 站点判定登录态的方式：未登录时页头固定是「登录 / 注册」，
+   * 登录后会换成用户入口，并且导航里多出「泳装类分享」。
+   * 三个信号都认，任何一个成立就够 —— 站点改版时不容易整体失灵。
+   */
+  private loginState(html: string): 'in' | 'out' | 'unknown' {
+    if (html.includes('泳装类分享')) return 'in'
+    if (/退出|注销/.test(html)) return 'in'
+    if (html.includes('登录 / 注册') || html.includes('/login.html')) return 'out'
+    return 'unknown'
+  }
+
+  /**
+   * 带 cookie 开工之前先确认会话还有效。
+   * 这里刻意不抛错：网络问题不等于会话失效，只有站点明确说「未登录」才算。
+   */
+  private async checkSessionAlive(): Promise<void> {
+    if (!this.deps.getCookie()) return
+    try {
+      const { html } = await this.http.getHtml(`${SITE_ORIGIN}/`)
+      if (this.loginState(html) === 'out') {
+        this.deps.onSessionExpired('站点认为当前未登录，本地保存的会话 cookie 可能已经过期')
+      }
+    } catch {
+      /* 忽略：可能只是网络抖动 */
     }
   }
 
@@ -237,6 +269,9 @@ export class CrawlEngine {
     try {
       await this.deps.library.ensure()
       await this.deps.library.cleanupTmp()
+
+      // 只会真正提醒一次（SessionStore 侧去重），失败也不影响这一轮抓取
+      await this.checkSessionAlive()
 
       st.phase = 'indexing'
       this.emit(true)
