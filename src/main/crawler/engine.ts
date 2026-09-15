@@ -29,6 +29,15 @@ import { makeThumbnail, probeImage } from '../media/thumbnail'
 import type { AppSettings, CrawlSiteInfo } from '@shared/types'
 import { categoryTagFor } from '@shared/categories'
 
+/** 站点登录态：in/out 是明确判断，unknown 是页面里找不到任何信号 */
+export type SessionLoginState = 'in' | 'out' | 'unknown' | 'none' | 'error'
+
+export interface SessionVerifyResult {
+  ok: boolean
+  state: SessionLoginState
+  message: string
+}
+
 export interface EngineDeps {
   repo: Repository
   library: Library
@@ -115,20 +124,31 @@ export class CrawlEngine {
    * 校验登录态：拿一份首页看导航里有没有「泳装类分享」。
    * 它是登录后才出现的栏目，比找 cookie 过期关键字更可靠。
    */
-  async verifySession(): Promise<{ ok: boolean; message: string }> {
+  async verifySession(): Promise<SessionVerifyResult> {
     const cookie = this.deps.getCookie()
-    if (!cookie) return { ok: false, message: '还没有设置登录凭据' }
+    if (!cookie) return { ok: false, state: 'none', message: '还没有设置登录凭据' }
     this.http.configure({ cookie })
     try {
       const { html } = await this.http.getHtml(`${SITE_ORIGIN}/`)
       const state = this.loginState(html)
-      if (state === 'in') return { ok: true, message: '登录态有效' }
+      if (state === 'in') return { ok: true, state, message: '登录态有效' }
       if (state === 'out') {
-        return { ok: false, message: '站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期' }
+        return {
+          ok: false,
+          state,
+          message: '站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期'
+        }
       }
-      return { ok: false, message: '没法确认登录态：首页里既没有登录入口也没有退出入口' }
+      return { ok: false, state, message: '没法确认登录态：首页里既没有登录入口也没有退出入口' }
     } catch (err) {
-      return { ok: false, message: `校验失败：${err instanceof Error ? err.message : String(err)}` }
+      return {
+        ok: false,
+        state: 'error',
+        message: `校验失败：${err instanceof Error ? err.message : String(err)}`
+      }
+    } finally {
+      // 校验用的 cookie 不留在客户端上：正式抓取会在 start() 里按需重新配置
+      this.http.configure({ cookie: '' })
     }
   }
 
@@ -155,6 +175,7 @@ export class CrawlEngine {
       if (this.loginState(html) === 'out') {
         this.deps.onSessionExpired('站点认为当前未登录，本地保存的会话 cookie 可能已经过期')
       }
+      // 不缓存这次校验用的 cookie：抓取阶段会按需重新配置
     } catch {
       /* 忽略：可能只是网络抖动 */
     }

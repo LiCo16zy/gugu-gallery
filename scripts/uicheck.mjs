@@ -279,6 +279,9 @@ const SCRIPT = `(async () => {
     loginBtn?.click()
     await sleep(400)
     out.guideOpenedFromHelp = Boolean(document.querySelector('[data-component="App/LoginGuide"]'))
+    out.guideStatusText = (
+      document.querySelector('[data-component="App/LoginGuide"] .panel-title .hint') || {}
+    ).textContent || ''
     out.helpClosedAfterLogin = !document.querySelector('[data-component="App/Help"]')
     const closeBtn = Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn')).find(
       (b) => b.textContent.trim() === '关闭'
@@ -440,11 +443,17 @@ const env = {
 }
 
 const output = await new Promise((resolvePromise) => {
-  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
-    cwd: root,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe']
-  })
+  // userData 指向仓库内的临时目录：既别读用户真实的 session.bin，
+  // 也别让自检写坏他的设置（登录态断言必须是确定性的）
+  const child = spawn(
+    electronBinary,
+    [join(root, 'out', 'main', 'index.js'), '--user-data-dir=' + join(root, 'data', 'uicheck-userdata')],
+    {
+      cwd: root,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe']
+    }
+  )
   let buf = ''
   child.stdout.on('data', (d) => {
     buf += String(d)
@@ -489,6 +498,7 @@ const checks = [
   ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
   ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
   ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '')],
+  ['未登录时登录引导显示未登录', /未登录/.test(result.guideStatusText || '')],
   ['未登录时侧栏不出现登录专属分类', result.swimsuitHiddenInSidebar === true],
   ['未登录时抓取目标不出现登录专属分类', result.swimsuitHiddenInCrawl === true],
   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],

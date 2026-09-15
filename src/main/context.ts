@@ -40,6 +40,27 @@ export class AppContext {
     await this.session.load()
     await applyProxy(this.settings.get().proxy)
     await this.openLibrary(this.settings.get().libraryRoot)
+    // 存了 cookie 就顺手验一次：失效得在界面上说出来，
+    // 否则帮助里的按钮会一直显示「已登录」，用户以为还能用
+    void this.verifySessionQuietly()
+  }
+
+  /** 静默校验一次登录态：确认有效就记下来，明确失效才提醒（且只提醒一次） */
+  private async verifySessionQuietly(): Promise<void> {
+    if (!this.session.isLoggedIn()) return
+    try {
+      const result = await this.engine.verifySession()
+      if (result.state === 'in') {
+        this.session.markVerified()
+        return
+      }
+      if (result.state !== 'out') return
+      if (!this.session.shouldNotifyExpiry()) return
+      this.session.markExpired(result.message)
+      for (const listener of this.sessionExpiredListeners) listener(result.message)
+    } catch {
+      /* 启动时的网络抖动不当作会话失效 */
+    }
   }
 
   private async openLibrary(root: string): Promise<void> {

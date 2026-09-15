@@ -75,7 +75,9 @@ export default function LoginGuide({
           登录态
           <span className="hint">
             {session?.loggedIn
-              ? '已登录 ' + (session.fingerprint ?? '') + (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
+              ? (session.verified === false ? '凭据已失效 ' : '已登录 ') +
+                (session.fingerprint ?? '') +
+                (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
               : '未登录 · 只影响「泳装分享」分类'}
           </span>
         </div>

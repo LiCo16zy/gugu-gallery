@@ -490,6 +490,13 @@ export default function App(): JSX.Element {
   const jobActive =
     progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
 
+  /**
+   * 「登录中」= 本地存了 cookie 且没被判失效。
+   * 只看 loggedIn 的话，过期的 cookie 会一直显示成「已登录」，反而误导。
+   */
+  const sessionOk = session?.loggedIn === true && session?.verified !== false
+  const sessionStale = session?.loggedIn === true && session?.verified === false
+
   /* 右键菜单项：收藏 / 复制 pid / 打开于…（折叠子项） */
   const contextEntries: MenuEntry[] = contextMenu
     ? [
@@ -971,14 +978,14 @@ export default function App(): JSX.Element {
             </dl>
             <div className="modal-actions">
               <button
-                className="btn btn-left"
-                disabled={session?.loggedIn === true}
+                className={`btn btn-left${sessionStale ? ' warn' : ''}`}
+                disabled={sessionOk}
                 onClick={() => {
                   setHelpOpen(false)
                   setLoginOpen(true)
                 }}
               >
-                {session?.loggedIn ? '已登录' : '登录'}
+                {sessionOk ? '已登录' : sessionStale ? '登录已失效' : '登录'}
               </button>
 
               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>

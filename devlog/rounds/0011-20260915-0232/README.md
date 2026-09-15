@@ -79,3 +79,40 @@ uicheck 新增的 6 项：日期胶囊在过滤栏第二个位置、帮助里有
 - 改动后截图（4 张）：`screenshots-after/`
 - 代码差异：`changes.patch` / `changes.md`
 - 界面标注原文：`annotations.md` / `annotations.json`
+
+## 补记：会话状态不再「假在线」
+
+收尾之后发现一个真实问题，顺手修掉：**本地存着一份已经过期的 cookie，帮助里的按钮仍然显示「已登录」**。
+
+`SessionStore.status().loggedIn` 的含义只是「本地有 cookie」，不代表站点还认它。用户上一轮贴进来的那份就是过期的，于是按钮一直灰着显示「已登录」，看不出需要重新登录。
+
+改动：
+
+- `verifySession()` 的返回值加上 `state`（`in / out / unknown / none / error`），只有 **out**（站点明确说未登录）才算失效；`unknown`（页面里没有任何信号）不再被误判成失效。
+- 应用启动时**静默校验一次**（`AppContext.verifySessionQuietly()`）：有效就 `markVerified()`，明确失效就 `markExpired()` 并按既有的一次性提醒推给界面。网络抖动不算失效。
+- 帮助里的按钮改成三态：**已登录**（灰、不可点）／**登录已失效**（警示色、可点）／**登录**。
+- uicheck 改用 `--user-data-dir` 指向仓库内的临时目录，不再读用户真实的 `session.bin`，登录态相关断言从此是确定性的。
+
+### cookie 到底存得安不安全（用户反复强调的一件事）
+
+在本机对真实文件做过检查：
+
+| 检查项 | 结果 |
+| --- | --- |
+| 落盘位置 | `%APPDATA%/gugu-gallery/session.bin`，117 字节 |
+| 内容 | DPAPI 密文（`safeStorage.encryptString`）；文件里既搜不到 `PHPSESSID`，也搜不到 cookie 值 |
+| 加密不可用时 | `save()` 直接 return，**不落盘**，只在内存里生效（宁可每次重贴，也不明文存） |
+| 界面暴露 | 只显示 `头4位…尾4位` 指纹（如 `8g1k…sll5`）：够确认「换没换」，不足以还原凭证 |
+| 日志 | cookie 只进请求头，HTTP 客户端与引擎都不打印请求头 |
+| 解锁失败 | `load()` 解不开就当没有并删掉文件（换机器 / 换用户即失效） |
+
+另外全仓扫描过一遍：用户那次贴在对话里的 cookie 值没有出现在仓库的任何文件中。
+
+| 补充检查 | 结果 |
+| --- | --- |
+| `npm run typecheck` / `npm test` | 通过 / 30 项 |
+| `node scripts/uicheck.mjs` | 58 项通过（新增「未登录时登录引导显示未登录」） |
+| `node plugins/annotator/bin/check.mjs` | 37 项通过 |
+| `node scripts/e2e.mjs` | 通过 |
+
+截图证据：`screenshots-after/verify-date-month.jpg`（日期胶囊在第二位 + 按月输入）、`screenshots-after/verify-login-guide.jpg`（登录引导：凭据已失效 8g1k…sll5 · 已加密保存）。

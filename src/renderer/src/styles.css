@@ -1256,6 +1256,15 @@ body.resizing * {
 .btn.danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--danger) 18%, transparent);
 }
+/* 登录凭据过期：按钮不置灰，但用警示色提示需要重新登录 */
+.btn.warn {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 35%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+.btn.warn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+}
 .btn.ghost {
   background: transparent;
   border-color: transparent;
