@@ -1,0 +1,1225 @@
+# 轮次 0011-20260915-0232 代码差异
+# 基线提交 HEAD~1 -> 0f5a004
+
+diff --git a/devlog/rounds/0011-20260915-0232/README.md b/devlog/rounds/0011-20260915-0232/README.md
+new file mode 100644
+index 0000000..699ca17
+--- /dev/null
++++ b/devlog/rounds/0011-20260915-0232/README.md
+@@ -0,0 +1,74 @@
++# 轮次 0011-20260915-0232
++
++- 时间：2026-09-15
++- 应用版本：**0.6.1**
++- 起点提交：`a2f0959`
++- 用户给这一轮定的方向：**登录态解锁 / 爬虫优化**
++
++## 背景
++
++上一轮（0010）把分类摊平、页码范围、日期筛选和登录态入口做完了，但登录态整条链路没能验证 —— 用户给的会话 cookie 已经失效。用户随后用标注工具提了 3 条意见，都围绕「怎么用起来更顺」：抓回来的泳装图要能单独筛出来、日期筛选要更贴合实际用法、登录入口要更显眼。
++
++## 反馈标注
++
++共 3 条，详见 [`annotations.md`](annotations.md)、[`annotations.json`](annotations.json) 与 [`screenshots/`](screenshots)。三条都是 `should` 级。
++
++| # | 组件 | 意见 |
++| --- | --- | --- |
++| 1 | `Sidebar › 分类` | 爬虫爬取此类应额外添加泳装分享标签，点击时添加筛选，且此分类仅登录态可见 |
++| 2 | `App/FilterBar › 日期▾` | 此项置于左侧第二个位置；仅分月，不记录日 |
++| 3 | `App/Help › 访问网站` | 在左边增加登录按钮，点击后关闭帮助弹出引导界面，识别后此处登录按钮变灰「已登录」 |
++
++## 改动
++
++### 1. 搜索类目标抓回来的图带一个应用侧标签（标注 1）
++
++站点的搜索页不会告诉你怎么找到这张图的，详情链接里带的还是图片原本的分类。所以 `kind === 'search'` 的目标在写入时额外补一个标签：
++
++- `src/shared/categories.ts` 新增 `categoryTagFor(word)`：站点关键词（`泳装类分享`）→ 应用分类显示名（`泳装分享`），认不出来就原样返回；
++- `engine.ts` 索引搜索目标时把 `[...raw.tags, categoryTagFor(target.word)]` 一起写进去。
++
++标签是可点击的（侧栏「热门标签」与灯箱里的标签都会加筛选），所以「额外加标签」等于多了一条独立的筛选入口，和侧栏分类是两条路。**这条已经在真站点上验证过**（见下方验证一节）。
++
++至于「此分类仅登录态可见」：上一轮已经做了，本轮没有改动 —— 侧栏分类和抓取目标两处都按登录态显隐。
++
++### 2. 日期筛选挪到第二位、并且只精确到月（标注 2）
++
++- 过滤栏顺序改为 `排序 → 日期 → 全部 → 收藏 → …`；
++- 两个输入从 `type="date"` 换成 `type="month"`，取值 `YYYY-MM`；
++- SQL 相应改成「下限补成当月 1 号 00:00、上限取下个月 1 号 00:00」，`nextDay()` 也随之换成 `nextMonth()`。`GalleryQuery.dateFrom/dateTo` 更名 `monthFrom/monthTo`。
++
++只到月之后，「到 2026-09」天然包含整个 9 月，之前那段「上界要取次日 00:00 才不漏当天」的说明也就不需要了。
++
++### 3. 帮助里的登录入口独立成引导弹窗（标注 3）
++
++原来登录面板是塞在「帮助」里的，既不好找也不像一个独立动作。现在：
++
++- 「帮助」底部左侧多一个 `登录` 按钮（`margin-right: auto`，右边仍是「访问网站 / 知道了」）；已登录时这个按钮置灰并显示 `已登录`；
++- 点它会**先关掉帮助**，再弹出独立的 `LoginGuide` 弹窗（`data-component="App/LoginGuide"`）：贴 cookie、「保存并验证 / 重新验证 / 清除」、以及「去浏览器登录」；
++- 验证通过后弹窗自动关闭并提示「登录态已生效」，回到帮助就能看到按钮变灰；
++- 会话失效的提示文案也跟着改成「请到『帮助 → 登录』里重新贴一次 cookie」。
++
++### 4. 顺手两件小事
++
++- `cli.ts` 补上 `--search` 开关，无界面模式下也能抓关键词分类（`npx electron out/main/cli.js --search --word 泳装类分享 --pages 2 --index-only`），这样搜索类目标才有可自动化的自检入口；
++- 新增 `tests/categories.test.ts`（7 项）：分类显隐、分类到目标的映射、标签映射。
++
++## 验证
++
++| 检查 | 结果 |
++| --- | --- |
++| `npm run typecheck` | 通过 |
++| `npm test` | 30 项通过（新增 7 项分类用例） |
++| `node scripts/uicheck.mjs` | 57 项通过（上一轮 51 项，本轮新增 6 项） |
++| `node plugins/annotator/bin/check.mjs` | 37 项通过 |
++| `node scripts/e2e.mjs` | 真连站点：索引 1 页 / 下载 4 张 / 失败 0 |
++| 搜索类目标真站点抓取 | `--search --word 泳装类分享 --pages 2 --index-only`：20 条，全部 `plate=NULL / word=泳装类分享`、全部带上 `泳装分享` 标签、页码分别落 1 和 2 |
++
++uicheck 新增的 6 项：日期胶囊在过滤栏第二个位置、帮助里有登录入口且未登录时不置灰、登录按钮贴左边、点登录会关掉帮助并弹出登录引导、登录引导能关闭，以及把日期断言从写死的 2120 改成「先取当前总数再比较」（图库会随着开发过程变大，写死数字迟早会假失败）。
++
++## 遗留
++
++- **登录态仍然没有真实验证过**：用户的会话 cookie 已失效，所以「登录后泳装分享分类出现在侧栏、计数正确」这条只能靠代码与单测保证。等用户换成新密码、重新贴一次 cookie 后再复核。
++- 泳装分类的图现在来自站点对关键词「泳装类分享」的搜索结果。未登录时站点把它解析成「分享」（`<title>搜索：分享</title>`），返回的是分享区的图；登录后是否更精确，需要有效会话才能确认。
++- 数据侧提醒：用户自己的 `data/demo` 里已经有一批 `泳装类分享` 的条目（100 条，抓取于本轮改动之前，因此没有 `泳装分享` 标签）。这些条目要等重新抓一次才会补上标签。
+diff --git a/devlog/rounds/0011-20260915-0232/annotations.json b/devlog/rounds/0011-20260915-0232/annotations.json
+new file mode 100644
+index 0000000..591fe54
+--- /dev/null
++++ b/devlog/rounds/0011-20260915-0232/annotations.json
+@@ -0,0 +1,220 @@
++{
++  "roundId": "0011-20260915-0232",
++  "exportedAt": "2026-09-14T18:32:22.567Z",
++  "view": "crawl",
++  "note": "登录态解锁\n爬虫优化",
++  "viewport": {
++    "width": 1348,
++    "height": 716
++  },
++  "devicePixelRatio": 1.4249999523162842,
++  "appVersion": "0.6.0",
++  "annotations": [
++    {
++      "id": "no92h6kx",
++      "index": 1,
++      "comment": "爬虫爬取此类应额外添加泳装分享标签，点击时添加筛选，且此分类仅登录态可见。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789409808887,
++      "rect": {
++        "x": 10,
++        "y": 268.9254455566406,
++        "width": 210.29605102539062,
++        "height": 23.26754379272461
++      },
++      "pageRect": {
++        "x": 10,
++        "y": 268.9254455566406,
++        "width": 210.29605102539062,
++        "height": 23.26754379272461
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > aside.sidebar > div.sidebar-scroll:nth-of-type(1) > div.side-section:nth-of-type(2) > div.side-title",
++        "component": "Sidebar › div.side-title",
++        "tag": "div",
++        "classes": "side-title",
++        "text": "分类",
++        "parentChain": [
++          "div.side-section",
++          "div.sidebar-scroll",
++          "aside.sidebar",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "space-between",
++          "align-items": "center",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "210.296px",
++          "height": "23.2675px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px 8px 7px",
++          "margin": "0px",
++          "font-size": "10.5px",
++          "font-weight": "600",
++          "line-height": "16.275px",
++          "letter-spacing": "0.9px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "3qkl8amy",
++      "index": 2,
++      "comment": "此项置于左侧第二个位置\n仅分月，不记录日",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789409883390,
++      "rect": {
++        "x": 723.38818359375,
++        "y": 68.99122619628906,
++        "width": 62.105262756347656,
++        "height": 25.997806549072266
++      },
++      "pageRect": {
++        "x": 723.38818359375,
++        "y": 68.99122619628906,
++        "width": 62.105262756347656,
++        "height": 25.997806549072266
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > main.main > div.filter-bar:nth-of-type(1) > div.date-picker:nth-of-type(2) > button.pill",
++        "component": "App/FilterBar › button.pill",
++        "tag": "button",
++        "classes": "pill",
++        "text": "日期▾",
++        "parentChain": [
++          "div.date-picker",
++          "div.filter-bar",
++          "main.main",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "inline-flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "6px",
++          "grid-template-columns": "none",
++          "width": "62.1053px",
++          "height": "25.9978px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px 10px",
++          "margin": "0px",
++          "font-size": "12px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(20, 25, 36)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "99px",
++          "white-space": "normal",
++          "transition": "0.14s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "14.72:1（AAA）"
++        },
++        "attributes": {
++          "title": "按发布日期筛选（可与排序叠加）"
++        }
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "v7196cc8",
++      "index": 3,
++      "comment": "在左边增加登录按钮，点击后关闭帮助弹出引导界面，识别后此处登录按钮变灰“已登陆”",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789410345297,
++      "rect": {
++        "x": 773.5855102539062,
++        "y": 568.739013671875,
++        "width": 81.38157653808594,
++        "height": 33.99123001098633
++      },
++      "pageRect": {
++        "x": 773.5855102539062,
++        "y": 568.739013671875,
++        "width": 81.38157653808594,
++        "height": 33.99123001098633
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(5) > button.btn:nth-of-type(1)",
++        "component": "App/Help › button.btn",
++        "tag": "button",
++        "classes": "btn",
++        "text": "访问网站",
++        "parentChain": [
++          "div.modal-actions",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "81.3816px",
++          "height": "33.9912px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 14px",
++          "margin": "0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgb(26, 32, 45)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "9px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "13.64:1（AAA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/devlog/rounds/0011-20260915-0232/annotations.md b/devlog/rounds/0011-20260915-0232/annotations.md
+new file mode 100644
+index 0000000..e44d5ec
+--- /dev/null
++++ b/devlog/rounds/0011-20260915-0232/annotations.md
+@@ -0,0 +1,52 @@
++# 界面标注 · 轮次 0011-20260915-0232
++
++- 导出时间：2026-09-14T18:32:22.567Z
++- 所在界面：crawl
++- 视口：1348×716（DPR 1.4249999523162842）
++- 应用版本：0.6.0
++- 标注条数：3
++
++## 总体说明
++
++登录态解锁
++爬虫优化
++
++## 逐条标注
++
++### 1. 爬虫爬取此类应额外添加泳装分享标签，点击时添加筛选，且此分类仅登录态可见。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`Sidebar › div.side-title`
++- **选择器**：`div.app > aside.sidebar > div.sidebar-scroll:nth-of-type(1) > div.side-section:nth-of-type(2) > div.side-title`
++- **父级链**：`div.side-section` ← `div.sidebar-scroll` ← `aside.sidebar` ← `div.app` ← `div`
++- **元素文本**：分类
++- **位置尺寸**：x=10 y=269 210×23
++- **关键样式**：display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap: normal; grid-template-columns: none; width: 210.296px; height: 23.2675px; min-width: 0px; max-width: none; padding: 0px 8px 7px; margin: 0px; font-size: 10.5px; font-weight: 600; line-height: 16.275px; letter-spacing: 0.9px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 爬虫爬取此类应额外添加泳装分享标签，点击时添加筛选，且此分类仅登录态可见。
++
++### 2. 此项置于左侧第二个位置
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/FilterBar › button.pill`
++- **选择器**：`div.app > main.main > div.filter-bar:nth-of-type(1) > div.date-picker:nth-of-type(2) > button.pill`
++- **父级链**：`div.date-picker` ← `div.filter-bar` ← `main.main` ← `div.app` ← `div`
++- **元素文本**：日期▾
++- **位置尺寸**：x=723 y=69 62×26
++- **关键样式**：display: inline-flex; flex-direction: row; justify-content: normal; align-items: center; gap: 6px; grid-template-columns: none; width: 62.1053px; height: 25.9978px; min-width: 0px; max-width: none; padding: 0px 10px; margin: 0px; font-size: 12px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(20, 25, 36); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 99px; white-space: normal; transition: 0.14s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 14.72:1（AAA）
++- **属性**：title="按发布日期筛选（可与排序叠加）"
++
++> 此项置于左侧第二个位置
++> 仅分月，不记录日
++
++### 3. 在左边增加登录按钮，点击后关闭帮助弹出引导界面，识别后此处登录按钮变灰“已登陆”
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › button.btn`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(5) > button.btn:nth-of-type(1)`
++- **父级链**：`div.modal-actions` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：访问网站
++- **位置尺寸**：x=774 y=569 81×34
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 81.3816px; height: 33.9912px; min-width: auto; max-width: none; padding: 0px 14px; margin: 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(231, 235, 243); background-color: rgb(26, 32, 45); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 9px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 13.64:1（AAA）
++
++> 在左边增加登录按钮，点击后关闭帮助弹出引导界面，识别后此处登录按钮变灰“已登陆”
+diff --git a/devlog/rounds/0011-20260915-0232/screenshots/00-full.png b/devlog/rounds/0011-20260915-0232/screenshots/00-full.png
+new file mode 100644
+index 0000000..26543ef
+Binary files /dev/null and b/devlog/rounds/0011-20260915-0232/screenshots/00-full.png differ
+diff --git "a/devlog/rounds/0011-20260915-0232/screenshots/001-\347\210\254\350\231\253\347\210\254\345\217\226\346\255\244\347\261\273\345\272\224\351\242\235\345\244\226\346\267\273\345\212\240\346\263\263\350\243\205\345\210\206\344\272\253\346\240\207\347\255\276\347\202\271\345\207\273\346\227\266\346\267\273\345\212\240\347\255\233\351\200\211\344\270\224\346\255\244\345\210\206\347\261\273.png" "b/devlog/rounds/0011-20260915-0232/screenshots/001-\347\210\254\350\231\253\347\210\254\345\217\226\346\255\244\347\261\273\345\272\224\351\242\235\345\244\226\346\267\273\345\212\240\346\263\263\350\243\205\345\210\206\344\272\253\346\240\207\347\255\276\347\202\271\345\207\273\346\227\266\346\267\273\345\212\240\347\255\233\351\200\211\344\270\224\346\255\244\345\210\206\347\261\273.png"
+new file mode 100644
+index 0000000..8019590
+Binary files /dev/null and "b/devlog/rounds/0011-20260915-0232/screenshots/001-\347\210\254\350\231\253\347\210\254\345\217\226\346\255\244\347\261\273\345\272\224\351\242\235\345\244\226\346\267\273\345\212\240\346\263\263\350\243\205\345\210\206\344\272\253\346\240\207\347\255\276\347\202\271\345\207\273\346\227\266\346\267\273\345\212\240\347\255\233\351\200\211\344\270\224\346\255\244\345\210\206\347\261\273.png" differ
+diff --git "a/devlog/rounds/0011-20260915-0232/screenshots/002-\346\255\244\351\241\271\347\275\256\344\272\216\345\267\246\344\276\247\347\254\254\344\272\214\344\270\252\344\275\215\347\275\256.png" "b/devlog/rounds/0011-20260915-0232/screenshots/002-\346\255\244\351\241\271\347\275\256\344\272\216\345\267\246\344\276\247\347\254\254\344\272\214\344\270\252\344\275\215\347\275\256.png"
+new file mode 100644
+index 0000000..924b905
+Binary files /dev/null and "b/devlog/rounds/0011-20260915-0232/screenshots/002-\346\255\244\351\241\271\347\275\256\344\272\216\345\267\246\344\276\247\347\254\254\344\272\214\344\270\252\344\275\215\347\275\256.png" differ
+diff --git "a/devlog/rounds/0011-20260915-0232/screenshots/003-\345\234\250\345\267\246\350\276\271\345\242\236\345\212\240\347\231\273\345\275\225\346\214\211\351\222\256\347\202\271\345\207\273\345\220\216\345\205\263\351\227\255\345\270\256\345\212\251\345\274\271\345\207\272\345\274\225\345\257\274\347\225\214\351\235\242\350\257\206\345\210\253\345\220\216\346\255\244\345\244\204\347\231\273.png" "b/devlog/rounds/0011-20260915-0232/screenshots/003-\345\234\250\345\267\246\350\276\271\345\242\236\345\212\240\347\231\273\345\275\225\346\214\211\351\222\256\347\202\271\345\207\273\345\220\216\345\205\263\351\227\255\345\270\256\345\212\251\345\274\271\345\207\272\345\274\225\345\257\274\347\225\214\351\235\242\350\257\206\345\210\253\345\220\216\346\255\244\345\244\204\347\231\273.png"
+new file mode 100644
+index 0000000..93e4438
+Binary files /dev/null and "b/devlog/rounds/0011-20260915-0232/screenshots/003-\345\234\250\345\267\246\350\276\271\345\242\236\345\212\240\347\231\273\345\275\225\346\214\211\351\222\256\347\202\271\345\207\273\345\220\216\345\205\263\351\227\255\345\270\256\345\212\251\345\274\271\345\207\272\345\274\225\345\257\274\347\225\214\351\235\242\350\257\206\345\210\253\345\220\216\346\255\244\345\244\204\347\231\273.png" differ
+diff --git a/package.json b/package.json
+index 02b1d63..4c52d1e 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "gugu-gallery",
+-  "version": "0.6.0",
++  "version": "0.6.1",
+   "private": true,
+   "description": "咕咕小站图片爬虫 + 本地图库浏览器（Electron 桌面应用）",
+   "author": "gugu-gallery",
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index 19d192c..c8d3ce1 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -217,14 +217,20 @@ const SCRIPT = `(async () => {
+     out.sortMeta = meta()
+   }
+ 
+-  // 7.2) 日期范围：可折叠面板 + 起止两个日期，和排序叠加使用
++  // 7.2) 日期范围：可折叠面板 + 起止两个月份，和排序叠加使用
+   {
+     const pill = () => document.querySelector('.date-picker .pill')
++    const totalOf = (s) => Number(((s.match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
++    // 图库会随着开发过程中的抓取变大，所以基准值现场取，不写死
++    out.dateTotalBefore = totalOf(meta())
+     out.datePillExists = Boolean(pill())
++    // 按标注挪到过滤栏第二个位置：排序之后、全部之前
++    const bar = document.querySelector('.filter-bar')
++    out.datePillSlot = bar ? Array.from(bar.children).findIndex((el) => el.classList.contains('date-picker')) : -1
+     pill()?.click()
+     await sleep(250)
+     out.dateMenuOpen = Boolean(document.querySelector('.date-menu'))
+-    const inputs = Array.from(document.querySelectorAll('.date-menu input[type="date"]'))
++    const inputs = Array.from(document.querySelectorAll('.date-menu input[type="month"]'))
+     out.dateInputCount = inputs.length
+     // React 自己维护 value 影子值，直接赋值不会触发 onChange，得走原生 setter
+     const setDate = (el, v) => {
+@@ -233,13 +239,14 @@ const SCRIPT = `(async () => {
+       el.dispatchEvent(new Event('input', { bubbles: true }))
+     }
+     if (inputs.length === 2) {
+-      setDate(inputs[0], '2026-09-01')
++      // 界面只精确到月：demo 库里 2026-09 正好 110 条
++      setDate(inputs[0], '2026-09')
+       await sleep(1200)
+-      setDate(inputs[1], '2026-09-14')
++      setDate(inputs[1], '2026-09')
+       await sleep(1400)
+       const m = meta()
+       out.dateMeta = m
+-      out.dateFiltered = Number(((m.match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
++      out.dateFiltered = totalOf(m)
+       out.datePillActive = (pill()?.className || '').includes('active')
+       const clear = Array.from(document.querySelectorAll('.date-menu .btn')).find((b) =>
+         b.textContent.includes('清空日期')
+@@ -247,13 +254,40 @@ const SCRIPT = `(async () => {
+       clear?.click()
+       await sleep(1200)
+       out.dateMetaAfterClear = meta()
+-      out.dateClearedCount = Number(((meta().match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
++      out.dateClearedCount = totalOf(meta())
+     }
+     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+     await sleep(250)
+     out.dateMenuClosedOnOutside = !document.querySelector('.date-menu')
+   }
+ 
++  // 7.3) 帮助里的登录入口：点了要关掉帮助、弹出登录引导
++  {
++    const helpBtn = Array.from(document.querySelectorAll('.sidebar-foot .side-item')).find((b) =>
++      b.textContent.includes('帮助')
++    )
++    helpBtn?.click()
++    await sleep(400)
++    const help = document.querySelector('[data-component="App/Help"]')
++    out.helpOpen = Boolean(help)
++    const loginBtn = help
++      ? Array.from(help.querySelectorAll('.modal-actions .btn')).find((b) => b.textContent.trim() === '登录')
++      : null
++    out.helpLoginButton = Boolean(loginBtn)
++    out.helpLoginDisabled = loginBtn ? loginBtn.disabled : null
++    out.helpLoginOnLeft = Boolean(loginBtn && loginBtn.classList.contains('btn-left'))
++    loginBtn?.click()
++    await sleep(400)
++    out.guideOpenedFromHelp = Boolean(document.querySelector('[data-component="App/LoginGuide"]'))
++    out.helpClosedAfterLogin = !document.querySelector('[data-component="App/Help"]')
++    const closeBtn = Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn')).find(
++      (b) => b.textContent.trim() === '关闭'
++    )
++    closeBtn?.click()
++    await sleep(300)
++    out.guideClosed = !document.querySelector('[data-component="App/LoginGuide"]')
++  }
++
+   // 7.5) 横向溢出
+   {
+     const m = document.querySelector('.main')
+@@ -460,10 +494,15 @@ const checks = [
+   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
+   ['过滤栏有日期范围入口', result.datePillExists === true],
+   ['日期面板可展开且有起止两个输入', result.dateMenuOpen === true && result.dateInputCount === 2],
+-  ['日期范围能缩小结果集', (result.dateFiltered ?? -1) > 0 && result.dateFiltered < 2120],
++  ['日期范围能缩小结果集', (result.dateFiltered ?? 0) > 0 && result.dateFiltered < (result.dateTotalBefore ?? 0)],
+   ['日期生效时按钮高亮', result.datePillActive === true],
+-  ['清空日期后恢复全量', result.dateClearedCount === 2120],
++  ['清空日期后恢复全量', result.dateClearedCount === result.dateTotalBefore],
+   ['点空白处关闭日期面板', result.dateMenuClosedOnOutside === true],
++  ['日期胶囊在过滤栏第二个位置', result.datePillSlot === 1],
++  ['帮助里有登录入口且未登录时不置灰', result.helpLoginButton === true && result.helpLoginDisabled === false],
++  ['登录按钮贴左边', result.helpLoginOnLeft === true],
++  ['点登录会关掉帮助并弹出登录引导', result.guideOpenedFromHelp === true && result.helpClosedAfterLogin === true],
++  ['登录引导能关闭', result.guideClosed === true],
+   ['切换排序生效', result.sortValue === 'views'],
+   ['内容页无横向溢出', result.mainOverflowX === 0],
+   ['灯箱打开时根节点有 lightbox-open', result.lightboxOpenClass === true],
+diff --git a/src/main/cli.ts b/src/main/cli.ts
+index c4ddc89..24732d8 100644
+--- a/src/main/cli.ts
++++ b/src/main/cli.ts
+@@ -3,6 +3,7 @@
+  *
+  *   npm run crawl -- --plate ACG图片 --word Pixiv萌图 --pages 3 --max 60
+  *   npm run crawl -- --index-only --pages 50
++ *   npm run crawl -- --search --word 泳装类分享 --pages 2 --index-only
+  *   npm run crawl -- --library D:/Pictures/GuguGallery --sort newest
+  *
+  * 除了给自动化留一个入口，它也是最快的端到端自检方式：
+@@ -20,6 +21,8 @@ interface Args {
+   max: number | null
+   indexOnly: boolean
+   noEnrich: boolean
++  /** 关键词搜索目标（泳装类分享这类没有一级分类的分类） */
++  search: boolean
+   library: string | null
+   delay: number | null
+   concurrency: number | null
+@@ -52,6 +55,7 @@ function parseArgs(argv: string[]): Args {
+     max: num('max'),
+     indexOnly: has('index-only'),
+     noEnrich: has('no-enrich'),
++    search: has('search'),
+     library: get('library') ?? null,
+     delay: num('delay'),
+     concurrency: num('concurrency'),
+@@ -70,7 +74,11 @@ void app.whenReady().then(async () => {
+ 
+   const settings = ctx.settingsValue()
+   const request: CrawlRequest = {
+-    targets: [{ kind: 'category', plate: args.plate, word: args.word }],
++    targets: [
++      args.search
++        ? { kind: 'search', word: args.word }
++        : { kind: 'category', plate: args.plate, word: args.word }
++    ],
+     pageFrom: args.from,
+     pageTo: args.pages == null ? null : args.from + args.pages - 1,
+     maxItems: args.max,
+@@ -90,7 +98,9 @@ void app.whenReady().then(async () => {
+   }
+ 
+   console.log(`[cli] 图库目录: ${ctx.library.root}`)
+-  console.log(`[cli] 目标: ${args.plate} / ${args.word}  页 ${request.pageFrom}..${request.pageTo ?? '自动'}`)
++  console.log(
++    `[cli] 目标: ${args.search ? '搜索' : args.plate} / ${args.word}  页 ${request.pageFrom}..${request.pageTo ?? '自动'}`
++  )
+   console.log(`[cli] 模式: ${args.indexOnly ? '仅索引' : '索引 + 下载'}${args.max ? ` 最多 ${args.max} 张` : ''}`)
+ 
+   let lastPhase = ''
+diff --git a/src/main/crawler/engine.ts b/src/main/crawler/engine.ts
+index a717880..c5ea189 100644
+--- a/src/main/crawler/engine.ts
++++ b/src/main/crawler/engine.ts
+@@ -27,6 +27,7 @@ import type { Library } from '../media/library'
+ import { buildSlug } from '../media/library'
+ import { makeThumbnail, probeImage } from '../media/thumbnail'
+ import type { AppSettings, CrawlSiteInfo } from '@shared/types'
++import { categoryTagFor } from '@shared/categories'
+ 
+ export interface EngineDeps {
+   repo: Repository
+@@ -383,7 +384,11 @@ export class CrawlEngine {
+         previewUrl: raw.remotePath ? previewUrl(raw.remotePath) : null,
+         downloadUrl: raw.remotePath ? originalUrl(raw.remotePath) : null,
+         page,
+-        tags: raw.tags
++        // 搜索类目标额外补一个应用侧标签（站点自己不会给），方便单独筛出来
++        tags:
++          target.kind === 'search' && target.word
++            ? [...raw.tags, categoryTagFor(target.word)]
++            : raw.tags
+       }))
+ 
+       const { inserted } = this.deps.repo.upsertItems(upserts)
+diff --git a/src/main/store/repository.ts b/src/main/store/repository.ts
+index 79ed2a3..f41d100 100644
+--- a/src/main/store/repository.ts
++++ b/src/main/store/repository.ts
+@@ -576,15 +576,16 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] }
+     clauses.push('COALESCE(i.height, 0) >= ?')
+     params.push(query.minHeight)
+   }
+-  if (query.dateFrom) {
+-    // published_at 存的是 'YYYY-MM-DD HH:mm'，按字典序比较即可
++  if (query.monthFrom) {
++    // published_at 存的是 'YYYY-MM-DD HH:mm'，按字典序比较即可。
++    // 界面只让选到月，下限就补成当月 1 号 00:00。
+     clauses.push("COALESCE(i.published_at, '') >= ?")
+-    params.push(`${query.dateFrom} 00:00`)
++    params.push(`${query.monthFrom}-01 00:00`)
+   }
+-  if (query.dateTo) {
+-    // 上界用「次日 00:00」而不是当天 23:59，避免把当天的内容漏掉
++  if (query.monthTo) {
++    // 上界用「下个月 1 号 00:00」，这样「到 2026-09」是包含整个 9 月的闭区间
+     clauses.push("COALESCE(i.published_at, '') < ?")
+-    params.push(`${nextDay(query.dateTo)} 00:00`)
++    params.push(`${nextMonth(query.monthTo)}-01 00:00`)
+   }
+   if (query.pageFrom != null) {
+     clauses.push('i.page IS NOT NULL AND i.page >= ?')
+@@ -641,13 +642,11 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] }
+   return { where: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '', params }
+ }
+ 
+-/** 'YYYY-MM-DD' -> 次日；用于日期上界的开区间比较 */
+-function nextDay(date: string): string {
+-  const d = new Date(`${date}T00:00:00`)
+-  if (Number.isNaN(d.getTime())) return date
+-  d.setDate(d.getDate() + 1)
+-  const pad = (n: number): string => String(n).padStart(2, '0')
+-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
++/** 'YYYY-MM' -> 下个月；用于月份上界的开区间比较 */
++function nextMonth(month: string): string {
++  const [y, m] = month.split('-').map(Number)
++  if (!y || !m || m < 1 || m > 12) return month
++  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
+ }
+ 
+ function buildOrder(sort: NonNullable<GalleryQuery['sort']>): string {
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index 6ad9210..4c0e5a5 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -21,6 +21,7 @@ import SettingsPanel from './components/SettingsPanel'
+ import ContextMenu, { type MenuEntry } from './components/ContextMenu'
+ import Toast, { type ToastPayload } from './components/Toast'
+ import SetupWizard from './components/SetupWizard'
++import LoginGuide from './components/LoginGuide'
+ import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
+ import { visibleCategories } from '@shared/categories'
+ import type { SessionStatus } from '@shared/bridge'
+@@ -49,9 +50,9 @@ export interface Filters {
+   sort: SortKey
+   orientation: Orientation
+   minWidth: number
+-  /** 发布日期闭区间（YYYY-MM-DD），空串表示不限 */
+-  dateFrom: string
+-  dateTo: string
++  /** 发布月份闭区间（YYYY-MM），空串表示不限 */
++  monthFrom: string
++  monthTo: string
+ }
+ 
+ const INITIAL_FILTERS: Filters = {
+@@ -65,8 +66,8 @@ const INITIAL_FILTERS: Filters = {
+   sort: 'newest',
+   orientation: 'any',
+   minWidth: 0,
+-  dateFrom: '',
+-  dateTo: ''
++  monthFrom: '',
++  monthTo: ''
+ }
+ 
+ /** 主题：dark / light / system，system 跟随操作系统配色 */
+@@ -121,8 +122,6 @@ export default function App(): JSX.Element {
+   const [info, setInfo] = useState<AppInfo | null>(null)
+   /** 登录态：只保存站点会话 cookie，账号密码不经过本应用 */
+   const [session, setSession] = useState<SessionStatus | null>(null)
+-  const [cookieDraft, setCookieDraft] = useState('')
+-  const [sessionBusy, setSessionBusy] = useState(false)
+   const [sessionMsg, setSessionMsg] = useState<string | null>(null)
+   const [stats, setStats] = useState<LibraryStats | null>(null)
+   /** 关键词维度的分类计数（电脑壁纸这类有 plate，泳装分享这类没有） */
+@@ -159,6 +158,8 @@ export default function App(): JSX.Element {
+   /** 自绘标题栏：最大化状态与窗口按钮联动 */
+   const [maximized, setMaximized] = useState(false)
+   const [helpOpen, setHelpOpen] = useState(false)
++  /** 登录引导弹窗：帮助里的「登录」按钮会把它叫起来 */
++  const [loginOpen, setLoginOpen] = useState(false)
+   /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
+   const [reflowing, setReflowing] = useState(false)
+   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
+@@ -229,7 +230,7 @@ export default function App(): JSX.Element {
+   useEffect(() => {
+     return api.session.onExpired((message) => {
+       setSessionMsg(message)
+-      setToast({ id: Date.now(), text: '登录态已失效，请到「帮助」里重新贴一次 cookie', duration: 4000, kind: 'warn' })
++      setToast({ id: Date.now(), text: '登录态已失效，请到「帮助 → 登录」里重新贴一次 cookie', duration: 4000, kind: 'warn' })
+       void api.session.status().then(setSession)
+     })
+   }, [])
+@@ -248,8 +249,8 @@ export default function App(): JSX.Element {
+       favorite: filters.favorite,
+       downloaded: filters.downloaded,
+       orientation: filters.orientation,
+-      dateFrom: filters.dateFrom || undefined,
+-      dateTo: filters.dateTo || undefined,
++      monthFrom: filters.monthFrom || undefined,
++      monthTo: filters.monthTo || undefined,
+       sort: filters.sort,
+       minWidth: filters.minWidth > 0 ? filters.minWidth : undefined,
+       cursor: cursorValue,
+@@ -287,7 +288,7 @@ export default function App(): JSX.Element {
+     setListEpoch((e) => e + 1)
+     void loadPage('reset')
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.dateFrom, filters.dateTo])
++  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.monthFrom, filters.monthTo])
+ 
+   // 滚动到底自动追加
+   /**
+@@ -407,8 +408,8 @@ export default function App(): JSX.Element {
+     filters.tags.length === 0 &&
+     filters.orientation === 'any' &&
+     filters.minWidth === 0 &&
+-    filters.dateFrom === '' &&
+-    filters.dateTo === ''
++    filters.monthFrom === '' &&
++    filters.monthTo === ''
+ 
+   const quickFavorite = useCallback(async (item: ItemSummary) => {
+     const value = await api.library.favorite(item.id, !item.favorite)
+@@ -482,7 +483,7 @@ export default function App(): JSX.Element {
+     if (filters.downloaded !== 'any') n += 1
+     if (filters.orientation !== 'any') n += 1
+     if (filters.minWidth > 0) n += 1
+-    if (filters.dateFrom || filters.dateTo) n += 1
++    if (filters.monthFrom || filters.monthTo) n += 1
+     return n
+   }, [filters])
+ 
+@@ -695,6 +696,52 @@ export default function App(): JSX.Element {
+                 )}
+               </div>
+ 
++              <div className="date-picker">
++                <button
++                  className={`pill${filters.monthFrom || filters.monthTo ? ' active' : ''}`}
++                  onClick={() => setDateOpen((v) => !v)}
++                  title="按发布月份筛选（可与排序叠加）"
++                >
++                  日期
++                  {filters.monthFrom || filters.monthTo
++                    ? `：${filters.monthFrom || '…'} ~ ${filters.monthTo || '…'}`
++                    : ''}
++                  <span className={`caret-inline${dateOpen ? ' open' : ''}`}>▾</span>
++                </button>
++                {dateOpen && (
++                  <div className="date-menu">
++                    <label>
++                      <span>从</span>
++                      <input
++                        type="month"
++                        value={filters.monthFrom}
++                        max={filters.monthTo || undefined}
++                        onChange={(e) => patchFilters({ monthFrom: e.target.value })}
++                      />
++                    </label>
++                    <label>
++                      <span>到</span>
++                      <input
++                        type="month"
++                        value={filters.monthTo}
++                        min={filters.monthFrom || undefined}
++                        onChange={(e) => patchFilters({ monthTo: e.target.value })}
++                      />
++                    </label>
++                    <div className="date-actions">
++                      <button
++                        className="btn sm ghost"
++                        disabled={!filters.monthFrom && !filters.monthTo}
++                        onClick={() => patchFilters({ monthFrom: '', monthTo: '' })}
++                      >
++                        清空日期
++                      </button>
++                    </div>
++                    <p className="dim">按站点发布/上传月份筛，留空即不限</p>
++                  </div>
++                )}
++              </div>
++
+               <button
+                 className={`pill${isAllScope ? ' active' : ''}`}
+                 onClick={() =>
+@@ -706,8 +753,8 @@ export default function App(): JSX.Element {
+                     tags: [],
+                     orientation: 'any',
+                     minWidth: 0,
+-                    dateFrom: '',
+-                    dateTo: ''
++                    monthFrom: '',
++                    monthTo: ''
+                   })
+                 }
+               >
+@@ -749,52 +796,6 @@ export default function App(): JSX.Element {
+                 竖图
+               </button>
+ 
+-              <div className="date-picker">
+-                <button
+-                  className={`pill${filters.dateFrom || filters.dateTo ? ' active' : ''}`}
+-                  onClick={() => setDateOpen((v) => !v)}
+-                  title="按发布日期筛选（可与排序叠加）"
+-                >
+-                  日期
+-                  {filters.dateFrom || filters.dateTo
+-                    ? `：${filters.dateFrom || '…'} ~ ${filters.dateTo || '…'}`
+-                    : ''}
+-                  <span className={`caret-inline${dateOpen ? ' open' : ''}`}>▾</span>
+-                </button>
+-                {dateOpen && (
+-                  <div className="date-menu">
+-                    <label>
+-                      <span>从</span>
+-                      <input
+-                        type="date"
+-                        value={filters.dateFrom}
+-                        max={filters.dateTo || undefined}
+-                        onChange={(e) => patchFilters({ dateFrom: e.target.value })}
+-                      />
+-                    </label>
+-                    <label>
+-                      <span>到</span>
+-                      <input
+-                        type="date"
+-                        value={filters.dateTo}
+-                        min={filters.dateFrom || undefined}
+-                        onChange={(e) => patchFilters({ dateTo: e.target.value })}
+-                      />
+-                    </label>
+-                    <div className="date-actions">
+-                      <button
+-                        className="btn sm ghost"
+-                        disabled={!filters.dateFrom && !filters.dateTo}
+-                        onClick={() => patchFilters({ dateFrom: '', dateTo: '' })}
+-                      >
+-                        清空日期
+-                      </button>
+-                    </div>
+-                    <p className="dim">按站点发布/上传时间筛，留空即不限</p>
+-                  </div>
+-                )}
+-              </div>
+-
+               {filters.plate && (
+                 <span className="pill active">
+                   {filters.plate}
+@@ -968,88 +969,18 @@ export default function App(): JSX.Element {
+               <dt>图库目录</dt>
+               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
+             </dl>
+-            <div className="sep" />
+-
+-            <div className="panel-title" style={{ marginBottom: 8 }}>
+-              登录态
+-              <span className="hint">
+-                {session?.loggedIn
+-                  ? '已登录 ' + (session.fingerprint ?? '') + (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
+-                  : '未登录 · 只影响「泳装分享」分类'}
+-              </span>
+-            </div>
+-
+-            {sessionMsg && <p className="setup-error" style={{ marginTop: 0 }}>{sessionMsg}</p>}
+-
+-            <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.8 }}>
+-              本应用<strong>不保存账号密码</strong>。请先用浏览器登录 guguxz.com，
+-              按 F12 → Console 输入 <code>document.cookie</code>，
+-              把 <code>PHPSESSID=...</code> 那一段粘到下面。
+-              它会用系统密钥链加密后存在本地，随时可以清除。
+-            </p>
+-
+-            <textarea
+-              className="cookie-input"
+-              rows={2}
+-              spellCheck={false}
+-              placeholder="PHPSESSID=xxxxxxxx"
+-              value={cookieDraft}
+-              onChange={(e) => setCookieDraft(e.target.value)}
+-            />
+-
+-            <div className="row" style={{ gap: 8, marginTop: 8 }}>
+-              <button
+-                className="btn primary sm"
+-                disabled={sessionBusy || cookieDraft.trim() === ''}
+-                onClick={async () => {
+-                  setSessionBusy(true)
+-                  setSessionMsg(null)
+-                  try {
+-                    const r = await api.session.set(cookieDraft.trim())
+-                    setSession(r.status)
+-                    setSessionMsg(r.verify.message)
+-                    if (r.verify.ok) {
+-                      setCookieDraft('')
+-                      showToast('登录态已生效', 1600, 'success')
+-                    }
+-                  } catch (err) {
+-                    setSessionMsg(err instanceof Error ? err.message : '保存失败')
+-                  } finally {
+-                    setSessionBusy(false)
+-                  }
+-                }}
+-              >
+-                保存并验证
+-              </button>
+-              <button
+-                className="btn sm"
+-                disabled={sessionBusy || !session?.loggedIn}
+-                onClick={async () => {
+-                  setSessionBusy(true)
+-                  try {
+-                    const r = await api.session.verify()
+-                    setSession(r.status)
+-                    setSessionMsg(r.verify.message)
+-                  } finally {
+-                    setSessionBusy(false)
+-                  }
+-                }}
+-              >
+-                重新验证
+-              </button>
++            <div className="modal-actions">
+               <button
+-                className="btn sm danger"
+-                disabled={sessionBusy || !session?.loggedIn}
+-                onClick={async () => {
+-                  setSession(await api.session.clear())
+-                  setSessionMsg('已清除本地登录凭据')
++                className="btn btn-left"
++                disabled={session?.loggedIn === true}
++                onClick={() => {
++                  setHelpOpen(false)
++                  setLoginOpen(true)
+                 }}
+               >
+-                清除
++                {session?.loggedIn ? '已登录' : '登录'}
+               </button>
+-            </div>
+ 
+-            <div className="modal-actions">
+               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
+                 访问网站
+               </button>
+@@ -1061,6 +992,17 @@ export default function App(): JSX.Element {
+         </div>
+       )}
+ 
++      {loginOpen && (
++        <LoginGuide
++          session={session}
++          message={sessionMsg}
++          onSession={setSession}
++          onMessage={setSessionMsg}
++          onClose={() => setLoginOpen(false)}
++          onToast={showToast}
++        />
++      )}
++
+       {bootstrapped && !settings.setupCompleted && (
+         <SetupWizard
+           suggested={suggestedRoot}
+diff --git a/src/renderer/src/components/LoginGuide.tsx b/src/renderer/src/components/LoginGuide.tsx
+new file mode 100644
+index 0000000..6e9adef
+--- /dev/null
++++ b/src/renderer/src/components/LoginGuide.tsx
+@@ -0,0 +1,128 @@
++import { useState } from 'react'
++import type { SessionStatus } from '@shared/bridge'
++import type { ToastPayload } from './Toast'
++import { api } from '../api'
++
++interface Props {
++  session: SessionStatus | null
++  /** 上一次操作的结果说明；由外层持有，登录态失效时也能带进来 */
++  message: string | null
++  onSession: (status: SessionStatus) => void
++  onMessage: (message: string | null) => void
++  onClose: () => void
++  onToast: (text: string, duration?: number, kind?: ToastPayload['kind']) => void
++}
++
++/**
++ * 登录引导。
++ *
++ * 站点有一部分内容（泳装分享）只在登录后可见，而登录要过验证码，
++ * 所以这里不去模拟登录表单，而是让用户用浏览器登录、把会话 cookie 交过来 ——
++ * 好处是**账号密码从头到尾不经过本应用**。
++ */
++export default function LoginGuide({
++  session,
++  message,
++  onSession,
++  onMessage,
++  onClose,
++  onToast
++}: Props): JSX.Element {
++  const [draft, setDraft] = useState('')
++  const [busy, setBusy] = useState(false)
++
++  const save = async (): Promise<void> => {
++    setBusy(true)
++    onMessage(null)
++    try {
++      const r = await api.session.set(draft.trim())
++      onSession(r.status)
++      onMessage(r.verify.message)
++      if (r.verify.ok) {
++        setDraft('')
++        onToast('登录态已生效', 1600, 'success')
++        onClose()
++      }
++    } catch (err) {
++      onMessage(err instanceof Error ? err.message : '保存失败')
++    } finally {
++      setBusy(false)
++    }
++  }
++
++  const verify = async (): Promise<void> => {
++    setBusy(true)
++    try {
++      const r = await api.session.verify()
++      onSession(r.status)
++      onMessage(r.verify.message)
++    } finally {
++      setBusy(false)
++    }
++  }
++
++  const clear = async (): Promise<void> => {
++    onSession(await api.session.clear())
++    onMessage('已清除本地登录凭据')
++  }
++
++  return (
++    <div className="modal-mask" onClick={onClose}>
++      <div className="modal login-guide" data-component="App/LoginGuide" onClick={(e) => e.stopPropagation()}>
++        <h3>登录</h3>
++
++        <div className="panel-title" style={{ marginBottom: 8 }}>
++          登录态
++          <span className="hint">
++            {session?.loggedIn
++              ? '已登录 ' + (session.fingerprint ?? '') + (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
++              : '未登录 · 只影响「泳装分享」分类'}
++          </span>
++        </div>
++
++        {message && (
++          <p className="setup-error" style={{ marginTop: 0 }}>
++            {message}
++          </p>
++        )}
++
++        <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.8 }}>
++          本应用<strong>不保存账号密码</strong>。请先用浏览器登录 guguxz.com，
++          按 F12 → Console 输入 <code>document.cookie</code>，
++          把 <code>PHPSESSID=...</code> 那一段粘到下面。
++          它会用系统密钥链加密后存在本地，随时可以清除。
++        </p>
++
++        <textarea
++          className="cookie-input"
++          rows={2}
++          spellCheck={false}
++          placeholder="PHPSESSID=xxxxxxxx"
++          value={draft}
++          onChange={(e) => setDraft(e.target.value)}
++        />
++
++        <div className="row" style={{ gap: 8, marginTop: 8 }}>
++          <button className="btn primary sm" disabled={busy || draft.trim() === ''} onClick={() => void save()}>
++            保存并验证
++          </button>
++          <button className="btn sm" disabled={busy || !session?.loggedIn} onClick={() => void verify()}>
++            重新验证
++          </button>
++          <button className="btn sm danger" disabled={busy || !session?.loggedIn} onClick={() => void clear()}>
++            清除
++          </button>
++        </div>
++
++        <div className="modal-actions">
++          <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/login.html')}>
++            去浏览器登录
++          </button>
++          <button className="btn primary" onClick={onClose}>
++            关闭
++          </button>
++        </div>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index efc6899..2a24512 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -919,7 +919,7 @@ body.resizing * {
+   flex: none;
+   width: 18px;
+ }
+-.date-menu input[type='date'] {
++.date-menu input[type='month'] {
+   flex: 1;
+   min-width: 0;
+   height: 28px;
+@@ -933,13 +933,13 @@ body.resizing * {
+   color-scheme: dark;
+   transition: border-color 0.14s var(--ease);
+ }
+-[data-theme='light'] .date-menu input[type='date'] {
++[data-theme='light'] .date-menu input[type='month'] {
+   color-scheme: light;
+ }
+-.date-menu input[type='date']:hover {
++.date-menu input[type='month']:hover {
+   border-color: var(--border-strong);
+ }
+-.date-menu input[type='date']:focus {
++.date-menu input[type='month']:focus {
+   outline: none;
+   border-color: var(--accent);
+ }
+@@ -2306,3 +2306,13 @@ body.resizing * {
+   color: #ff9f45;
+   box-shadow: inset 0 0 0 1px rgba(255, 159, 69, 0.4);
+ }
++
++/* 帮助里的「登录」按钮贴左边，右半边留给「访问网站 / 知道了」 */
++.modal-actions .btn-left {
++  margin-right: auto;
++}
++
++/* 登录引导：说明文字比较长，比帮助弹窗略宽一点更好读 */
++.login-guide {
++  width: min(520px, calc(100vw - 48px));
++}
+diff --git a/src/shared/categories.ts b/src/shared/categories.ts
+index 59910e8..689b3e3 100644
+--- a/src/shared/categories.ts
++++ b/src/shared/categories.ts
+@@ -43,6 +43,14 @@ export const visibleCategories = (loggedIn: boolean): AppCategory[] =>
+ export const findCategory = (name: string): AppCategory | undefined =>
+   APP_CATEGORIES.find((c) => c.name === name)
+ 
++/**
++ * 站点关键词 -> 应用分类的显示名。
++ * 抓取时用它给条目补一个应用侧标签：站点搜索结果里的泳装图原本挂在别的分类下，
++ * 光靠 plate/word 说不清「用户是从哪儿找到它的」，标签是第二重保险。
++ */
++export const categoryTagFor = (word: string): string =>
++  APP_CATEGORIES.find((c) => c.word === word)?.name ?? word
++
+ /** 应用分类 -> 爬虫目标 */
+ export function toTarget(category: AppCategory): { kind: 'category' | 'search'; plate?: string; word: string } {
+   return category.kind === 'category'
+diff --git a/src/shared/types.ts b/src/shared/types.ts
+index 2220bd5..f64617e 100644
+--- a/src/shared/types.ts
++++ b/src/shared/types.ts
+@@ -103,9 +103,9 @@ export interface GalleryQuery {
+   /** 只取来源页落在该区间的条目（下载阶段按页码范围过滤用） */
+   pageFrom?: number
+   pageTo?: number
+-  /** 发布日期闭区间，格式 YYYY-MM-DD */
+-  dateFrom?: string
+-  dateTo?: string
++  /** 发布月份闭区间，格式 YYYY-MM（界面只精确到月） */
++  monthFrom?: string
++  monthTo?: string
+   sort?: SortKey
+   cursor?: string | null
+   limit?: number
+diff --git a/tests/categories.test.ts b/tests/categories.test.ts
+new file mode 100644
+index 0000000..b4b825d
+--- /dev/null
++++ b/tests/categories.test.ts
+@@ -0,0 +1,46 @@
++import { describe, expect, it } from 'vitest'
++import { APP_CATEGORIES, categoryTagFor, findCategory, toTarget, visibleCategories } from '@shared/categories'
++
++describe('应用分类表', () => {
++  it('未登录时看不到需要登录的分类', () => {
++    const names = visibleCategories(false).map((c) => c.name)
++    expect(names).toEqual(['Pixiv萌图', '电脑壁纸', '手机壁纸'])
++    expect(names).not.toContain('泳装分享')
++  })
++
++  it('登录后泳装分享才出现', () => {
++    const names = visibleCategories(true).map((c) => c.name)
++    expect(names).toContain('泳装分享')
++  })
++
++  it('不再出现搞笑图片与一级分类前缀', () => {
++    const names = APP_CATEGORIES.map((c) => c.name)
++    expect(names.some((n) => n.includes('搞笑'))).toBe(false)
++    expect(names.some((n) => n.startsWith('ACG图片'))).toBe(false)
++  })
++})
++
++describe('分类 -> 抓取目标', () => {
++  it('两层分类带上 plate', () => {
++    const cat = findCategory('电脑壁纸')
++    expect(cat).toBeDefined()
++    expect(toTarget(cat!)).toEqual({ kind: 'category', plate: 'ACG图片', word: '电脑壁纸' })
++  })
++
++  it('泳装分享是关键词搜索，没有 plate', () => {
++    const cat = findCategory('泳装分享')
++    expect(cat?.kind).toBe('search')
++    expect(toTarget(cat!)).toEqual({ kind: 'search', word: '泳装类分享' })
++  })
++})
++
++describe('抓取时补的应用侧标签', () => {
++  it('用显示名而不是站点关键词，和界面上的分类名保持一致', () => {
++    expect(categoryTagFor('泳装类分享')).toBe('泳装分享')
++    expect(categoryTagFor('Pixiv萌图')).toBe('Pixiv萌图')
++  })
++
++  it('认不出来的关键词原样返回', () => {
++    expect(categoryTagFor('随便什么')).toBe('随便什么')
++  })
++})
