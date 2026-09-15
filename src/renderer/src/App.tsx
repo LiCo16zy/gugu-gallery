@@ -21,6 +21,7 @@ import SettingsPanel from './components/SettingsPanel'
 import ContextMenu, { type MenuEntry } from './components/ContextMenu'
 import Toast, { type ToastPayload } from './components/Toast'
 import SetupWizard from './components/SetupWizard'
+import LoginGuide from './components/LoginGuide'
 import { IconCopy, IconExternal, IconFolder, IconHeart } from './components/Icons'
 import { visibleCategories } from '@shared/categories'
 import type { SessionStatus } from '@shared/bridge'
@@ -49,9 +50,9 @@ export interface Filters {
   sort: SortKey
   orientation: Orientation
   minWidth: number
-  /** 发布日期闭区间（YYYY-MM-DD），空串表示不限 */
-  dateFrom: string
-  dateTo: string
+  /** 发布月份闭区间（YYYY-MM），空串表示不限 */
+  monthFrom: string
+  monthTo: string
 }
 
 const INITIAL_FILTERS: Filters = {
@@ -65,8 +66,8 @@ const INITIAL_FILTERS: Filters = {
   sort: 'newest',
   orientation: 'any',
   minWidth: 0,
-  dateFrom: '',
-  dateTo: ''
+  monthFrom: '',
+  monthTo: ''
 }
 
 /** 主题：dark / light / system，system 跟随操作系统配色 */
@@ -121,8 +122,6 @@ export default function App(): JSX.Element {
   const [info, setInfo] = useState<AppInfo | null>(null)
   /** 登录态：只保存站点会话 cookie，账号密码不经过本应用 */
   const [session, setSession] = useState<SessionStatus | null>(null)
-  const [cookieDraft, setCookieDraft] = useState('')
-  const [sessionBusy, setSessionBusy] = useState(false)
   const [sessionMsg, setSessionMsg] = useState<string | null>(null)
   const [stats, setStats] = useState<LibraryStats | null>(null)
   /** 关键词维度的分类计数（电脑壁纸这类有 plate，泳装分享这类没有） */
@@ -159,6 +158,8 @@ export default function App(): JSX.Element {
   /** 自绘标题栏：最大化状态与窗口按钮联动 */
   const [maximized, setMaximized] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  /** 登录引导弹窗：帮助里的「登录」按钮会把它叫起来 */
+  const [loginOpen, setLoginOpen] = useState(false)
   /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
   const [reflowing, setReflowing] = useState(false)
   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
@@ -229,7 +230,7 @@ export default function App(): JSX.Element {
   useEffect(() => {
     return api.session.onExpired((message) => {
       setSessionMsg(message)
-      setToast({ id: Date.now(), text: '登录态已失效，请到「帮助」里重新贴一次 cookie', duration: 4000, kind: 'warn' })
+      setToast({ id: Date.now(), text: '登录态已失效，请到「帮助 → 登录」里重新贴一次 cookie', duration: 4000, kind: 'warn' })
       void api.session.status().then(setSession)
     })
   }, [])
@@ -248,8 +249,8 @@ export default function App(): JSX.Element {
       favorite: filters.favorite,
       downloaded: filters.downloaded,
       orientation: filters.orientation,
-      dateFrom: filters.dateFrom || undefined,
-      dateTo: filters.dateTo || undefined,
+      monthFrom: filters.monthFrom || undefined,
+      monthTo: filters.monthTo || undefined,
       sort: filters.sort,
       minWidth: filters.minWidth > 0 ? filters.minWidth : undefined,
       cursor: cursorValue,
@@ -287,7 +288,7 @@ export default function App(): JSX.Element {
     setListEpoch((e) => e + 1)
     void loadPage('reset')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.dateFrom, filters.dateTo])
+  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.monthFrom, filters.monthTo])
 
   // 滚动到底自动追加
   /**
@@ -407,8 +408,8 @@ export default function App(): JSX.Element {
     filters.tags.length === 0 &&
     filters.orientation === 'any' &&
     filters.minWidth === 0 &&
-    filters.dateFrom === '' &&
-    filters.dateTo === ''
+    filters.monthFrom === '' &&
+    filters.monthTo === ''
 
   const quickFavorite = useCallback(async (item: ItemSummary) => {
     const value = await api.library.favorite(item.id, !item.favorite)
@@ -482,7 +483,7 @@ export default function App(): JSX.Element {
     if (filters.downloaded !== 'any') n += 1
     if (filters.orientation !== 'any') n += 1
     if (filters.minWidth > 0) n += 1
-    if (filters.dateFrom || filters.dateTo) n += 1
+    if (filters.monthFrom || filters.monthTo) n += 1
     return n
   }, [filters])
 
@@ -695,6 +696,52 @@ export default function App(): JSX.Element {
                 )}
               </div>
 
+              <div className="date-picker">
+                <button
+                  className={`pill${filters.monthFrom || filters.monthTo ? ' active' : ''}`}
+                  onClick={() => setDateOpen((v) => !v)}
+                  title="按发布月份筛选（可与排序叠加）"
+                >
+                  日期
+                  {filters.monthFrom || filters.monthTo
+                    ? `：${filters.monthFrom || '…'} ~ ${filters.monthTo || '…'}`
+                    : ''}
+                  <span className={`caret-inline${dateOpen ? ' open' : ''}`}>▾</span>
+                </button>
+                {dateOpen && (
+                  <div className="date-menu">
+                    <label>
+                      <span>从</span>
+                      <input
+                        type="month"
+                        value={filters.monthFrom}
+                        max={filters.monthTo || undefined}
+                        onChange={(e) => patchFilters({ monthFrom: e.target.value })}
+                      />
+                    </label>
+                    <label>
+                      <span>到</span>
+                      <input
+                        type="month"
+                        value={filters.monthTo}
+                        min={filters.monthFrom || undefined}
+                        onChange={(e) => patchFilters({ monthTo: e.target.value })}
+                      />
+                    </label>
+                    <div className="date-actions">
+                      <button
+                        className="btn sm ghost"
+                        disabled={!filters.monthFrom && !filters.monthTo}
+                        onClick={() => patchFilters({ monthFrom: '', monthTo: '' })}
+                      >
+                        清空日期
+                      </button>
+                    </div>
+                    <p className="dim">按站点发布/上传月份筛，留空即不限</p>
+                  </div>
+                )}
+              </div>
+
               <button
                 className={`pill${isAllScope ? ' active' : ''}`}
                 onClick={() =>
@@ -706,8 +753,8 @@ export default function App(): JSX.Element {
                     tags: [],
                     orientation: 'any',
                     minWidth: 0,
-                    dateFrom: '',
-                    dateTo: ''
+                    monthFrom: '',
+                    monthTo: ''
                   })
                 }
               >
@@ -748,52 +795,6 @@ export default function App(): JSX.Element {
               >
                 竖图
               </button>
-
-              <div className="date-picker">
-                <button
-                  className={`pill${filters.dateFrom || filters.dateTo ? ' active' : ''}`}
-                  onClick={() => setDateOpen((v) => !v)}
-                  title="按发布日期筛选（可与排序叠加）"
-                >
-                  日期
-                  {filters.dateFrom || filters.dateTo
-                    ? `：${filters.dateFrom || '…'} ~ ${filters.dateTo || '…'}`
-                    : ''}
-                  <span className={`caret-inline${dateOpen ? ' open' : ''}`}>▾</span>
-                </button>
-                {dateOpen && (
-                  <div className="date-menu">
-                    <label>
-                      <span>从</span>
-                      <input
-                        type="date"
-                        value={filters.dateFrom}
-                        max={filters.dateTo || undefined}
-                        onChange={(e) => patchFilters({ dateFrom: e.target.value })}
-                      />
-                    </label>
-                    <label>
-                      <span>到</span>
-                      <input
-                        type="date"
-                        value={filters.dateTo}
-                        min={filters.dateFrom || undefined}
-                        onChange={(e) => patchFilters({ dateTo: e.target.value })}
-                      />
-                    </label>
-                    <div className="date-actions">
-                      <button
-                        className="btn sm ghost"
-                        disabled={!filters.dateFrom && !filters.dateTo}
-                        onClick={() => patchFilters({ dateFrom: '', dateTo: '' })}
-                      >
-                        清空日期
-                      </button>
-                    </div>
-                    <p className="dim">按站点发布/上传时间筛，留空即不限</p>
-                  </div>
-                )}
-              </div>
 
               {filters.plate && (
                 <span className="pill active">
@@ -968,88 +969,18 @@ export default function App(): JSX.Element {
               <dt>图库目录</dt>
               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
             </dl>
-            <div className="sep" />
-
-            <div className="panel-title" style={{ marginBottom: 8 }}>
-              登录态
-              <span className="hint">
-                {session?.loggedIn
-                  ? '已登录 ' + (session.fingerprint ?? '') + (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
-                  : '未登录 · 只影响「泳装分享」分类'}
-              </span>
-            </div>
-
-            {sessionMsg && <p className="setup-error" style={{ marginTop: 0 }}>{sessionMsg}</p>}
-
-            <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.8 }}>
-              本应用<strong>不保存账号密码</strong>。请先用浏览器登录 guguxz.com，
-              按 F12 → Console 输入 <code>document.cookie</code>，
-              把 <code>PHPSESSID=...</code> 那一段粘到下面。
-              它会用系统密钥链加密后存在本地，随时可以清除。
-            </p>
-
-            <textarea
-              className="cookie-input"
-              rows={2}
-              spellCheck={false}
-              placeholder="PHPSESSID=xxxxxxxx"
-              value={cookieDraft}
-              onChange={(e) => setCookieDraft(e.target.value)}
-            />
-
-            <div className="row" style={{ gap: 8, marginTop: 8 }}>
-              <button
-                className="btn primary sm"
-                disabled={sessionBusy || cookieDraft.trim() === ''}
-                onClick={async () => {
-                  setSessionBusy(true)
-                  setSessionMsg(null)
-                  try {
-                    const r = await api.session.set(cookieDraft.trim())
-                    setSession(r.status)
-                    setSessionMsg(r.verify.message)
-                    if (r.verify.ok) {
-                      setCookieDraft('')
-                      showToast('登录态已生效', 1600, 'success')
-                    }
-                  } catch (err) {
-                    setSessionMsg(err instanceof Error ? err.message : '保存失败')
-                  } finally {
-                    setSessionBusy(false)
-                  }
-                }}
-              >
-                保存并验证
-              </button>
-              <button
-                className="btn sm"
-                disabled={sessionBusy || !session?.loggedIn}
-                onClick={async () => {
-                  setSessionBusy(true)
-                  try {
-                    const r = await api.session.verify()
-                    setSession(r.status)
-                    setSessionMsg(r.verify.message)
-                  } finally {
-                    setSessionBusy(false)
-                  }
-                }}
-              >
-                重新验证
-              </button>
-              <button
-                className="btn sm danger"
-                disabled={sessionBusy || !session?.loggedIn}
-                onClick={async () => {
-                  setSession(await api.session.clear())
-                  setSessionMsg('已清除本地登录凭据')
-                }}
-              >
-                清除
-              </button>
-            </div>
-
             <div className="modal-actions">
+              <button
+                className="btn btn-left"
+                disabled={session?.loggedIn === true}
+                onClick={() => {
+                  setHelpOpen(false)
+                  setLoginOpen(true)
+                }}
+              >
+                {session?.loggedIn ? '已登录' : '登录'}
+              </button>
+
               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
                 访问网站
               </button>
@@ -1059,6 +990,17 @@ export default function App(): JSX.Element {
             </div>
           </div>
         </div>
+      )}
+
+      {loginOpen && (
+        <LoginGuide
+          session={session}
+          message={sessionMsg}
+          onSession={setSession}
+          onMessage={setSessionMsg}
+          onClose={() => setLoginOpen(false)}
+          onToast={showToast}
+        />
       )}
 
       {bootstrapped && !settings.setupCompleted && (

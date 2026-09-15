@@ -43,6 +43,14 @@ export const visibleCategories = (loggedIn: boolean): AppCategory[] =>
 export const findCategory = (name: string): AppCategory | undefined =>
   APP_CATEGORIES.find((c) => c.name === name)
 
+/**
+ * 站点关键词 -> 应用分类的显示名。
+ * 抓取时用它给条目补一个应用侧标签：站点搜索结果里的泳装图原本挂在别的分类下，
+ * 光靠 plate/word 说不清「用户是从哪儿找到它的」，标签是第二重保险。
+ */
+export const categoryTagFor = (word: string): string =>
+  APP_CATEGORIES.find((c) => c.word === word)?.name ?? word
+
 /** 应用分类 -> 爬虫目标 */
 export function toTarget(category: AppCategory): { kind: 'category' | 'search'; plate?: string; word: string } {
   return category.kind === 'category'

@@ -217,14 +217,20 @@ const SCRIPT = `(async () => {
     out.sortMeta = meta()
   }
 
-  // 7.2) 日期范围：可折叠面板 + 起止两个日期，和排序叠加使用
+  // 7.2) 日期范围：可折叠面板 + 起止两个月份，和排序叠加使用
   {
     const pill = () => document.querySelector('.date-picker .pill')
+    const totalOf = (s) => Number(((s.match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
+    // 图库会随着开发过程中的抓取变大，所以基准值现场取，不写死
+    out.dateTotalBefore = totalOf(meta())
     out.datePillExists = Boolean(pill())
+    // 按标注挪到过滤栏第二个位置：排序之后、全部之前
+    const bar = document.querySelector('.filter-bar')
+    out.datePillSlot = bar ? Array.from(bar.children).findIndex((el) => el.classList.contains('date-picker')) : -1
     pill()?.click()
     await sleep(250)
     out.dateMenuOpen = Boolean(document.querySelector('.date-menu'))
-    const inputs = Array.from(document.querySelectorAll('.date-menu input[type="date"]'))
+    const inputs = Array.from(document.querySelectorAll('.date-menu input[type="month"]'))
     out.dateInputCount = inputs.length
     // React 自己维护 value 影子值，直接赋值不会触发 onChange，得走原生 setter
     const setDate = (el, v) => {
@@ -233,13 +239,14 @@ const SCRIPT = `(async () => {
       el.dispatchEvent(new Event('input', { bubbles: true }))
     }
     if (inputs.length === 2) {
-      setDate(inputs[0], '2026-09-01')
+      // 界面只精确到月：demo 库里 2026-09 正好 110 条
+      setDate(inputs[0], '2026-09')
       await sleep(1200)
-      setDate(inputs[1], '2026-09-14')
+      setDate(inputs[1], '2026-09')
       await sleep(1400)
       const m = meta()
       out.dateMeta = m
-      out.dateFiltered = Number(((m.match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
+      out.dateFiltered = totalOf(m)
       out.datePillActive = (pill()?.className || '').includes('active')
       const clear = Array.from(document.querySelectorAll('.date-menu .btn')).find((b) =>
         b.textContent.includes('清空日期')
@@ -247,11 +254,38 @@ const SCRIPT = `(async () => {
       clear?.click()
       await sleep(1200)
       out.dateMetaAfterClear = meta()
-      out.dateClearedCount = Number(((meta().match(/共 ([0-9,]+) 条/) || [])[1] || '0').replace(/,/g, ''))
+      out.dateClearedCount = totalOf(meta())
     }
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
     await sleep(250)
     out.dateMenuClosedOnOutside = !document.querySelector('.date-menu')
+  }
+
+  // 7.3) 帮助里的登录入口：点了要关掉帮助、弹出登录引导
+  {
+    const helpBtn = Array.from(document.querySelectorAll('.sidebar-foot .side-item')).find((b) =>
+      b.textContent.includes('帮助')
+    )
+    helpBtn?.click()
+    await sleep(400)
+    const help = document.querySelector('[data-component="App/Help"]')
+    out.helpOpen = Boolean(help)
+    const loginBtn = help
+      ? Array.from(help.querySelectorAll('.modal-actions .btn')).find((b) => b.textContent.trim() === '登录')
+      : null
+    out.helpLoginButton = Boolean(loginBtn)
+    out.helpLoginDisabled = loginBtn ? loginBtn.disabled : null
+    out.helpLoginOnLeft = Boolean(loginBtn && loginBtn.classList.contains('btn-left'))
+    loginBtn?.click()
+    await sleep(400)
+    out.guideOpenedFromHelp = Boolean(document.querySelector('[data-component="App/LoginGuide"]'))
+    out.helpClosedAfterLogin = !document.querySelector('[data-component="App/Help"]')
+    const closeBtn = Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn')).find(
+      (b) => b.textContent.trim() === '关闭'
+    )
+    closeBtn?.click()
+    await sleep(300)
+    out.guideClosed = !document.querySelector('[data-component="App/LoginGuide"]')
   }
 
   // 7.5) 横向溢出
@@ -460,10 +494,15 @@ const checks = [
   ['排序挪到过滤栏且可展开', result.sortMenuOpen === true && result.sortItemCount === 6],
   ['过滤栏有日期范围入口', result.datePillExists === true],
   ['日期面板可展开且有起止两个输入', result.dateMenuOpen === true && result.dateInputCount === 2],
-  ['日期范围能缩小结果集', (result.dateFiltered ?? -1) > 0 && result.dateFiltered < 2120],
+  ['日期范围能缩小结果集', (result.dateFiltered ?? 0) > 0 && result.dateFiltered < (result.dateTotalBefore ?? 0)],
   ['日期生效时按钮高亮', result.datePillActive === true],
-  ['清空日期后恢复全量', result.dateClearedCount === 2120],
+  ['清空日期后恢复全量', result.dateClearedCount === result.dateTotalBefore],
   ['点空白处关闭日期面板', result.dateMenuClosedOnOutside === true],
+  ['日期胶囊在过滤栏第二个位置', result.datePillSlot === 1],
+  ['帮助里有登录入口且未登录时不置灰', result.helpLoginButton === true && result.helpLoginDisabled === false],
+  ['登录按钮贴左边', result.helpLoginOnLeft === true],
+  ['点登录会关掉帮助并弹出登录引导', result.guideOpenedFromHelp === true && result.helpClosedAfterLogin === true],
+  ['登录引导能关闭', result.guideClosed === true],
   ['切换排序生效', result.sortValue === 'views'],
   ['内容页无横向溢出', result.mainOverflowX === 0],
   ['灯箱打开时根节点有 lightbox-open', result.lightboxOpenClass === true],

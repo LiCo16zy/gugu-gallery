@@ -27,6 +27,7 @@ import type { Library } from '../media/library'
 import { buildSlug } from '../media/library'
 import { makeThumbnail, probeImage } from '../media/thumbnail'
 import type { AppSettings, CrawlSiteInfo } from '@shared/types'
+import { categoryTagFor } from '@shared/categories'
 
 export interface EngineDeps {
   repo: Repository
@@ -383,7 +384,11 @@ export class CrawlEngine {
         previewUrl: raw.remotePath ? previewUrl(raw.remotePath) : null,
         downloadUrl: raw.remotePath ? originalUrl(raw.remotePath) : null,
         page,
-        tags: raw.tags
+        // 搜索类目标额外补一个应用侧标签（站点自己不会给），方便单独筛出来
+        tags:
+          target.kind === 'search' && target.word
+            ? [...raw.tags, categoryTagFor(target.word)]
+            : raw.tags
       }))
 
       const { inserted } = this.deps.repo.upsertItems(upserts)

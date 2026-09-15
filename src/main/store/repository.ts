@@ -576,15 +576,16 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] } 
     clauses.push('COALESCE(i.height, 0) >= ?')
     params.push(query.minHeight)
   }
-  if (query.dateFrom) {
-    // published_at 存的是 'YYYY-MM-DD HH:mm'，按字典序比较即可
+  if (query.monthFrom) {
+    // published_at 存的是 'YYYY-MM-DD HH:mm'，按字典序比较即可。
+    // 界面只让选到月，下限就补成当月 1 号 00:00。
     clauses.push("COALESCE(i.published_at, '') >= ?")
-    params.push(`${query.dateFrom} 00:00`)
+    params.push(`${query.monthFrom}-01 00:00`)
   }
-  if (query.dateTo) {
-    // 上界用「次日 00:00」而不是当天 23:59，避免把当天的内容漏掉
+  if (query.monthTo) {
+    // 上界用「下个月 1 号 00:00」，这样「到 2026-09」是包含整个 9 月的闭区间
     clauses.push("COALESCE(i.published_at, '') < ?")
-    params.push(`${nextDay(query.dateTo)} 00:00`)
+    params.push(`${nextMonth(query.monthTo)}-01 00:00`)
   }
   if (query.pageFrom != null) {
     clauses.push('i.page IS NOT NULL AND i.page >= ?')
@@ -641,13 +642,11 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] } 
   return { where: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '', params }
 }
 
-/** 'YYYY-MM-DD' -> 次日；用于日期上界的开区间比较 */
-function nextDay(date: string): string {
-  const d = new Date(`${date}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return date
-  d.setDate(d.getDate() + 1)
-  const pad = (n: number): string => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+/** 'YYYY-MM' -> 下个月；用于月份上界的开区间比较 */
+function nextMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  if (!y || !m || m < 1 || m > 12) return month
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
 }
 
 function buildOrder(sort: NonNullable<GalleryQuery['sort']>): string {

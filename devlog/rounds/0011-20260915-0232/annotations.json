@@ -1,0 +1,220 @@
+{
+  "roundId": "0011-20260915-0232",
+  "exportedAt": "2026-09-14T18:32:22.567Z",
+  "view": "crawl",
+  "note": "登录态解锁\n爬虫优化",
+  "viewport": {
+    "width": 1348,
+    "height": 716
+  },
+  "devicePixelRatio": 1.4249999523162842,
+  "appVersion": "0.6.0",
+  "annotations": [
+    {
+      "id": "no92h6kx",
+      "index": 1,
+      "comment": "爬虫爬取此类应额外添加泳装分享标签，点击时添加筛选，且此分类仅登录态可见。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789409808887,
+      "rect": {
+        "x": 10,
+        "y": 268.9254455566406,
+        "width": 210.29605102539062,
+        "height": 23.26754379272461
+      },
+      "pageRect": {
+        "x": 10,
+        "y": 268.9254455566406,
+        "width": 210.29605102539062,
+        "height": 23.26754379272461
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > aside.sidebar > div.sidebar-scroll:nth-of-type(1) > div.side-section:nth-of-type(2) > div.side-title",
+        "component": "Sidebar › div.side-title",
+        "tag": "div",
+        "classes": "side-title",
+        "text": "分类",
+        "parentChain": [
+          "div.side-section",
+          "div.sidebar-scroll",
+          "aside.sidebar",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "space-between",
+          "align-items": "center",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "210.296px",
+          "height": "23.2675px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px 8px 7px",
+          "margin": "0px",
+          "font-size": "10.5px",
+          "font-weight": "600",
+          "line-height": "16.275px",
+          "letter-spacing": "0.9px",
+          "color": "rgb(102, 112, 133)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(102, 112, 133)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "3qkl8amy",
+      "index": 2,
+      "comment": "此项置于左侧第二个位置\n仅分月，不记录日",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789409883390,
+      "rect": {
+        "x": 723.38818359375,
+        "y": 68.99122619628906,
+        "width": 62.105262756347656,
+        "height": 25.997806549072266
+      },
+      "pageRect": {
+        "x": 723.38818359375,
+        "y": 68.99122619628906,
+        "width": 62.105262756347656,
+        "height": 25.997806549072266
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > main.main > div.filter-bar:nth-of-type(1) > div.date-picker:nth-of-type(2) > button.pill",
+        "component": "App/FilterBar › button.pill",
+        "tag": "button",
+        "classes": "pill",
+        "text": "日期▾",
+        "parentChain": [
+          "div.date-picker",
+          "div.filter-bar",
+          "main.main",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "inline-flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "6px",
+          "grid-template-columns": "none",
+          "width": "62.1053px",
+          "height": "25.9978px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px 10px",
+          "margin": "0px",
+          "font-size": "12px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(20, 25, 36)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "99px",
+          "white-space": "normal",
+          "transition": "0.14s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "14.72:1（AAA）"
+        },
+        "attributes": {
+          "title": "按发布日期筛选（可与排序叠加）"
+        }
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "v7196cc8",
+      "index": 3,
+      "comment": "在左边增加登录按钮，点击后关闭帮助弹出引导界面，识别后此处登录按钮变灰“已登陆”",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789410345297,
+      "rect": {
+        "x": 773.5855102539062,
+        "y": 568.739013671875,
+        "width": 81.38157653808594,
+        "height": 33.99123001098633
+      },
+      "pageRect": {
+        "x": 773.5855102539062,
+        "y": 568.739013671875,
+        "width": 81.38157653808594,
+        "height": 33.99123001098633
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(5) > button.btn:nth-of-type(1)",
+        "component": "App/Help › button.btn",
+        "tag": "button",
+        "classes": "btn",
+        "text": "访问网站",
+        "parentChain": [
+          "div.modal-actions",
+          "div.modal",
+          "div.modal-mask",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "center",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "81.3816px",
+          "height": "33.9912px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 14px",
+          "margin": "0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgb(26, 32, 45)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "9px",
+          "white-space": "nowrap",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "13.64:1（AAA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    }
+  ]
+}

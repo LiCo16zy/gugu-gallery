@@ -919,7 +919,7 @@ body.resizing * {
   flex: none;
   width: 18px;
 }
-.date-menu input[type='date'] {
+.date-menu input[type='month'] {
   flex: 1;
   min-width: 0;
   height: 28px;
@@ -933,13 +933,13 @@ body.resizing * {
   color-scheme: dark;
   transition: border-color 0.14s var(--ease);
 }
-[data-theme='light'] .date-menu input[type='date'] {
+[data-theme='light'] .date-menu input[type='month'] {
   color-scheme: light;
 }
-.date-menu input[type='date']:hover {
+.date-menu input[type='month']:hover {
   border-color: var(--border-strong);
 }
-.date-menu input[type='date']:focus {
+.date-menu input[type='month']:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -2305,4 +2305,14 @@ body.resizing * {
   background: rgba(255, 159, 69, 0.16);
   color: #ff9f45;
   box-shadow: inset 0 0 0 1px rgba(255, 159, 69, 0.4);
+}
+
+/* 帮助里的「登录」按钮贴左边，右半边留给「访问网站 / 知道了」 */
+.modal-actions .btn-left {
+  margin-right: auto;
+}
+
+/* 登录引导：说明文字比较长，比帮助弹窗略宽一点更好读 */
+.login-guide {
+  width: min(520px, calc(100vw - 48px));
 }
