@@ -6,27 +6,16 @@
  *
  * 需要先 npm run build；依赖 GUGU_LIBRARY_ROOT（默认 data/demo）里的图库数据。
  */
-import { spawn } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { cp, mkdir, rm } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const electronBinary = join(
-  root,
-  'node_modules',
-  'electron',
-  'dist',
-  process.platform === 'win32' ? 'electron.exe' : 'electron'
-)
+import { join } from 'node:path'
+import { appBinary, root, runApp, startDevServer } from './tauri-app.mjs'
 
 const sourceLibrary = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
 const outDir = join(root, 'screenshots', 'uicheck')
 
-if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
-  console.error('缺少构建产物，请先 npm run build')
+if (!existsSync(appBinary())) {
+  console.error('缺少构建产物，请先执行 cd src-tauri && cargo build')
   process.exit(1)
 }
 await mkdir(outDir, { recursive: true })
@@ -455,9 +444,8 @@ const SCRIPT = `(async () => {
   return out
 })()`
 
-// 自检用的 userData 每次清掉登录态：断言必须与用户本机的登录状态无关
+// 自检的登录态与用户本机完全隔离（见下面的 GUGU_SESSION_EPHEMERAL）
 const userDataDir = join(root, 'data', 'uicheck-userdata')
-rmSync(join(userDataDir, 'session.bin'), { force: true })
 
 const env = {
   ...process.env,
@@ -474,40 +462,14 @@ const env = {
 }
 
 // Tauri 版：debug 构建走 devUrl，所以先起 Vite 开发服务器，再起应用本体
-const vite = spawn('npm run dev:web', [], {
-  shell: true,
-  cwd: root,
-  env: process.env,
-  stdio: ['ignore', 'pipe', 'pipe']
-})
-await new Promise((r) => setTimeout(r, 7000))
-
-const tauriExe = join(root, 'src-tauri', 'target', 'debug', 'gugu-gallery.exe')
-if (!existsSync(tauriExe)) {
+const vite = await startDevServer()
+let output = ''
+try {
+  const run = await runApp(env, { timeoutMs: 180000, echo: false })
+  output = run.output
+} finally {
   vite.kill()
-  console.error('未找到 Tauri 构建产物，请先执行：cd src-tauri && cargo build')
-  process.exit(1)
 }
-
-const output = await new Promise((resolvePromise) => {
-  const child = spawn(tauriExe, [], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] })
-  let buf = ''
-  child.stdout.on('data', (d) => {
-    buf += String(d)
-  })
-  child.stderr.on('data', (d) => {
-    buf += String(d)
-  })
-  const killer = setTimeout(() => {
-    child.kill()
-    resolvePromise(buf)
-  }, 180000)
-  child.on('exit', () => {
-    clearTimeout(killer)
-    vite.kill()
-    resolvePromise(buf)
-  })
-})
 
 const match = /__EVAL__(\{.*\})/s.exec(output)
 if (!match) {

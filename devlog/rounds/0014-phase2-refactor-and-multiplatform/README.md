@@ -399,3 +399,41 @@ devlog/rounds/0001-20260916-1917/
 
 ---
 
+## 十六、里程碑 8：Electron 代码清空 + 命令行模式搬到 Rust
+
+**这一节开始，仓库里再没有 Electron。**
+
+删除：
+
+| 删除物 | 说明 |
+| --- | --- |
+| `src/main/**`、`src/preload/**` | Electron 主进程与预加载（爬虫 / 存储 / 会话 / 插件宿主全部已由 Rust 侧承担） |
+| `electron.vite.config.ts` | 渲染层由 `vite.renderer.config.ts` 承担 |
+| `plugins/devlog/main/**` | 主进程侧插件，已由 `src-tauri/src/plugins/devlog.rs` 承担 |
+| `scripts/{fix-wincodesign,imgdiff.cjs,make-icon.mjs}` | electron-builder / nativeImage 专用 |
+| `tests/parser.test.ts`、`tsconfig.node.json` | 前者覆盖已由 Rust 侧 16 项解析单测承担（同一批 fixtures），后者只为 Electron 主进程存在 |
+| `release/`（旧安装包与免安装目录）、`out/{main,preload}` | 首个发布版在 GitHub 上有存档，本地不再需要 |
+
+依赖瘦身：Electron / electron-builder / electron-vite / sql.js 全部移除，
+`node_modules` 从 ~700 MB 级降到 **92 MB**；`package.json` 去掉 `main` 与 electron-builder 的 `build` 段。
+
+**命令行模式搬到 Rust**（`src-tauri/src/cli.rs`）：参数与旧版逐个对齐 ——
+`--plate`、`--word`、`--pages`、`--from`、`--max`、`--index-only`、`--no-enrich`、
+`--search`、`--library`、`--delay`、`--concurrency`、`--include`、`--exclude`、`--quiet`；
+无参数照旧进界面。进展行按「稳定字段变化或每 2 秒」打印，不刷屏；
+`imgdiff` 也从 `nativeImage` 版改成 Rust 子命令。新增 `scripts/crawl.mjs` 包装，
+`e2e.mjs` 改成驱动应用本体的命令行模式。
+
+**验证（全部在删干净之后重跑）**
+
+| 检查 | 结果 |
+| --- | --- |
+| `npm run typecheck` | 干净 |
+| `npm test`（vitest） | 7 项通过（分类表） |
+| `npm run build:web` | 245 KB JS / 47 KB CSS |
+| `node scripts/uicheck.mjs` | **63 项全绿** |
+| `node plugins/annotator/bin/check.mjs` | **37 项全绿** |
+| `node scripts/e2e.mjs`（真连站点） | 5 项全绿：索引 10 条、下载 4 张、缩略图 4 张、5779 KB |
+
+---
+

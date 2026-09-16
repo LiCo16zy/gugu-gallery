@@ -2,89 +2,44 @@
   "name": "gugu-gallery",
   "version": "0.6.3",
   "private": true,
-  "description": "咕咕小站图片爬虫 + 本地图库浏览器（Electron 桌面应用）",
-  "author": "gugu-gallery",
+  "description": "咕咕小站图片爬虫 + 本地图库浏览器（Tauri 2 桌面应用）",
+  "author": "LiCo16zy",
   "license": "MIT",
-  "main": "out/main/index.js",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "npm run typecheck && electron-vite build",
-    "build:release": "node scripts/release.mjs build",
-    "start": "electron-vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dev:web": "vite --config vite.renderer.config.ts",
+    "build:web": "vite build --config vite.renderer.config.ts",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "crawl": "node scripts/crawl.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "shot": "node scripts/shot.mjs",
-    "crawl": "electron-vite build && electron out/main/cli.js",
-    "crawl:dev": "electron out/main/cli.js",
-    "e2e": "node scripts/e2e.mjs",
     "uicheck": "node scripts/uicheck.mjs",
+    "e2e": "node scripts/e2e.mjs",
     "annotatecheck": "node plugins/annotator/bin/check.mjs",
     "round": "node plugins/devlog/bin/round.mjs",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build:release && electron-builder",
-    "imgdiff": "electron scripts/imgdiff.cjs",
-    "dev:web": "vite --config vite.renderer.config.ts",
-    "build:web": "vite build --config vite.renderer.config.ts",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "pack": "node scripts/release.mjs build",
+    "dist": "node scripts/release.mjs dist"
   },
   "dependencies": {
-    "sql.js": "^1.13.0",
     "@tauri-apps/api": "^2"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "@types/sql.js": "^1.4.9",
     "@vitejs/plugin-react": "^4.3.4",
-    "electron": "^33.3.1",
-    "electron-builder": "^25.1.8",
-    "electron-vite": "^2.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
-    "vitest": "^2.1.8",
-    "@tauri-apps/cli": "^2"
-  },
-  "build": {
-    "appId": "com.gugu.gallery",
-    "productName": "GuguGallery",
-    "directories": {
-      "output": "release",
-      "buildResources": "build"
-    },
-    "files": [
-      "out/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "build/icon.png"
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowElevation": true,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "咕咕图库",
-      "artifactName": "GuguGallery-Setup-${version}.${ext}",
-      "deleteAppDataOnUninstall": false
-    }
+    "vitest": "^2.1.8"
   }
 }

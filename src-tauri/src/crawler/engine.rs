@@ -14,7 +14,7 @@ use serde_json::{json, Value as Json};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 #[derive(Debug, Clone, Deserialize, serde::Serialize, Default)]

@@ -4,6 +4,7 @@
 // 尚未迁移的部分（爬虫 / 登录态 / 插件）暂时返回占位值。
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod cli;
 mod crawler;
 mod library;
 mod media;
@@ -533,9 +534,17 @@ fn run_probe() {
 }
 
 fn main() {
-    if std::env::args().any(|a| a == "probe") {
+    let argv: Vec<String> = std::env::args().collect();
+    if argv.iter().any(|a| a == "probe") {
         run_probe();
         return;
+    }
+    if argv.iter().any(|a| a == "imgdiff") {
+        std::process::exit(cli::run_imgdiff(&argv));
+    }
+    // --library 要在打开图库之前生效
+    if cli::is_cli_mode(&argv) {
+        cli::apply_library_arg(&argv);
     }
 
     let state = match open_state() {
@@ -605,6 +614,16 @@ fn main() {
             let cookie = state.session.lock().unwrap().cookie_header();
             let engine = Engine::new(db, lib, handle, cookie, proxy);
             *state.engine.lock().unwrap() = Some(Arc::new(engine));
+
+            // 命令行模式：藏起窗口，跑完抓取直接退出
+            if cli::is_cli_mode(&std::env::args().collect::<Vec<_>>()) {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.hide();
+                }
+                cli::start(app.handle().clone());
+                return Ok(());
+            }
+
             // 截图模式自己管启动流程（截图 → 体检 → eval → 补拍 → 退出）
             if !shot::maybe_start(app.handle()) {
                 run_eval_hook(app.handle());
