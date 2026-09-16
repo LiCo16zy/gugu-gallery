@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "咕咕图库",
-        "width": 1280,
-        "height": 800,
-        "minWidth": 960,
-        "minHeight": 600,
+        "width": 1480,
+        "height": 940,
+        "minWidth": 1040,
+        "minHeight": 660,
         "decorations": false,
         "resizable": true,
         "center": true

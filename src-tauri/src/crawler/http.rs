@@ -288,13 +288,13 @@ pub fn sniff_format(head: &[u8]) -> Option<(&'static str, &'static str)> {
     if head.starts_with(&[0x89, b'P', b'N', b'G']) {
         return Some(("png", "image/png"));
     }
-    if head.len() > 12 && &head[0..4] == b"RIFF" && &head[8..12] == b"WEBP" {
+    if head.len() >= 12 && &head[0..4] == b"RIFF" && &head[8..12] == b"WEBP" {
         return Some(("webp", "image/webp"));
     }
     if head.starts_with(b"GIF8") {
         return Some(("gif", "image/gif"));
     }
-    if head.len() > 12 && &head[4..12] == b"ftypavif" {
+    if head.len() >= 12 && &head[4..12] == b"ftypavif" {
         return Some(("avif", "image/avif"));
     }
     if head.starts_with(b"BM") {

@@ -99,6 +99,11 @@ impl Engine {
         }
     }
 
+    /// 会话变化时更新后续请求要带的 cookie
+    pub fn set_cookie(&self, cookie: Option<String>) {
+        *self.cookie.lock().unwrap() = cookie;
+    }
+
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::SeqCst)
     }

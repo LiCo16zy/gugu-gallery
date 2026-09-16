@@ -468,18 +468,29 @@ const env = {
   GUGU_SETTINGS_FILE: join(root, 'data', 'uicheck-settings.json'),
   // 比 --user-data-dir 可靠：主进程会把它当作 userData 根目录
   GUGU_USER_DATA: userDataDir,
-  GUGU_EVAL: SCRIPT
+  GUGU_EVAL: SCRIPT,
+  // 自检不碰系统凭据库：登录态断言必须是确定性的
+  GUGU_SESSION_EPHEMERAL: '1'
+}
+
+// Tauri 版：debug 构建走 devUrl，所以先起 Vite 开发服务器，再起应用本体
+const vite = spawn('npm run dev:web', [], {
+  shell: true,
+  cwd: root,
+  env: process.env,
+  stdio: ['ignore', 'pipe', 'pipe']
+})
+await new Promise((r) => setTimeout(r, 7000))
+
+const tauriExe = join(root, 'src-tauri', 'target', 'debug', 'gugu-gallery.exe')
+if (!existsSync(tauriExe)) {
+  vite.kill()
+  console.error('未找到 Tauri 构建产物，请先执行：cd src-tauri && cargo build')
+  process.exit(1)
 }
 
 const output = await new Promise((resolvePromise) => {
-  // userData 指向仓库内的临时目录：既别读用户真实的 session.bin，
-  // 也别让自检写坏他的设置（登录态断言必须是确定性的）
-  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
-      cwd: root,
-      env,
-      stdio: ['ignore', 'pipe', 'pipe']
-    }
-  )
+  const child = spawn(tauriExe, [], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] })
   let buf = ''
   child.stdout.on('data', (d) => {
     buf += String(d)
@@ -487,7 +498,15 @@ const output = await new Promise((resolvePromise) => {
   child.stderr.on('data', (d) => {
     buf += String(d)
   })
-  child.on('exit', () => resolvePromise(buf))
+  const killer = setTimeout(() => {
+    child.kill()
+    resolvePromise(buf)
+  }, 180000)
+  child.on('exit', () => {
+    clearTimeout(killer)
+    vite.kill()
+    resolvePromise(buf)
+  })
 })
 
 const match = /__EVAL__(\{.*\})/s.exec(output)
@@ -561,9 +580,10 @@ const checks = [
   ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
   ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
   ['视图密度只剩一个按钮', result.viewToggleCount === 1],
-  ['标准视图为 4 栏', result.masonryColumns === 4],
-  ['紧凑视图为 6 栏', result.denseColumns === 6],
-  ['切回标准视图恢复 4 栏', result.normalColumnsAfter === 4],
+  // 列数取决于窗口宽度（不同缩放/屏幕会对不上），断言改成「密度切换真的改变了列数」
+  ['标准视图至少 2 栏', (result.masonryColumns ?? 0) >= 2],
+  ['紧凑视图列数多于标准视图', (result.denseColumns ?? 0) > (result.masonryColumns ?? 0)],
+  ['切回标准视图恢复原列数', result.normalColumnsAfter === result.masonryColumns],
   ['浅色主题可切换', result.theme === 'light'],
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0]
 ]

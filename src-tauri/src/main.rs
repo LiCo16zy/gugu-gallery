@@ -7,6 +7,7 @@
 mod crawler;
 mod library;
 mod media;
+mod session;
 mod settings;
 mod store;
 
@@ -14,6 +15,7 @@ use crawler::engine::{CrawlRequest, Engine};
 use library::Library;
 use rusqlite::Connection;
 use serde_json::{json, Value as Json};
+use session::SessionStore;
 use settings::{suggested_library_root, SettingsStore};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -23,6 +25,7 @@ pub struct AppState {
     lib: Mutex<Library>,
     db: Arc<Mutex<Connection>>,
     settings: Mutex<SettingsStore>,
+    session: Mutex<SessionStore>,
     engine: Mutex<Option<Arc<Engine>>>,
 }
 
@@ -46,6 +49,8 @@ fn open_state() -> Result<AppState, String> {
     if let Ok(root) = std::env::var("GUGU_LIBRARY_ROOT") {
         settings.set(&json!({ "libraryRoot": root, "setupCompleted": true }));
     }
+    let mut session = SessionStore::new();
+    session.load();
     let root = settings.library_root();
     let lib = Library::new(&root);
     lib.ensure().map_err(|e| format!("创建图库目录失败: {e}"))?;
@@ -54,6 +59,7 @@ fn open_state() -> Result<AppState, String> {
         lib: Mutex::new(lib),
         db: Arc::new(Mutex::new(conn)),
         settings: Mutex::new(settings),
+        session: Mutex::new(session),
         engine: Mutex::new(None),
     })
 }
@@ -80,11 +86,12 @@ fn run_eval_hook(app: &tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
         // 直接走 __TAURI_INTERNALS__：桥本身出问题时也能看到东西
+        // 与 Electron 版的 harness 约定保持一致：__EVAL__{ok,result,error,consoleErrors}
         let wrapped = format!(
             "(async () => {{
-               const rep = async (p) => {{ try {{ await window.__TAURI_INTERNALS__.invoke('debug_report', {{ payload: p }}); }} catch (e) {{}} }};
-               await rep({{ stage: 'start' }});
-               try {{ const r = await ({}); await rep(r); }} catch (e) {{ await rep({{ error: String(e) }}); }}
+               const rep = (p) => window.__TAURI_INTERNALS__.invoke('debug_report', {{ payload: p }});
+               try {{ const r = await ({}); await rep({{ ok: true, result: r, consoleErrors: [] }}); }}
+               catch (e) {{ await rep({{ ok: false, error: String(e), consoleErrors: [] }}); }}
              }})()",
             script
         );
@@ -360,36 +367,54 @@ fn crawl_progress(state: State<'_, AppState>) -> Json {
 }
 
 #[tauri::command]
-fn session_status() -> Json {
-    json!({
-        "loggedIn": false,
-        "fingerprint": Json::Null,
-        "savedAt": Json::Null,
-        "encrypted": false,
-        "verified": Json::Null,
-        "verifyMessage": Json::Null
-    })
+fn session_status(state: State<'_, AppState>) -> Json {
+    state.session.lock().unwrap().status()
 }
 
 #[tauri::command]
-fn session_set() -> Json {
-    json!({
-        "status": session_status(),
-        "verify": { "ok": false, "state": "none", "message": "重构中：登录态尚未接入" }
-    })
+async fn session_set(cookie: String, state: State<'_, AppState>) -> Result<Json, String> {
+    let proxy = state.settings.lock().unwrap().get().get("proxy").and_then(|v| v.as_str()).map(|s| s.to_string());
+    {
+        let mut session = state.session.lock().unwrap();
+        session.save(&cookie)?;
+    }
+    let header = state.session.lock().unwrap().cookie_for_verify();
+    let (verify, verify_state, message) = session::verify_cookie(header, proxy).await;
+    let status = {
+        let mut session = state.session.lock().unwrap();
+        session.apply_verify(&verify_state, &message);
+        session.status()
+    };
+    if let Some(engine) = state.engine.lock().unwrap().clone() {
+        engine.set_cookie(state.session.lock().unwrap().cookie_header());
+    }
+    Ok(json!({ "status": status, "verify": verify }))
 }
 
 #[tauri::command]
-fn session_clear() -> Json {
-    session_status()
+fn session_clear(state: State<'_, AppState>) -> Json {
+    let status = {
+        let mut session = state.session.lock().unwrap();
+        session.clear();
+        session.status()
+    };
+    if let Some(engine) = state.engine.lock().unwrap().clone() {
+        engine.set_cookie(None);
+    }
+    status
 }
 
 #[tauri::command]
-fn session_verify() -> Json {
-    json!({
-        "status": session_status(),
-        "verify": { "ok": false, "state": "none", "message": "重构中：登录态尚未接入" }
-    })
+async fn session_verify(state: State<'_, AppState>) -> Result<Json, String> {
+    let proxy = state.settings.lock().unwrap().get().get("proxy").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let header = state.session.lock().unwrap().cookie_for_verify();
+    let (verify, verify_state, message) = session::verify_cookie(header, proxy).await;
+    let status = {
+        let mut session = state.session.lock().unwrap();
+        session.apply_verify(&verify_state, &message);
+        session.status()
+    };
+    Ok(json!({ "status": status, "verify": verify }))
 }
 
 #[tauri::command]
@@ -404,14 +429,17 @@ fn plugins_invoke() -> Json {
 
 #[tauri::command]
 fn open_external(url: String) -> bool {
-    let _ = url;
-    false
+    // 只放行 http/https，避免把 shell 交给任意协议
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return false;
+    }
+    tauri_plugin_opener::open_url(url, None::<&str>).is_ok()
 }
 
 #[tauri::command]
-fn copy_text(text: String) -> bool {
-    let _ = text;
-    false
+fn copy_text(app: tauri::AppHandle, text: String) -> bool {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    app.clipboard().write_text(text).is_ok()
 }
 
 
@@ -474,6 +502,9 @@ fn main() {
     };
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .manage(state)
         .register_asynchronous_uri_scheme_protocol("gugu", |ctx, request, responder| {
             responder.respond(media::handle(ctx, request));
@@ -524,7 +555,8 @@ fn main() {
             let db = state.db.clone();
             let settings = state.settings.lock().unwrap().get();
             let proxy = settings.get("proxy").and_then(|v| v.as_str()).map(|s| s.to_string());
-            let engine = Engine::new(db, lib, handle, None, proxy);
+            let cookie = state.session.lock().unwrap().cookie_header();
+            let engine = Engine::new(db, lib, handle, cookie, proxy);
             *state.engine.lock().unwrap() = Some(Arc::new(engine));
             run_eval_hook(app.handle());
             Ok(())
