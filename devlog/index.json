@@ -152,6 +152,15 @@
       "finishedAt": "2026-09-16 09:57",
       "endCommit": "8ce20be",
       "status": "closed"
+    },
+    {
+      "id": "0014-phase2-refactor-and-multiplatform",
+      "slug": "phase2-refactor-and-multiplatform",
+      "createdAt": "2026-09-16 14:08",
+      "baseCommit": "3408d51",
+      "branch": "master",
+      "summary": "",
+      "status": "open"
     }
   ]
 }
