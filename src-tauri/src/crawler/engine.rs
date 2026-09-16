@@ -44,6 +44,8 @@ pub struct CrawlRequest {
 
 #[derive(Debug, Clone, Default)]
 struct LogLine {
+    /// 递增序号：事件里只发「上次没发过」的日志，避免界面重复堆叠
+    seq: u64,
     at: u64,
     level: String,
     message: String,
@@ -68,6 +70,14 @@ struct RunState {
     logs: Vec<LogLine>,
     /// 最近一次失败的原因（单张下载失败时界面要能说清楚）
     last_error: Option<String>,
+    /// 暂停标志（界面读它来决定显示「暂停」还是「继续」）
+    paused: bool,
+    /// 暂停前的阶段，继续时还原
+    phase_before_pause: Option<String>,
+    /// 日志序号发号器
+    log_seq: u64,
+    /// 已经发给界面的最大日志序号
+    logs_sent_seq: u64,
 }
 
 pub struct Engine {
@@ -126,7 +136,15 @@ impl Engine {
             return false;
         }
         self.paused.store(true, Ordering::SeqCst);
-        self.log("info", "已暂停，当前批次完成后停止取新任务");
+        {
+            let mut st = self.state.lock().unwrap();
+            if st.phase != "paused" {
+                st.phase_before_pause = Some(st.phase.clone());
+                st.phase = "paused".to_string();
+            }
+            st.paused = true;
+        }
+        self.log("info", "已暂停：在跑的这一次请求会跑完，之后不再取新任务");
         true
     }
 
@@ -135,6 +153,16 @@ impl Engine {
             return false;
         }
         self.paused.store(false, Ordering::SeqCst);
+        {
+            let mut st = self.state.lock().unwrap();
+            st.paused = false;
+            if st.phase == "paused" {
+                st.phase = st
+                    .phase_before_pause
+                    .take()
+                    .unwrap_or_else(|| "downloading".to_string());
+            }
+        }
         self.log("info", "继续抓取");
         true
     }
@@ -151,7 +179,10 @@ impl Engine {
         eprintln!("[gugu] {level}: {message}");
         {
             let mut st = self.state.lock().unwrap();
+            st.log_seq += 1;
+            let seq = st.log_seq;
             st.logs.push(LogLine {
+                seq,
                 at: now_ms(),
                 level: level.to_string(),
                 message: message.to_string(),
@@ -166,13 +197,9 @@ impl Engine {
 
     fn emit(&self, with_logs: bool) {
         let payload = {
-            let st = self.state.lock().unwrap();
+            let mut st = self.state.lock().unwrap();
             let progress = progress_json(&st);
-            let logs: Vec<Json> = if with_logs {
-                st.logs.iter().map(log_json).collect()
-            } else {
-                Vec::new()
-            };
+            let logs = if with_logs { take_new_logs(&mut st) } else { Vec::new() };
             json!({ "progress": progress, "logs": logs })
         };
         let _ = self.app.emit("crawl://progress", payload);
@@ -318,7 +345,9 @@ impl EngineHandle {
         eprintln!("[gugu] {level}: {message}");
         {
             let mut st = self.state.lock().unwrap();
-            st.logs.push(LogLine { at: now_ms(), level: level.into(), message: message.into() });
+            st.log_seq += 1;
+            let seq = st.log_seq;
+            st.logs.push(LogLine { seq, at: now_ms(), level: level.into(), message: message.into() });
             if st.logs.len() > 400 {
                 let drop = st.logs.len() - 400;
                 st.logs.drain(0..drop);
@@ -328,8 +357,8 @@ impl EngineHandle {
     }
     fn emit(&self, with_logs: bool) {
         let payload = {
-            let st = self.state.lock().unwrap();
-            let logs: Vec<Json> = if with_logs { st.logs.iter().map(log_json).collect() } else { Vec::new() };
+            let mut st = self.state.lock().unwrap();
+            let logs = if with_logs { take_new_logs(&mut st) } else { Vec::new() };
             json!({ "progress": progress_json(&st), "logs": logs })
         };
         let _ = self.app.emit("crawl://progress", payload);
@@ -338,6 +367,8 @@ impl EngineHandle {
         let (job_id, stats) = {
             let mut st = self.state.lock().unwrap();
             st.phase = phase.to_string();
+            st.paused = false;
+            st.phase_before_pause = None;
             (
                 st.job_id,
                 json!({
@@ -406,6 +437,13 @@ impl EngineHandle {
         for item in queue {
             if self.cancelled.load(Ordering::SeqCst) {
                 return Ok(());
+            }
+            // 单张下载同样要能被暂停（以前这里没有闸门，点了暂停照样继续下）
+            while self.paused.load(Ordering::SeqCst) {
+                tokio::time::sleep(Duration::from_millis(300)).await;
+                if self.cancelled.load(Ordering::SeqCst) {
+                    return Ok(());
+                }
             }
             if let Err(err) = self.download_one(&item, request).await {
                 let mut st = self.state.lock().unwrap();
@@ -807,6 +845,20 @@ fn log_json(line: &LogLine) -> Json {
     json!({ "at": line.at, "level": line.level, "message": line.message })
 }
 
+/// 只取「上次之后新增」的日志并推进游标（缓冲裁剪也不会错位）
+fn take_new_logs(st: &mut RunState) -> Vec<Json> {
+    let fresh: Vec<Json> = st
+        .logs
+        .iter()
+        .filter(|line| line.seq > st.logs_sent_seq)
+        .map(log_json)
+        .collect();
+    if let Some(last) = st.logs.last() {
+        st.logs_sent_seq = last.seq;
+    }
+    fresh
+}
+
 fn progress_json(st: &RunState) -> Json {
     let elapsed = now_ms().saturating_sub(st.started_at);
     let speed = if elapsed > 0 { (st.bytes as f64) / (elapsed as f64 / 1000.0) } else { 0.0 };
@@ -828,6 +880,7 @@ fn progress_json(st: &RunState) -> Json {
         "speedBps": speed.round(),
         "etaSeconds": Json::Null,
         "currentLabel": st.current_label,
+        "paused": st.paused,
         "lastError": st.last_error,
         "logs": []
     })

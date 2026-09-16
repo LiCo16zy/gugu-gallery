@@ -150,20 +150,22 @@ pub fn build_slug(parts: &[Option<&str>]) -> String {
         .chars()
         .filter(|c| !matches!(c, '[' | ']' | '（' | '）' | '(' | ')'))
         .collect();
+    // 文件名里不留空格（站点标签里常带空格，例如「画作 Pid=118581347」）
     let mut out = String::new();
     let mut last_dash = false;
     for ch in stripped.chars() {
-        if ch == '-' {
+        if ch == '-' || ch.is_whitespace() {
             if last_dash {
                 continue;
             }
             last_dash = true;
+            out.push('-');
         } else {
             last_dash = false;
+            out.push(ch);
         }
-        out.push(ch);
     }
-    out
+    out.trim_matches('-').to_string()
 }
 
 pub fn ext_of(path: &str) -> String {

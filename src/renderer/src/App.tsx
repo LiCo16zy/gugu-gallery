@@ -168,6 +168,8 @@ export default function App(): JSX.Element {
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [progress, setProgress] = useState<CrawlProgress | null>(null)
   const [logs, setLogs] = useState<CrawlLogLine[]>([])
+  /** 日志面板当前对应哪个任务：换任务要清空，否则上一轮的行会混进来 */
+  const logJobId = useRef(0)
   const [toast, setToast] = useState<ToastPayload | null>(null)
   /** 右键菜单：卡片 + 弹出位置 */
   const [contextMenu, setContextMenu] = useState<{ item: ItemSummary; x: number; y: number } | null>(null)
@@ -344,7 +346,10 @@ export default function App(): JSX.Element {
     void api.crawl.progress().then((p) => p && setProgress(p))
     const off = api.crawl.onProgress(({ progress: p, logs: newLogs }) => {
       setProgress(p)
-      if (newLogs.length > 0) {
+      if (logJobId.current !== p.jobId) {
+        logJobId.current = p.jobId
+        setLogs(newLogs.slice(-400))
+      } else if (newLogs.length > 0) {
         setLogs((prev) => [...prev, ...newLogs].slice(-400))
       }
       if (p.phase === 'done' || p.phase === 'cancelled' || p.phase === 'failed') {

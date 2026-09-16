@@ -1,0 +1,81 @@
+{
+  "annotations": [
+    {
+      "category": "style",
+      "comment": "获取一下日志，测试下载正常，但是暂停功能不能暂停，不确定暂停后能否重新从断点继续",
+      "createdAt": 1789571252041,
+      "id": "zgdy3pya",
+      "index": 1,
+      "kind": "element",
+      "pageRect": {
+        "height": 333.3881530761719,
+        "width": 1036.0087890625,
+        "x": 269.9890441894531,
+        "y": 299.1118469238281
+      },
+      "rect": {
+        "height": 333.3881530761719,
+        "width": 1036.0087890625,
+        "x": 269.9890441894531,
+        "y": 299.1118469238281
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "severity": "should",
+      "target": {
+        "attributes": {},
+        "classes": "card-panel",
+        "component": "CrawlPanel › section.card-panel",
+        "parentChain": [
+          "div.page",
+          "main.main",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "selector": "div > div.app > main.main > div.page > section.card-panel:nth-of-type(5)",
+        "styles": {
+          "align-items": "normal",
+          "background-color": "rgb(20, 25, 36)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.07)",
+          "border-radius": "16px",
+          "color": "rgb(231, 235, 243)",
+          "flex-direction": "row",
+          "font-size": "13px",
+          "font-weight": "400",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "height": "333.388px",
+          "justify-content": "normal",
+          "line-height": "20.15px",
+          "margin": "0px 0px 14px",
+          "max-width": "none",
+          "min-width": "0px",
+          "padding": "16px 18px",
+          "transition": "all",
+          "white-space": "normal",
+          "width": "1036.01px",
+          "── 对比度": "14.72:1（AAA）"
+        },
+        "tag": "section",
+        "text": "运行日志最近 163 条刷新图库23:02:50任务 #19 启动：搜索 · 泳装类分享23:02:50任务 #19 启动：搜索 · 泳装类分享23:02:50任务 #19 启动：搜索 · 泳装类分享23:02:50开始索引：搜索 · 泳装类分享23:02:50任务 #19 启动：搜索 · 泳装类分享23:02:50开始索引：搜索 · 泳装类分享23:03:08任务完成23:03:46任务 #20 启动：搜索 · 泳装类分享23:03:46任务 #20 启动：搜索 · 泳装类分享23:03:46任务 #20 启动：搜索 · 泳装类分享23:03:46开始索引：搜索 · 泳装类分享23:03:46任务 #20 启动：搜索 · 泳装类分享23:03:46开始索引：搜索 · 泳装类分享23:03:46任务 #20 启动：搜索 · 泳装类分享23:03:46开始索引：搜索 · 泳装类分享23:04"
+      },
+      "viewport": {
+        "height": 716,
+        "width": 1348
+      }
+    }
+  ],
+  "appVersion": "0.7.0",
+  "devicePixelRatio": 1.4249999523162842,
+  "exportedAt": "2026-09-16T15:11:11.840Z",
+  "note": "关于下载的调整",
+  "roundId": "0016-20260916-2311",
+  "view": "gallery",
+  "viewport": {
+    "height": 716.0,
+    "width": 1348.0
+  }
+}

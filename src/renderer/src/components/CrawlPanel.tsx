@@ -104,6 +104,7 @@ export default function CrawlPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstTargetKey])
   const active = progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
+  const pausedNow = progress?.paused === true || progress?.phase === 'paused'
   const start = async (): Promise<void> => {
     if (targets.length === 0) {
       onToast('请至少选择一个抓取目标')
@@ -357,11 +358,11 @@ export default function CrawlPanel({
           </button>
           <button
             className="btn"
-            onClick={() => void (progress?.phase === 'paused' ? api.crawl.resume() : api.crawl.pause())}
+            onClick={() => void (pausedNow ? api.crawl.resume() : api.crawl.pause())}
             disabled={!active}
           >
             <IconPause width={13} height={13} />
-            {progress?.phase === 'paused' ? '继续' : '暂停'}
+            {pausedNow ? '继续' : '暂停'}
           </button>
           <button className="btn danger" onClick={() => void api.crawl.cancel()} disabled={!active}>
             <IconStop width={13} height={13} />

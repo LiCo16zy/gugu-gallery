@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "shot": "node scripts/shot.mjs",
     "uicheck": "node scripts/uicheck.mjs",
+    "pausecheck": "node scripts/check-pause.mjs",
     "e2e": "node scripts/e2e.mjs",
     "annotatecheck": "node plugins/annotator/bin/check.mjs",
     "round": "node plugins/devlog/bin/round.mjs",

@@ -211,6 +211,8 @@ export interface CrawlProgress {
   speedBps: number
   etaSeconds: number | null
   currentLabel: string | null
+  /** 是否处于暂停状态（界面据此把「暂停」切成「继续」） */
+  paused: boolean
   logs: CrawlLogLine[]
 }
 
