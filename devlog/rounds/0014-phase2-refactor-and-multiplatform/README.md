@@ -169,3 +169,32 @@ WebView2 在 Win10 1803+ 基本都自带，即使没有，Tauri 也能引导用�
 1. **确认技术方向**：按 Tauri 2（复用 React UI + Rust 后端）重构 —— 用户确认后动手。
 2. 确认后要装的东西：Android SDK + NDK（可延后到 Android 阶段）、NSIS 工具（打包阶段）。
 3. 重构期间**不对外发布**：只在本地/分支迭代，重构完成 + 用户实测通过后再提 PR。
+
+---
+
+## 八、里程碑 1：Tauri 骨架跑通（已完成）
+
+分支 `refactor/tauri-2`。这一步只干一件事：**证明「界面可以原样搬到 Tauri」**。
+
+**新增**
+
+- `src-tauri/`：`Cargo.toml`（tauri 2 + serde）、`build.rs`（注入 package.json 的版本号）、
+  `tauri.conf.json`（无边框窗口、CSP 放行 IPC、NSIS 打包配置）、`src/main.rs`（按 @shared/bridge 契约注册了 35 个命令，先返回占位数据）、`icons/`
+- `vite.renderer.config.ts`：与 `electron.vite.config.ts` 的 renderer 段同源（同一套 define / alias / 插件虚拟模块），产物同样落 `out/renderer`
+- 脚本：`dev:web` / `build:web` / `tauri:dev` / `tauri:build`
+
+**渲染层的改动只有一个文件**：`src/renderer/src/tauri-bridge.ts`（在 `main.tsx` 里最先求值，
+因为 `api.ts` 在模块加载时就把 `window.gugu` 抓走了）。它把 38 个桥方法逐一映射到 `invoke`，
+**6,166 行界面与 CSS 一行未改** —— 这正是选 Tauri 的核心收益。
+
+**踩到的坑**：`index.html` 里原有的 CSP `default-src 'self'` 会把 Tauri 的 IPC 全部拦掉，
+必须补 `connect-src 'self' ipc: http://ipc.localhost`（自定义协议后面也要加进 `img-src`）。
+
+**证据**：`screenshots-verify/tauri-ui-milestone1.png` —— 真实界面在 Tauri 窗口里渲染出来了：
+侧栏资料库、筛选栏（排序 / 日期 / 全部 / 收藏 / 已下载 / 待下载 / 横图 / 竖图）、
+空态文案、深色主题与主题色全部正确；数据来自 Rust 侧占位实现。
+
+**体积对照**：debug 产物 213MB（带调试信息，不代表最终体积）；release + `lto` + `strip` 的 PoC 实测 **3.1MB**。
+
+**下一步**：按模块把占位实现换成真实现 —— store（rusqlite + repository）→ media（落盘 / 魔数 / 缩略图 → 自定义协议）
+→ crawler（http / parser / engine）→ session（DPAPI）→ 打包（NSIS）→ 对等性验收（30 单测 + 63 uicheck + 37 标注断言）。
