@@ -4,23 +4,26 @@
 // 尚未迁移的部分（爬虫 / 登录态 / 插件）暂时返回占位值。
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod crawler;
 mod library;
 mod media;
 mod settings;
 mod store;
 
+use crawler::engine::{CrawlRequest, Engine};
 use library::Library;
 use rusqlite::Connection;
 use serde_json::{json, Value as Json};
 use settings::{suggested_library_root, SettingsStore};
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
 
 pub struct AppState {
     lib: Mutex<Library>,
-    db: Mutex<Connection>,
+    db: Arc<Mutex<Connection>>,
     settings: Mutex<SettingsStore>,
+    engine: Mutex<Option<Arc<Engine>>>,
 }
 
 const PACKAGED: bool = !cfg!(debug_assertions);
@@ -49,8 +52,9 @@ fn open_state() -> Result<AppState, String> {
     let conn = store::open(&lib.db_path).map_err(|e| format!("打开索引库失败: {e}"))?;
     Ok(AppState {
         lib: Mutex::new(lib),
-        db: Mutex::new(conn),
+        db: Arc::new(Mutex::new(conn)),
         settings: Mutex::new(settings),
+        engine: Mutex::new(None),
     })
 }
 
@@ -138,7 +142,8 @@ fn switch_library(state: &State<'_, AppState>, root: &str) -> Result<(), String>
     lib.ensure().map_err(|e| format!("创建图库目录失败: {e}"))?;
     let conn = store::open(&lib.db_path).map_err(|e| format!("打开索引库失败: {e}"))?;
     *state.lib.lock().unwrap() = lib;
-    *state.db.lock().unwrap() = conn;
+    let mut guard = state.db.lock().unwrap();
+    *guard = conn;
     Ok(())
 }
 
@@ -276,43 +281,82 @@ fn crawl_jobs(state: State<'_, AppState>) -> Result<Json, String> {
 /* --------------------------------------------- 以下为迁移中的占位（爬虫 / 登录态 / 插件） */
 
 #[tauri::command]
-fn crawl_site_info() -> Json {
-    json!({ "plates": [], "fetchedAt": 0 })
+async fn crawl_site_info(state: State<'_, AppState>) -> Result<Json, String> {
+    let settings = state.settings.lock().unwrap().get();
+    let proxy = settings.get("proxy").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let client = crawler::http::HttpClient::new(crawler::http::HttpOptions {
+        delay_ms: 0, retries: 2, timeout_ms: 20_000, concurrency: 1, cookie: None, proxy,
+    });
+    let html = client
+        .get_html(&format!("{}/", crawler::site::SITE_ORIGIN))
+        .await
+        .map_err(|e| e.0)?;
+    let plates = crawler::parser::parse_nav(&html)
+        .into_iter()
+        .map(|p| json!({ "name": p.name, "words": p.words }))
+        .collect::<Vec<_>>();
+    Ok(json!({ "plates": plates, "fetchedAt": chrono::Utc::now().timestamp_millis() }))
 }
 
 #[tauri::command]
-fn crawl_target_info() -> Json {
-    json!({ "totalPages": Json::Null, "totalItems": Json::Null })
+async fn crawl_target_info(target: Option<Json>, state: State<'_, AppState>) -> Result<Json, String> {
+    let Some(target) = target else { return Ok(json!({ "totalPages": Json::Null, "totalItems": Json::Null })) };
+    let site_target: crawler::site::SiteTarget = serde_json::from_value(target).map_err(|e| e.to_string())?;
+    let settings = state.settings.lock().unwrap().get();
+    let proxy = settings.get("proxy").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let client = crawler::http::HttpClient::new(crawler::http::HttpOptions {
+        delay_ms: 0, retries: 2, timeout_ms: 20_000, concurrency: 1, cookie: None, proxy,
+    });
+    let url = crawler::site::list_url(&site_target, 1)?;
+    match client.get_html(&url).await {
+        Ok(html) => {
+            let (pages, items) = crawler::parser::parse_pagination(&html);
+            Ok(json!({ "totalPages": pages, "totalItems": items }))
+        }
+        Err(err) => Err(err.0),
+    }
 }
 
 #[tauri::command]
-fn crawl_start() -> Json {
-    Json::Null
+fn crawl_start(request: Option<Json>, state: State<'_, AppState>) -> Result<i64, String> {
+    let engine = state.engine.lock().unwrap().clone().ok_or("引擎尚未就绪")?;
+    let request: CrawlRequest = serde_json::from_value(request.unwrap_or(json!({}))).map_err(|e| e.to_string())?;
+    engine.start(request)
 }
 
 #[tauri::command]
-fn crawl_pause() -> bool {
-    false
+fn crawl_pause(state: State<'_, AppState>) -> bool {
+    state.engine.lock().unwrap().clone().map(|e| e.pause()).unwrap_or(false)
 }
 
 #[tauri::command]
-fn crawl_resume() -> bool {
-    false
+fn crawl_resume(state: State<'_, AppState>) -> bool {
+    state.engine.lock().unwrap().clone().map(|e| e.resume()).unwrap_or(false)
 }
 
 #[tauri::command]
-fn crawl_cancel() -> bool {
-    false
+fn crawl_cancel(state: State<'_, AppState>) -> bool {
+    state.engine.lock().unwrap().clone().map(|e| e.cancel()).unwrap_or(false)
 }
 
 #[tauri::command]
-fn crawl_download_items() -> i64 {
-    0
+fn crawl_download_items(ids: Vec<i64>, state: State<'_, AppState>) -> Result<i64, String> {
+    let engine = state.engine.lock().unwrap().clone().ok_or("引擎尚未就绪")?;
+    let settings = state.settings.lock().unwrap().get();
+    let request = CrawlRequest {
+        download: true,
+        max_items: Some(ids.len() as i64),
+        delay_ms: settings.get("delayMs").and_then(|v| v.as_u64()).unwrap_or(220),
+        retries: settings.get("retries").and_then(|v| v.as_u64()).unwrap_or(4) as u32,
+        download_concurrency: settings.get("downloadConcurrency").and_then(|v| v.as_u64()).unwrap_or(3) as usize,
+        ..Default::default()
+    };
+    engine.start_ids(ids, request)
 }
 
 #[tauri::command]
-fn crawl_progress() -> Json {
-    Json::Null
+fn crawl_progress(state: State<'_, AppState>) -> Json {
+    state.engine.lock().unwrap().clone().map(|e| e.progress()).unwrap_or(Json::Null)
 }
 
 #[tauri::command]
@@ -370,7 +414,57 @@ fn copy_text(text: String) -> bool {
     false
 }
 
+
+/* -------------------------------------------------------------------- 探针 */
+
+/// 无界面探针：抓一页列表页并把解析结果打到 stdout。
+/// 用法：gugu-gallery.exe probe [页码]
+/// 爬虫改动后不用起界面就能快速验证（也是将来 CLI 模式的种子）。
+fn run_probe() {
+    use crawler::http::{HttpClient, HttpOptions};
+    let page: i64 = std::env::args().nth(2).and_then(|v| v.parse().ok()).unwrap_or(1);
+    let target = crawler::site::SiteTarget {
+        kind: "category".into(),
+        plate: Some("ACG图片".into()),
+        word: Some("Pixiv萌图".into()),
+        url: None,
+    };
+    let url = crawler::site::list_url(&target, page).expect("构造 URL 失败");
+    println!("[probe] GET {url}");
+    let started = std::time::Instant::now();
+    let client = HttpClient::new(HttpOptions {
+        delay_ms: 0,
+        retries: 1,
+        timeout_ms: 20_000,
+        concurrency: 1,
+        cookie: None,
+        proxy: None,
+    });
+    match tauri::async_runtime::block_on(client.get_html(&url)) {
+        Ok(html) => {
+            println!("[probe] HTTP 成功，用时 {:?}，长度 {}", started.elapsed(), html.len());
+            let (pages, items) = crawler::parser::parse_pagination(&html);
+            println!("[probe] 分页: pages={:?} items={:?}", pages, items);
+            let list = crawler::parser::parse_list_items(&html);
+            println!("[probe] 解析出条目 {} 条", list.len());
+            for it in list.iter().take(3) {
+                println!(
+                    "[probe]   #{} {} {}x{} {} bytes tags={:?} remote={:?}",
+                    it.id, it.title, it.width.unwrap_or(0), it.height.unwrap_or(0),
+                    it.bytes.unwrap_or(0), it.tags, it.remote_path
+                );
+            }
+        }
+        Err(err) => println!("[probe] 抓取失败（用时 {:?}）：{}", started.elapsed(), err),
+    }
+}
+
 fn main() {
+    if std::env::args().any(|a| a == "probe") {
+        run_probe();
+        return;
+    }
+
     let state = match open_state() {
         Ok(v) => v,
         Err(err) => {
@@ -424,6 +518,14 @@ fn main() {
         ])
         .setup(|app| {
             let _ = app.get_webview_window("main");
+            let handle = app.handle().clone();
+            let state = app.state::<AppState>();
+            let lib = state.lib.lock().unwrap().clone();
+            let db = state.db.clone();
+            let settings = state.settings.lock().unwrap().get();
+            let proxy = settings.get("proxy").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let engine = Engine::new(db, lib, handle, None, proxy);
+            *state.engine.lock().unwrap() = Some(Arc::new(engine));
             run_eval_hook(app.handle());
             Ok(())
         })

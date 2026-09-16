@@ -553,3 +553,334 @@ pub fn thumb_rel_path(conn: &Connection, item_id: i64) -> rusqlite::Result<Optio
     .optional()
     .map(|v| v.flatten())
 }
+
+
+/* ------------------------------------------------------------ 抓取写入路径 */
+
+#[derive(Debug, Clone, Default)]
+pub struct ItemUpsert {
+    pub id: i64,
+    pub detail_url: String,
+    pub source_url: Option<String>,
+    pub plate: Option<String>,
+    pub word: Option<String>,
+    pub title: String,
+    pub width: Option<i64>,
+    pub height: Option<i64>,
+    pub bytes: Option<i64>,
+    pub uploader: Option<String>,
+    pub views: Option<i64>,
+    pub published_at: Option<String>,
+    pub remote_path: Option<String>,
+    pub remote_ext: Option<String>,
+    pub preview_url: Option<String>,
+    pub download_url: Option<String>,
+    pub page: Option<i64>,
+    /// 抓取目标的关键词（搜索类目标才有）：记「从哪个应用分类找到它的」
+    pub target_word: Option<String>,
+    pub tags: Vec<String>,
+}
+
+/// 批量写入列表页解析结果；已存在的条目保留收藏 / 评分 / 详情补全标记
+pub fn upsert_items(conn: &Connection, items: &[ItemUpsert]) -> rusqlite::Result<(i64, i64)> {
+    let mut inserted = 0i64;
+    let ts = now_iso();
+    for it in items {
+        let before: Option<i64> = conn
+            .query_row("SELECT id FROM items WHERE id = ?1", [it.id], |r| r.get(0))
+            .optional()?;
+        conn.execute(
+            "INSERT INTO items (id, detail_url, source_url, plate, word, title, width, height, bytes,
+                                uploader, views, published_at, remote_path, remote_ext,
+                                preview_url, download_url, page, indexed_at, updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)
+             ON CONFLICT(id) DO UPDATE SET
+               detail_url   = excluded.detail_url,
+               source_url   = COALESCE(excluded.source_url, items.source_url),
+               plate        = COALESCE(excluded.plate, items.plate),
+               word         = COALESCE(excluded.word, items.word),
+               title        = CASE WHEN excluded.title <> '' THEN excluded.title ELSE items.title END,
+               width        = COALESCE(excluded.width, items.width),
+               height       = COALESCE(excluded.height, items.height),
+               bytes        = COALESCE(excluded.bytes, items.bytes),
+               uploader     = COALESCE(excluded.uploader, items.uploader),
+               views        = COALESCE(excluded.views, items.views),
+               published_at = COALESCE(items.published_at, excluded.published_at),
+               remote_path  = COALESCE(excluded.remote_path, items.remote_path),
+               remote_ext   = COALESCE(excluded.remote_ext, items.remote_ext),
+               preview_url  = COALESCE(excluded.preview_url, items.preview_url),
+               download_url = COALESCE(excluded.download_url, items.download_url),
+               page         = COALESCE(excluded.page, items.page),
+               updated_at   = excluded.updated_at",
+            rusqlite::params![
+                it.id, it.detail_url, it.source_url, it.plate, it.word, it.title, it.width, it.height,
+                it.bytes, it.uploader, it.views, it.published_at, it.remote_path, it.remote_ext,
+                it.preview_url, it.download_url, it.page, ts, ts
+            ],
+        )?;
+        if before.is_none() {
+            inserted += 1;
+        }
+        if let Some(word) = it.target_word.as_deref() {
+            conn.execute(
+                "INSERT OR IGNORE INTO item_targets (item_id, word) VALUES (?1, ?2)",
+                rusqlite::params![it.id, word],
+            )?;
+        }
+        if !it.tags.is_empty() {
+            replace_tags(conn, it.id, &it.tags)?;
+        }
+    }
+    Ok((inserted, items.len() as i64 - inserted))
+}
+
+/// 站点标签是「替换」语义；应用侧标签（item_targets 对应）要留住
+fn replace_tags(conn: &Connection, item_id: i64, tags: &[String]) -> rusqlite::Result<()> {
+    let mut merged: Vec<String> = tags.to_vec();
+    {
+        let mut stmt = conn.prepare("SELECT word FROM item_targets WHERE item_id = ?1")?;
+        let mut rows = stmt.query([item_id])?;
+        while let Some(row) = rows.next()? {
+            let word: String = row.get(0)?;
+            let tag = category_tag_for(&word);
+            if !merged.contains(&tag) {
+                merged.push(tag);
+            }
+        }
+    }
+    conn.execute("DELETE FROM item_tags WHERE item_id = ?1", [item_id])?;
+    for raw in merged {
+        let name = raw.trim().to_string();
+        if name.is_empty() {
+            continue;
+        }
+        conn.execute("INSERT OR IGNORE INTO tags (name) VALUES (?1)", [name.clone()])?;
+        let tag_id: i64 = conn.query_row("SELECT id FROM tags WHERE name = ?1", [name], |r| r.get(0))?;
+        conn.execute(
+            "INSERT OR IGNORE INTO item_tags (item_id, tag_id) VALUES (?1, ?2)",
+            rusqlite::params![item_id, tag_id],
+        )?;
+    }
+    Ok(())
+}
+
+/// 站点关键词 -> 应用分类显示名（与 shared/categories.ts 的 categoryTagFor 一致）
+pub fn category_tag_for(word: &str) -> String {
+    match word {
+        "泳装类分享" => "泳装分享".to_string(),
+        other => other.to_string(),
+    }
+}
+
+pub fn mark_page(conn: &Connection, source_url: &str, page: i64, item_count: i64) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO page_marks (source_url, page, item_count, fetched_at) VALUES (?1,?2,?3,?4)",
+        rusqlite::params![source_url, page, item_count, now_iso()],
+    )?;
+    Ok(())
+}
+
+pub fn has_page_mark(conn: &Connection, source_url: &str, page: i64) -> rusqlite::Result<bool> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM page_marks WHERE source_url = ?1 AND page = ?2",
+        rusqlite::params![source_url, page],
+        |r| r.get(0),
+    )?;
+    Ok(count > 0)
+}
+
+pub fn upsert_source(
+    conn: &Connection,
+    kind: &str,
+    plate: Option<&str>,
+    word: Option<&str>,
+    url: &str,
+    title: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT INTO sources (kind, plate, word, url, title, enabled, created_at)
+         VALUES (?1,?2,?3,?4,?5,1,?6)
+         ON CONFLICT(url) DO UPDATE SET kind = excluded.kind, plate = excluded.plate,
+                                        word = excluded.word, title = excluded.title",
+        rusqlite::params![kind, plate, word, url, title, now_iso()],
+    )?;
+    Ok(())
+}
+
+pub fn update_source_stats(
+    conn: &Connection,
+    url: &str,
+    total_pages: Option<i64>,
+    total_items: Option<i64>,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE sources SET total_pages = COALESCE(?1, total_pages),
+                            total_items = COALESCE(?2, total_items),
+                            last_crawled_at = ?3
+         WHERE url = ?4",
+        rusqlite::params![total_pages, total_items, now_iso(), url],
+    )?;
+    Ok(())
+}
+
+pub fn create_job(conn: &Connection, phase: &str, summary: &str, request_json: &str) -> rusqlite::Result<i64> {
+    conn.execute(
+        "INSERT INTO jobs (phase, summary, request, stats, started_at) VALUES (?1,?2,?3,'{}',?4)",
+        rusqlite::params![phase, summary, request_json, now_iso()],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn finish_job(conn: &Connection, id: i64, phase: &str, stats_json: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE jobs SET phase = ?1, stats = ?2, finished_at = ?3 WHERE id = ?4",
+        rusqlite::params![phase, stats_json, now_iso(), id],
+    )?;
+    Ok(())
+}
+
+pub fn apply_file_metrics(
+    conn: &Connection,
+    id: i64,
+    width: Option<i64>,
+    height: Option<i64>,
+    bytes: i64,
+    ext: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE items SET width = COALESCE(?1, width),
+                          height = COALESCE(?2, height),
+                          bytes = ?3,
+                          remote_ext = ?4,
+                          updated_at = ?5
+         WHERE id = ?6",
+        rusqlite::params![width, height, bytes, ext, now_iso(), id],
+    )?;
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct QueueItem {
+    pub id: i64,
+    pub remote_path: Option<String>,
+    pub title: String,
+}
+
+fn queue_where(q: &GalleryQuery, only_missing: bool) -> (String, Vec<SqlValue>) {
+    let (where_sql, params) = build_where(q);
+    let cond = if only_missing {
+        if where_sql.is_empty() {
+            "WHERE f.id IS NULL".to_string()
+        } else {
+            format!("{where_sql} AND f.id IS NULL")
+        }
+    } else {
+        where_sql
+    };
+    (cond, params)
+}
+
+pub fn list_download_queue(
+    conn: &Connection,
+    q: &GalleryQuery,
+    limit: i64,
+    only_missing: bool,
+) -> rusqlite::Result<Vec<QueueItem>> {
+    let (cond, params) = queue_where(q, only_missing);
+    let sql = format!(
+        "SELECT i.id, i.remote_path, i.title FROM items i
+         LEFT JOIN files f ON f.item_id = i.id AND f.variant = 'original'
+         {cond}
+         ORDER BY COALESCE(i.published_at, i.indexed_at) DESC, i.id DESC
+         LIMIT ?"
+    );
+    let mut all = params.clone();
+    all.push(SqlValue::Integer(limit));
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(params_from_iter(all.iter()), |row| {
+        Ok(QueueItem {
+            id: row.get(0)?,
+            remote_path: row.get(1)?,
+            title: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn count_download_queue(conn: &Connection, q: &GalleryQuery, only_missing: bool) -> rusqlite::Result<i64> {
+    let (cond, params) = queue_where(q, only_missing);
+    let sql = format!(
+        "SELECT COUNT(*) FROM items i LEFT JOIN files f ON f.item_id = i.id AND f.variant = 'original' {cond}"
+    );
+    conn.query_row(&sql, params_from_iter(params.iter()), |r| r.get(0))
+}
+
+pub fn list_queue_by_ids(conn: &Connection, ids: &[i64]) -> rusqlite::Result<Vec<QueueItem>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let marks = vec!["?"; ids.len()].join(",");
+    let params: Vec<SqlValue> = ids.iter().map(|i| SqlValue::Integer(*i)).collect();
+    let sql = format!("SELECT id, remote_path, title FROM items WHERE id IN ({marks})");
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(params_from_iter(params.iter()), |row| {
+        Ok(QueueItem {
+            id: row.get(0)?,
+            remote_path: row.get(1)?,
+            title: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn upsert_file(
+    conn: &Connection,
+    item_id: i64,
+    rel_path: &str,
+    thumb_rel: Option<&str>,
+    ext: &str,
+    mime: &str,
+    width: Option<i64>,
+    height: Option<i64>,
+    bytes: i64,
+    sha256: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT INTO files (item_id, rel_path, thumb_rel, ext, mime, width, height, bytes, sha256, variant, downloaded_at)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,'original',?10)
+         ON CONFLICT(item_id, variant) DO UPDATE SET
+           rel_path = excluded.rel_path,
+           thumb_rel = COALESCE(excluded.thumb_rel, files.thumb_rel),
+           ext = excluded.ext, mime = excluded.mime, width = excluded.width,
+           height = excluded.height, bytes = excluded.bytes, sha256 = excluded.sha256,
+           downloaded_at = excluded.downloaded_at",
+        rusqlite::params![item_id, rel_path, thumb_rel, ext, mime, width, height, bytes, sha256, now_iso()],
+    )?;
+    Ok(())
+}
+
+pub fn item_meta(conn: &Connection, id: i64) -> rusqlite::Result<Option<(Option<String>, Option<String>, String, Option<String>)>> {
+    conn.query_row(
+        "SELECT plate, word, COALESCE(title,''), pixiv_id FROM items WHERE id = ?1",
+        [id],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+    )
+    .optional()
+}
+
+pub fn has_file(conn: &Connection, item_id: i64) -> rusqlite::Result<bool> {
+    let n: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM files WHERE item_id = ?1 AND variant = 'original'",
+        [item_id],
+        |r| r.get(0),
+    )?;
+    Ok(n > 0)
+}
+
+pub fn item_tags(conn: &Connection, item_id: i64) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT t.name FROM item_tags it JOIN tags t ON t.id = it.tag_id WHERE it.item_id = ?1",
+    )?;
+    let rows = stmt.query_map([item_id], |row| row.get::<_, String>(0))?;
+    rows.collect()
+}
