@@ -275,3 +275,21 @@ WebView2 在 Win10 1803+ 基本都自带，即使没有，Tauri 也能引导用�
 Rust 侧的解析器单测也补齐了：`cargo test` **16 项全部通过**（样本与 Electron 版同一批 `tests/fixtures/`）。
 
 至此，界面的交互契约在新外壳下逐条复核完毕。
+
+---
+
+## 十二、里程碑 5：登录态、系统集成、目录选择器
+
+- `session.rs`：会话 cookie 交给**系统凭据库**（Windows 凭据管理器，DPAPI 保护、绑定当前账户），
+  不保存账号密码；校验沿用旧版三信号判据（泳装类分享 / 退出 / 登录注册）；
+  指纹只暴露头尾 4 位；`GUGU_SESSION_EPHEMERAL=1` 时不碰凭据库（自检用）
+- 系统集成：`openExternal`（只放行 http/https）、`copyText`（剪贴板插件）、
+  `reveal`（资源管理器定位文件）
+- 目录选择器接上 dialog 插件：回调式 API + oneshot 回传，不阻塞主线程
+- 引擎支持会话变化时更新 cookie（`set_cookie`）
+
+**真机验证**：把一份 cookie 存进去 → 校验返回 `state=out`（这份 cookie 已被站点轮换掉），
+指纹显示 `8i77…gk34`，与 curl 直接验证的结果一致 —— 说明校验逻辑对了，而不是「总是失败」。
+
+**遗留（下一批）**：GUGU_SHOT 截图（devlog / uicheck 的截图输出）、插件宿主（标注导出 / 轮次档案）、
+删除 Electron 代码、README 与文档更新、NSIS 打包（本机下不了 NSIS 工具，需要换源）。

@@ -236,14 +236,32 @@ fn library_reveal(id: i64, state: State<'_, AppState>) -> Result<bool, String> {
     Ok(false)
 }
 
-#[tauri::command]
-fn library_pick_root() -> Json {
-    Json::Null
+/// 选目录：用回调式 API + oneshot 把结果带回 async 命令（不阻塞主线程）
+async fn pick_folder(app: &tauri::AppHandle, default_path: Option<String>) -> Json {
+    use tauri_plugin_dialog::DialogExt;
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let mut builder = app.dialog().file();
+    if let Some(path) = default_path.filter(|p| !p.is_empty()) {
+        builder = builder.set_directory(path);
+    }
+    builder.pick_folder(move |picked| {
+        let _ = tx.send(picked);
+    });
+    match rx.await {
+        Ok(Some(path)) => json!(path.to_string()),
+        _ => Json::Null,
+    }
 }
 
 #[tauri::command]
-fn library_choose_dir() -> Json {
-    Json::Null
+async fn library_pick_root(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<Json, String> {
+    let current = state.lib.lock().unwrap().root.to_string_lossy().to_string();
+    Ok(pick_folder(&app, Some(current)).await)
+}
+
+#[tauri::command]
+async fn library_choose_dir(app: tauri::AppHandle, default_path: Option<String>) -> Json {
+    pick_folder(&app, default_path).await
 }
 
 #[tauri::command]
