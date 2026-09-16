@@ -7,6 +7,7 @@
 mod crawler;
 mod library;
 mod media;
+mod plugins;
 mod session;
 mod settings;
 mod shot;
@@ -32,7 +33,7 @@ pub struct AppState {
 
 const PACKAGED: bool = !cfg!(debug_assertions);
 
-fn user_data_dir() -> PathBuf {
+pub(crate) fn user_data_dir() -> PathBuf {
     if let Ok(dir) = std::env::var("GUGU_USER_DATA") {
         return PathBuf::from(dir);
     }
@@ -457,12 +458,18 @@ async fn session_verify(state: State<'_, AppState>) -> Result<Json, String> {
 
 #[tauri::command]
 fn plugins_list() -> Json {
-    json!([])
+    json!(plugins::list())
 }
 
+/// 插件方法调用：宿主只按 (插件 id, 方法名) 分发，核心代码不知道具体插件
 #[tauri::command]
-fn plugins_invoke() -> Json {
-    Json::Null
+fn plugins_invoke(
+    app: tauri::AppHandle,
+    plugin_id: String,
+    method: String,
+    payload: Option<Json>,
+) -> Result<Json, String> {
+    plugins::invoke(&app, &plugin_id, &method, payload)
 }
 
 #[tauri::command]

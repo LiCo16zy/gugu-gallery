@@ -363,3 +363,39 @@ Rust 侧的解析器单测也补齐了：`cargo test` **16 项全部通过**（�
 
 ---
 
+## 十五、里程碑 7：插件宿主搬到 Tauri（标注导出 / 轮次档案）
+
+Electron 版的主进程插件是运行时 import 的 JS 模块；Tauri 没有 Node 运行时，
+于是把**主进程侧**直接实现成 Rust：
+
+- `src-tauri/src/plugins/mod.rs`：宿主 —— 读 `plugins.json` 出清单（含依赖齐全判据），
+  按 `(插件 id, 方法名)` 分发，核心代码不知道具体插件的存在
+- `src-tauri/src/plugins/devlog.rs`：轮次目录管理 + 标注导出，与 `main/{store,render}.ts` 行为对齐
+
+**方法面只有两个**，与旧版逐个对齐：`devlog.listRounds`、`devlog.exportAnnotations`。
+
+**导出产物逐项对齐**：
+
+- `screenshots/00-full.png` 整页截图（复用 `shot::capture_rgba`，为此把抓屏函数开放出来）
+- 每条标注一张裁片：DPR 换算 + 12/24 像素留白 + 边界钳制
+- `annotations.json` 直接落**原始 payload** 的 annotations（不过结构体再序列化，避免丢 `pageRect/scroll`）
+- `annotations.md` / `README.md`（后者只在缺失时写）：类别/优先级中文标签、父级链、
+  关键样式与属性、引用块、`slugify`（清半角+全角标点、空白转 `-`、截 28 字符）全部照搬
+
+**启用条件**：插件只在 debug 构建里启用（`debug_assertions` + 仓库根存在）。
+发布产物本来就不打包插件代码，所以清单直接返回空 —— 与渲染层 `GUGU_PLUGINS` 的闸门一致。
+
+`plugins/annotator/bin/check.mjs` 改指 Tauri 应用（Vite + debug exe）。
+
+**真机验证**：`node plugins/annotator/bin/check.mjs` **37 项全部通过** ——
+工具开关、点选/框选、批注框、图钉、导出提示、轮次目录、`annotations.json`（2 条）、
+`annotations.md`、整页截图、2 张裁片、无控制台错误，全部与旧版一致：
+
+```
+devlog/rounds/0001-20260916-1917/
+  README.md  annotations.md  annotations.json
+  screenshots/00-full.png  001-….png  002-….png
+```
+
+---
+

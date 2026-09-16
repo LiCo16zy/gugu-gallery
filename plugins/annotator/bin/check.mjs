@@ -6,29 +6,17 @@
  *
  * 导出目标通过 GUGU_WORKSPACE 指向 data/annotate-test，不会污染真实的 devlog 档案。
  */
-import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runApp, startDevServer } from '../../../scripts/tauri-app.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '../../..')
-const electronBinary = join(
-  root,
-  'node_modules',
-  'electron',
-  'dist',
-  process.platform === 'win32' ? 'electron.exe' : 'electron'
-)
 
 const workspace = join(root, 'data', 'annotate-test')
 const libraryRoot = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
-
-if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
-  console.error('缺少构建产物，请先 npm run build')
-  process.exit(1)
-}
 
 await rm(workspace, { recursive: true, force: true })
 await mkdir(workspace, { recursive: true })
@@ -301,17 +289,15 @@ const env = {
 
 await mkdir(join(workspace, 'shots'), { recursive: true })
 
-const output = await new Promise((resolvePromise) => {
-  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
-    cwd: root,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe']
-  })
-  let buf = ''
-  child.stdout.on('data', (d) => (buf += String(d)))
-  child.stderr.on('data', (d) => (buf += String(d)))
-  child.on('exit', () => resolvePromise(buf))
-})
+// 插件只在 debug 构建里启用，界面走 devUrl：先起 Vite，再跑应用本体
+const vite = await startDevServer()
+let output = ''
+try {
+  const run = await runApp(env, { timeoutMs: 180000 })
+  output = run.output
+} finally {
+  vite.kill()
+}
 
 const match = /__EVAL__(\{.*\})/s.exec(output)
 if (!match) {

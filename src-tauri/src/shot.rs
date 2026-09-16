@@ -190,7 +190,7 @@ fn capture_and_save(
 ) -> Result<PathBuf, String> {
     let dir = shot_dir().ok_or_else(|| "GUGU_SHOT 未设置".to_string())?;
     let path = dir.join(format!("{label}{suffix}.{}", extension()));
-    let (width, height, rgba) = capture_window(win)?;
+    let (width, height, rgba) = capture_rgba(win)?;
     let image = image::RgbaImage::from_raw(width, height, rgba)
         .ok_or_else(|| "像素数据长度与尺寸不匹配".to_string())?;
     if as_jpeg() {
@@ -210,7 +210,7 @@ fn capture_and_save(
 
 /// 抓窗口客户区像素。PrintWindow 带 PW_RENDERFULLCONTENT 才能拿到 GPU 合成的 WebView2 画面。
 #[cfg(target_os = "windows")]
-fn capture_window(win: &tauri::WebviewWindow) -> Result<(u32, u32, Vec<u8>), String> {
+pub fn capture_rgba(win: &tauri::WebviewWindow) -> Result<(u32, u32, Vec<u8>), String> {
     use windows::Win32::Foundation::{HWND, RECT};
     use windows::Win32::Graphics::Gdi::{
         CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDC, GetDIBits,
@@ -284,6 +284,6 @@ fn capture_window(win: &tauri::WebviewWindow) -> Result<(u32, u32, Vec<u8>), Str
 }
 
 #[cfg(not(target_os = "windows"))]
-fn capture_window(_win: &tauri::WebviewWindow) -> Result<(u32, u32, Vec<u8>), String> {
+pub fn capture_rgba(_win: &tauri::WebviewWindow) -> Result<(u32, u32, Vec<u8>), String> {
     Err("当前平台还没有实现窗口截图".to_string())
 }

@@ -23,5 +23,8 @@ fn main() {
     println!("cargo:rustc-env=GUGU_APP_VERSION={version}");
     println!("cargo:rerun-if-changed=../package.json");
 
+    // 仓库根：开发态下插件（轮次档案 / 标注导出）要往这里写文件
+    println!("cargo:rustc-env=GUGU_REPO_ROOT={}", root.display());
+
     tauri_build::build()
 }
