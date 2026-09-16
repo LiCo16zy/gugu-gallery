@@ -9,6 +9,7 @@ mod library;
 mod media;
 mod session;
 mod settings;
+mod shot;
 mod store;
 
 use crawler::engine::{CrawlRequest, Engine};
@@ -72,6 +73,25 @@ fn debug_report(payload: Json) {
     let mut out = std::io::stdout();
     let _ = writeln!(out, "__EVAL__{}", payload);
     let _ = out.flush();
+}
+
+/// DOM 体检结果（截图模式的 GUGU_DIAG）：沿用 Electron 版的 __DIAG__<视图>__<json> 约定
+#[tauri::command]
+fn debug_diag(view: String, payload: Json, app: tauri::AppHandle) {
+    use std::io::Write;
+    let mut out = std::io::stdout();
+    let _ = writeln!(out, "__DIAG__{}__{}", view, payload);
+    let _ = out.flush();
+    // 没有 eval 脚本时，体检输出就是最后一步
+    if std::env::var("GUGU_EVAL").is_err() {
+        app.exit(0);
+    }
+}
+
+/// eval 脚本跑完后的补拍（渲染进程回调），拍完退出
+#[tauri::command]
+fn shot_after_eval(app: tauri::AppHandle) {
+    shot::capture_after_eval(&app);
 }
 
 /// 自检钩子：启动后注入一段脚本（GUGU_EVAL），脚本用 window.gugu.__report 交回结果
@@ -563,7 +583,9 @@ fn main() {
             plugins_invoke,
             open_external,
             copy_text,
-            debug_report
+            debug_report,
+            debug_diag,
+            shot_after_eval
         ])
         .setup(|app| {
             let _ = app.get_webview_window("main");
@@ -576,7 +598,10 @@ fn main() {
             let cookie = state.session.lock().unwrap().cookie_header();
             let engine = Engine::new(db, lib, handle, cookie, proxy);
             *state.engine.lock().unwrap() = Some(Arc::new(engine));
-            run_eval_hook(app.handle());
+            // 截图模式自己管启动流程（截图 → 体检 → eval → 补拍 → 退出）
+            if !shot::maybe_start(app.handle()) {
+                run_eval_hook(app.handle());
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

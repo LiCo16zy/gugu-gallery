@@ -336,3 +336,30 @@ Rust 侧的解析器单测也补齐了：`cargo test` **16 项全部通过**（�
 
 ---
 
+## 十四、里程碑 6：截图自检（GUGU_SHOT）搬到 Tauri
+
+- 新增 `src-tauri/src/shot.rs`：窗口截图走 PrintWindow（`PW_CLIENTONLY | PW_RENDERFULLCONTENT`）
+  + `GetDIBits` 取像素 → BGRA 转 RGBA → PNG / JPEG 编码。
+  契约与 Electron 版逐字一致：视图切换仍用 `gugu:navigate` 事件，
+  `GUGU_SHOT / GUGU_SHOT_VIEW / GUGU_SHOT_DELAY / GUGU_SHOT_SETTLE / GUGU_SHOT_FORMAT / GUGU_DIAG / GUGU_EVAL` 全部照旧，
+  产物仍是 `<视图|home>.<png|jpg>` 与 `<视图>-after-eval.<ext>`
+- 新增两个命令：`debug_diag`（沿用 `__DIAG__<视图>__<json>` 约定）与
+  `shot_after_eval`（渲染进程跑完 eval 后回调，补拍再退出）
+- 退出时机：有 `GUGU_EVAL` → 补拍后退出；只有体检 → 体检输出后退出；两者都没有 → 截图完就退出
+- `windows` 依赖 0.58 → 0.61：必须与 tauri 用同一个 crate 版本，否则 `WebviewWindow::hwnd()`
+  拿到的 HWND 与自己声明的那套类型对不上
+- 脚本：新增 `scripts/tauri-app.mjs`（找产物 / 起 Vite / 跑一次应用并收输出），
+  `scripts/shot.mjs` 改成用它，不再依赖 Electron 二进制与 `out/main`
+
+**真机验证**：`node scripts/shot.mjs gallery crawl settings` 三个视图都出图（1850×1092，
+窗口被屏幕高度收窄是正常的），`__DIAG__` 输出正常（2,129 条、60 张卡片、28 个标签 chip）；
+`node scripts/uicheck.mjs` 在「截图 → 体检 → eval → 补拍 → 退出」新流程下**仍然全绿**，
+并产出 `screenshots/uicheck/home.png` 与 `home-after-eval.png`。
+
+**踩坑**：Windows 上 `npm run dev:web` 会再 fork 一层，`child.kill()` 只干掉中间那层，
+孙进程继续握着管道，Node 脚本就僵着不退出（第一次跑把 10 分钟墙钟直接耗光）。
+现在开发服务器的输出写进 `data/dev-server.log` 而不是管道，收工用 `taskkill /T /F` 连整棵树一起收，
+脚本末尾再显式退出。
+
+---
+
