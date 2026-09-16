@@ -299,6 +299,13 @@ export default function Lightbox({
       >
         {detail?.imageUrl ? (
           <img
+            // 原图 404（文件被外部删了 / 库被拷动过）时重新拉一次详情：
+            // 后端会在取不到文件时清掉过期的 files 行，这里刷新后界面就变成「下载此图」
+            onError={() => {
+              void api.library.item(id).then((d) => {
+                if (d) setDetail((prev) => (prev ? { ...prev, ...d } : d))
+              })
+            }}
             src={detail.imageUrl}
             alt={detail.title}
             style={{ transform: 'translate(' + offset.x + 'px, ' + offset.y + 'px) scale(' + zoom + ')' }}

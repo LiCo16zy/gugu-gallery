@@ -664,6 +664,78 @@ fn replace_tags(conn: &Connection, item_id: i64, tags: &[String]) -> rusqlite::R
     Ok(())
 }
 
+
+/// 待补详情页的条目：rich = 0 表示还没抓过详情页
+/// （Pixiv 作品号 / 画师主页 / 完整标签只有详情页才有）
+pub fn items_needing_detail(conn: &Connection, ids: &[i64]) -> rusqlite::Result<Vec<(i64, String)>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let marks = vec!["?"; ids.len()].join(",");
+    let params: Vec<SqlValue> = ids.iter().map(|i| SqlValue::Integer(*i)).collect();
+    let sql = format!(
+        "SELECT id, detail_url FROM items
+          WHERE id IN ({marks}) AND COALESCE(rich, 0) = 0 AND COALESCE(detail_url, '') <> ''"
+    );
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(params_from_iter(params.iter()), |row| {
+        Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+    })?;
+    rows.collect()
+}
+
+/// 把详情页抓到的东西并进条目：只补空字段，不动收藏 / 评分 / 应用分类
+pub fn apply_detail(
+    conn: &Connection,
+    item_id: i64,
+    detail: &crate::crawler::parser::RawDetail,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE items SET
+            title            = CASE WHEN ?2 <> '' THEN ?2 ELSE title END,
+            width            = COALESCE(?3, width),
+            height           = COALESCE(?4, height),
+            bytes            = COALESCE(?5, bytes),
+            uploader         = COALESCE(?6, uploader),
+            views            = COALESCE(?7, views),
+            likes            = COALESCE(?8, likes),
+            collects         = COALESCE(?9, collects),
+            published_at     = COALESCE(published_at, ?10),
+            pixiv_id         = COALESCE(?11, pixiv_id),
+            pixiv_artist_url = COALESCE(?12, pixiv_artist_url),
+            rich             = 1,
+            updated_at       = ?13
+          WHERE id = ?1",
+        rusqlite::params![
+            item_id,
+            detail.title,
+            detail.width,
+            detail.height,
+            detail.bytes,
+            detail.uploader,
+            detail.views,
+            detail.likes,
+            detail.collects,
+            detail.published_at,
+            detail.pixiv_id,
+            detail.pixiv_artist_url,
+            now_iso(),
+        ],
+    )?;
+    if !detail.tags.is_empty() {
+        replace_tags(conn, item_id, &detail.tags)?;
+    }
+    Ok(())
+}
+
+/// 本地文件不在了：把过期的 files 行清掉，界面就会重新显示「下载」而不是坏图
+pub fn drop_file(conn: &Connection, item_id: i64, variant: &str) -> rusqlite::Result<usize> {
+    conn.execute(
+        "DELETE FROM files WHERE item_id = ?1 AND variant = ?2",
+        rusqlite::params![item_id, variant],
+    )
+}
+
 /// 站点关键词 -> 应用分类显示名（与 shared/categories.ts 的 categoryTagFor 一致）
 pub fn category_tag_for(word: &str) -> String {
     match word {

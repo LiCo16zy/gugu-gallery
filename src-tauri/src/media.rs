@@ -73,6 +73,13 @@ pub fn handle(ctx: UriSchemeContext<'_, tauri::Wry>, request: tauri::http::Reque
             .header("cache-control", "no-cache")
             .body(bytes)
             .unwrap_or_else(|_| not_found("build failed")),
-        Err(_) => not_found("read failed"),
+        Err(_) => {
+            // 文件不在了（被外部删了 / 库被拷动过）：把过期的 files 行清掉，
+            // 界面下次查询就会重新显示「下载此图」，而不是一直给一张坏图。
+            if kind == "media" {
+                let _ = crate::store::drop_file(&db, id, "original");
+            }
+            not_found("read failed")
+        }
     }
 }

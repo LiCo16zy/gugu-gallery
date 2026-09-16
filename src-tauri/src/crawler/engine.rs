@@ -4,7 +4,7 @@
  * 页码范围同时作用于索引与下载、进度事件、可暂停/取消、失败不中断整批。
  */
 use super::http::{sniff_format, HttpClient, HttpOptions};
-use super::parser::{parse_list_items, parse_pagination};
+use super::parser::{parse_detail, parse_list_items, parse_pagination};
 use super::site::{self, SiteTarget};
 use crate::library::{build_slug, Library};
 use crate::store::{self, GalleryQuery, ItemUpsert};
@@ -626,7 +626,39 @@ impl EngineHandle {
         Ok(())
     }
 
+    /// 抓一次详情页并把结果并进条目（已经补过的直接跳过）
+    async fn enrich_one(&self, item_id: i64) -> Result<(), String> {
+        let pending = {
+            let db = self.db.lock().unwrap();
+            store::items_needing_detail(&db, &[item_id]).map_err(|e| e.to_string())?
+        };
+        let Some((id, url)) = pending.into_iter().next() else {
+            return Ok(());
+        };
+        let html = self.client.get_html(&url).await.map_err(|e| e.0)?;
+        let detail = parse_detail(&html, Some(id));
+        {
+            let db = self.db.lock().unwrap();
+            store::apply_detail(&db, id, &detail).map_err(|e| e.to_string())?;
+        }
+        self.log(
+            "info",
+            &format!(
+                "#{id} 详情已补全（Pixiv {}）",
+                detail.pixiv_id.as_deref().unwrap_or("—")
+            ),
+        );
+        Ok(())
+    }
+
     async fn download_one(&self, item: &store::QueueItem, request: &CrawlRequest) -> Result<(), String> {
+        // 详情补全（可选，默认开）：Pixiv 作品号 / 画师 / 完整标签只有详情页才有，
+        // 顺便让落盘文件名带上 pid —— 这是「下载前补全详情」那个开关的实现
+        if request.enrich {
+            if let Err(err) = self.enrich_one(item.id).await {
+                self.log("warn", &format!("#{} 详情补全失败：{err}", item.id));
+            }
+        }
         let remote_path = item
             .remote_path
             .clone()
