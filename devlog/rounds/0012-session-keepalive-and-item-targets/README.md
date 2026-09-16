@@ -62,3 +62,10 @@ schema 版本 2 → 3，新表用 `CREATE TABLE IF NOT EXISTS` 放在 `SCHEMA_SQ
 - **关于「站点 cookie 每日刷新」**：实测用有效 cookie 请求首页与搜索页，响应里**没有** `Set-Cookie`（也就是服务端并没有在普通请求里轮换会话号），所以「换 cookie」更像是服务端会话过期后重新签发。真正让浏览器「一直保持登录」的其实是**持续有请求**。这一轮做了两件事来逼近这个效果：跟着 Set-Cookie 走（有就换）、应用开着时每 30 分钟保活一次。**如果应用连续几天不开，服务端会话仍然可能被回收**，那时只能重新贴一次 cookie —— 站点没有提供「记住我」之类的长效凭据，应用侧拿不到更长的授权。
 - 日期筛选只到月、来源分类与站点分类互斥（同时选会得到空集，代码里已经做了互斥清理）。
 - 用户那份 cookie 仍然只以 DPAPI 密文存在 `%APPDATA%/gugu-gallery/session.bin`，仓库与日志里都没有明文。
+
+## 过程存档
+
+- 起始截图（4 张）：`screenshots-before/`
+- 改动后截图（4 张）：`screenshots-after/`
+- 代码差异：`changes.patch` / `changes.md`
+- （本轮无界面标注）

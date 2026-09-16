@@ -1,0 +1,784 @@
+# 轮次 0012-session-keepalive-and-item-targets 代码差异
+# 基线提交 a68f1b1 -> a62e571
+
+diff --git a/devlog/index.json b/devlog/index.json
+index 6ea88fb..da15b89 100644
+--- a/devlog/index.json
++++ b/devlog/index.json
+@@ -135,6 +135,15 @@
+       "finishedAt": "2026-09-15 10:47",
+       "endCommit": "0f5a004",
+       "status": "closed"
++    },
++    {
++      "id": "0012-session-keepalive-and-item-targets",
++      "slug": "session-keepalive-and-item-targets",
++      "createdAt": "2026-09-16 08:38",
++      "baseCommit": "a68f1b1",
++      "branch": "master",
++      "summary": "",
++      "status": "open"
+     }
+   ]
+ }
+diff --git a/devlog/rounds/0012-session-keepalive-and-item-targets/README.md b/devlog/rounds/0012-session-keepalive-and-item-targets/README.md
+new file mode 100644
+index 0000000..ec63989
+--- /dev/null
++++ b/devlog/rounds/0012-session-keepalive-and-item-targets/README.md
+@@ -0,0 +1,64 @@
++# 轮次 0012-session-keepalive-and-item-targets
++
++- 时间：2026-09-16
++- 应用版本：**0.6.2**
++- 起点提交：`a68f1b1`
++- 用户诉求：换了新 cookie、要求清掉 demo 里那 100 条 `泳装类分享` 并做抓取测试；另外「似乎网站的 cookie 每日会刷新，但我网页端依旧保持登录，如果可以我希望用户登录一次后续短时间内不再频繁登录」。
++
++## 背景
++
++上一轮结束时，demo 库里躺着 100 条用**旧逻辑**抓回来的 `泳装类分享` 条目（那时搜索类目标会用自己的关键词覆盖站点分类），既没有新加的标签，也和站点真实分类对不上。这一轮把它们清干净，用新 cookie 重新抓一遍做验证，并把「登录一次能用多久」这件事从根上修一修。
++
++## 改动
++
++### 1. 会话保活，并且跟着站点换 cookie
++
++- **跟随轮换**：`HttpClient` 现在会读响应的 `Set-Cookie`，发现 `PHPSESSID` 变了就交给 `SessionStore.adopt()` 更新并重新加密落盘。浏览器之所以「一直保持登录」，就是因为它每次都跟着 Set-Cookie 走；应用只存一份静态值的话，站点一换就是废票。
++  - 有一道必不可少的闸门：**只有本来就登录着才 adopt**。站点给每个匿名访客都会发 `PHPSESSID`，没有这道闸门的话，匿名抓一把就会把应用「变成」已登录 —— 这个坑是 uicheck 先替我踩出来的（隔离目录里凭空多出 `session.bin`，泳装分享分类莫名其妙冒了出来）。
++  - 明确作废的 Set-Cookie（`max-age=0` / 1970 过期）不采纳。
++- **保活**：应用开着的时候每 30 分钟探一次首页（`AppContext.startSessionKeepAlive()`），顺带把轮换的 cookie 收下来。服务端会话闲置太久会被回收，用户第二天打开就得重新登录 —— 浏览器没这个问题，只是因为用户一直在浏览。
++- 探活改用一条**独立的 HttpClient**（`probe`）。之前 `verifySession()` 是借用抓取用的那条客户端、并在结束时把 cookie 清掉；如果这时候正好有抓取在跑，就会把正在进行的那批请求的登录态抹掉。
++
++### 2. 数据模型：来源分类单独记，不再覆盖站点分类
++
++上一轮我让搜索类目标直接把 `items.plate/word` 改成 `null / 泳装类分享`。这次真跑起来才看清代价：站点搜索页返回的详情链接仍然带着图片**原本**的分类（`/plate/ACG图片/wd/Pixiv萌图/id/...`），所以
++
++- 那 20 条里 11 条本来就存在，被就地改成了「泳装类分享」，**Pixiv萌图 的计数直接掉了 11**；
++- 再抓一次 Pixiv萌图 又会把它们改回来，标签也会被站点的标签覆盖掉 —— 同一条记录在两个分类之间来回跳。
++
++改成正解：
++
++- 新增 `item_targets(item_id, word)`（多对多，只增不删），记「这条是从哪个应用分类抓回来的」；
++- `items.plate/word` 恢复成站点给什么就是什么；
++- 侧栏分类的计数与筛选按分类类型分流：有一级分类的看 `items.word`，搜索类（泳装分享）看 `item_targets`；
++- 标签照样加（用户要的），并且 `replaceTags` 会把 `item_targets` 对应的应用侧标签**留住**，不再被站点的标签重写冲掉。
++
++schema 版本 2 → 3，新表用 `CREATE TABLE IF NOT EXISTS` 放在 `SCHEMA_SQL` 里，老库打开时自动补上，不需要重建索引。
++
++### 3. 顺手修掉两个真 bug
++
++- **侧栏分类点了没反应。** `patchFilters` 里「换一级分类就清掉二级分类」写成了 `if (patch.plate !== undefined) next.word = null`，而侧栏点分类时传的正是 `plate: null` + `word: 分类名` —— 于是刚设上的 word 立刻被清掉，筛选等于没生效。改成只在调用方没给 word 时才清。这个 bug 之前一直没被发现，是因为 uicheck 的断言只检查了「共 N 条」这种不管筛选与否都成立的文本。
++- **选了分类，「全部」还高亮。** `isAllScope` 没把 `word` / `targetWord` 算进去。
++
++### 4. demo 数据清理与修复
++
++- 删掉 100 条旧 `泳装类分享` 条目、它们的 100 个原图 + 100 个缩略图（**453 MB**），并清掉空的 `originals/未分类/` 目录；删前整库备份在 `data/demo/index.db.bak-*`。
++- 用新 cookie 重新抓了 3 页，那 20/30 条按详情链接把 classification 恢复正，并写入 `item_targets`。
++
++## 验证
++
++| 检查 | 结果 |
++| --- | --- |
++| 新 cookie 登录态 | 通过应用自身路径保存并验证：`state=in`、`登录态有效`、`encrypted=true`、指纹 `8i77…gk34` |
++| 真站点抓取（登录态） | `--search --word 泳装类分享 --pages 3 --max 2`：索引 3 页 / 新条目 0（都已在库）/ 下载 2 张 / 失败 0 |
++| 数据模型 | `items` 全部 `ACG图片 / Pixiv萌图`（2129 条，没有一条被来源覆盖）；`item_targets` 记 30 条 `泳装类分享`；30 条都带 `泳装分享` 标签 |
++| 登录后的界面 | 侧栏出现 `泳装分享:30`；点它 → `共 30 条`、`全部` 不再高亮；再点 `Pixiv萌图` → `共 2,129 条`；点 `全部` 恢复高亮 |
++| `npm run typecheck` / `npm test` | 通过 / 30 项 |
++| `node scripts/uicheck.mjs` | 59 项通过（新增「选中分类后『全部』不再高亮」，并把「点击分类直接筛选生效」收紧为必须真的选中） |
++| `node plugins/annotator/bin/check.mjs` / `node scripts/e2e.mjs` | 37 项通过 / 通过 |
++
++## 遗留与说明
++
++- **关于「站点 cookie 每日刷新」**：实测用有效 cookie 请求首页与搜索页，响应里**没有** `Set-Cookie`（也就是服务端并没有在普通请求里轮换会话号），所以「换 cookie」更像是服务端会话过期后重新签发。真正让浏览器「一直保持登录」的其实是**持续有请求**。这一轮做了两件事来逼近这个效果：跟着 Set-Cookie 走（有就换）、应用开着时每 30 分钟保活一次。**如果应用连续几天不开，服务端会话仍然可能被回收**，那时只能重新贴一次 cookie —— 站点没有提供「记住我」之类的长效凭据，应用侧拿不到更长的授权。
++- 日期筛选只到月、来源分类与站点分类互斥（同时选会得到空集，代码里已经做了互斥清理）。
++- 用户那份 cookie 仍然只以 DPAPI 密文存在 `%APPDATA%/gugu-gallery/session.bin`，仓库与日志里都没有明文。
+diff --git a/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/crawl.jpg b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/crawl.jpg
+new file mode 100644
+index 0000000..898c938
+Binary files /dev/null and b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/crawl.jpg differ
+diff --git a/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/home.jpg b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/home.jpg
+new file mode 100644
+index 0000000..88c05ca
+Binary files /dev/null and b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/home.jpg differ
+diff --git a/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/lightbox.jpg b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/lightbox.jpg
+new file mode 100644
+index 0000000..c54eb15
+Binary files /dev/null and b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/lightbox.jpg differ
+diff --git a/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/settings.jpg b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/settings.jpg
+new file mode 100644
+index 0000000..75283d1
+Binary files /dev/null and b/devlog/rounds/0012-session-keepalive-and-item-targets/screenshots-before/settings.jpg differ
+diff --git a/package.json b/package.json
+index 4c52d1e..ef93937 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "gugu-gallery",
+-  "version": "0.6.1",
++  "version": "0.6.2",
+   "private": true,
+   "description": "咕咕小站图片爬虫 + 本地图库浏览器（Electron 桌面应用）",
+   "author": "gugu-gallery",
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index f125c91..530d319 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -7,7 +7,7 @@
+  * 需要先 npm run build；依赖 GUGU_LIBRARY_ROOT（默认 data/demo）里的图库数据。
+  */
+ import { spawn } from 'node:child_process'
+-import { existsSync } from 'node:fs'
++import { existsSync, rmSync } from 'node:fs'
+ import { cp, mkdir, rm } from 'node:fs/promises'
+ import { dirname, join, resolve } from 'node:path'
+ import { fileURLToPath } from 'node:url'
+@@ -183,6 +183,9 @@ const SCRIPT = `(async () => {
+       await sleep(1100)
+       out.categoryMeta = meta()
+       out.categoryActive = first.className.includes('active')
++      out.allPillAfterCategory = (
++        Array.from(document.querySelectorAll('.filter-bar .pill')).find((b) => b.textContent.trim() === '全部') || {}
++      ).className || ''
+       const reset = byText('.filter-bar .pill', '清空筛选')
+       if (reset) { reset.click(); await sleep(900) }
+     }
+@@ -432,6 +435,10 @@ const SCRIPT = `(async () => {
+   return out
+ })()`
+ 
++// 自检用的 userData 每次清掉登录态：断言必须与用户本机的登录状态无关
++const userDataDir = join(root, 'data', 'uicheck-userdata')
++rmSync(join(userDataDir, 'session.bin'), { force: true })
++
+ const env = {
+   ...process.env,
+   GUGU_SHOT: outDir,
+@@ -497,7 +504,8 @@ const checks = [
+   ['Esc 能关闭灯箱', result.lightboxClosed === true],
+   ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
+   ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
+-  ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '')],
++  ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '') && result.categoryActive === true],
++  ['选中分类后「全部」不再高亮', !String(result.allPillAfterCategory).includes('active')],
+   ['未登录时登录引导显示未登录', /未登录/.test(result.guideStatusText || '')],
+   ['未登录时侧栏不出现登录专属分类', result.swimsuitHiddenInSidebar === true],
+   ['未登录时抓取目标不出现登录专属分类', result.swimsuitHiddenInCrawl === true],
+diff --git a/src/main/context.ts b/src/main/context.ts
+index 7bfac9b..332efbd 100644
+--- a/src/main/context.ts
++++ b/src/main/context.ts
+@@ -18,6 +18,7 @@ export class AppContext {
+   private repo!: Repository
+   private lib!: Library
+   private engine!: CrawlEngine
++  private keepAliveTimer: NodeJS.Timeout | null = null
+ 
+   private progressListeners = new Set<(p: CrawlProgress, logs: CrawlProgress['logs']) => void>()
+   private sessionExpiredListeners = new Set<(message: string) => void>()
+@@ -26,6 +27,9 @@ export class AppContext {
+     this.settings = new SettingsStore()
+   }
+ 
++  /** 会话保活间隔：够密到不会闲置被回收，又不会给对方添麻烦 */
++  private static readonly KEEP_ALIVE_MS = 30 * 60 * 1000
++
+   onSessionExpired(listener: (message: string) => void): () => void {
+     this.sessionExpiredListeners.add(listener)
+     return () => this.sessionExpiredListeners.delete(listener)
+@@ -43,6 +47,24 @@ export class AppContext {
+     // 存了 cookie 就顺手验一次：失效得在界面上说出来，
+     // 否���帮助里的按钮会一直显示「已登录」，用户以为还能用
+     void this.verifySessionQuietly()
++    this.startSessionKeepAlive()
++  }
++
++  /**
++   * 会话保活。
++   *
++   * 站点侧是一份服务端会话：应用只要一直不用它，它就会因为闲置被回收，
++   * 用户第二天打开就得重新登录。浏览器之所以没事，是因为用户一直在浏览。
++   * 这里在应用开着的时候每隔一段时间探一次，顺带把站点轮换的 cookie 收下来。
++   */
++  private startSessionKeepAlive(): void {
++    if (this.keepAliveTimer) return
++    this.keepAliveTimer = setInterval(() => {
++      if (this.engine.isRunning()) return
++      void this.verifySessionQuietly()
++    }, AppContext.KEEP_ALIVE_MS)
++    // 只是保活，不该拖住应用退出
++    this.keepAliveTimer.unref?.()
+   }
+ 
+   /** 静默校验一次登录态：确认有效就记下来，明确失效才提醒（且只提醒一次） */
+@@ -76,6 +98,10 @@ export class AppContext {
+       getSettings: () => this.settings.get(),
+       resolveFetch: (proxy) => (proxy.trim() ? electronFetch : undefined),
+       getCookie: () => this.session.cookieHeader,
++      onCookieRotated: (setCookie) => {
++        // 站点换了会话 cookie 就跟着换，否则本地那份很快就成废票
++        void this.session.adopt(setCookie)
++      },
+       onSessionExpired: (message) => {
+         // 只提醒一次：会话失效后反复弹窗只会让人烦
+         if (!this.session.shouldNotifyExpiry()) return
+diff --git a/src/main/crawler/engine.ts b/src/main/crawler/engine.ts
+index 478aee0..6b91997 100644
+--- a/src/main/crawler/engine.ts
++++ b/src/main/crawler/engine.ts
+@@ -50,6 +50,8 @@ export interface EngineDeps {
+   getCookie: () => string | null
+   /** 会话失效时回调一次，用于提醒用户重新登录 */
+   onSessionExpired: (message: string) => void
++  /** 站点轮换了会话 cookie，上层负责更新本地保存的那一份 */
++  onCookieRotated?: (setCookie: string) => void
+ }
+ 
+ interface EngineState {
+@@ -73,6 +75,8 @@ interface EngineState {
+ 
+ export class CrawlEngine {
+   private http: HttpClient
++  /** 只用来探登录态，和抓取流水线互不影响 */
++  private probe: HttpClient
+   private state: EngineState | null = null
+   private paused = false
+   private cancelled = false
+@@ -84,17 +88,21 @@ export class CrawlEngine {
+ 
+   constructor(private deps: EngineDeps) {
+     const s = deps.getSettings()
+-    this.http = new HttpClient({
++    const base = {
+       delayMs: s.delayMs,
+       retries: s.retries,
+       timeoutMs: 25_000,
+       stallMs: 30_000,
+       concurrency: Math.max(s.listConcurrency, s.downloadConcurrency),
+       fetchImpl: deps.fetchImpl,
+-      onRetry: ({ attempt, reason, waitMs, url }) => {
++      onSetCookie: (setCookie: string) => deps.onCookieRotated?.(setCookie),
++      onRetry: ({ attempt, reason, waitMs, url }: { attempt: number; reason: string; waitMs: number; url: string }) => {
+         this.log('warn', `第 ${attempt} 次重试（${reason}），${Math.round(waitMs / 100) / 10}s 后重试 ${shortUrl(url)}`)
+       }
+-    })
++    }
++    this.http = new HttpClient(base)
++    // 校验登录态单独用一条客户端：抓取进行中也不能被验证请求改掉 cookie
++    this.probe = new HttpClient({ ...base, retries: 1, concurrency: 1, delayMs: 0 })
+   }
+ 
+   /* ------------------------------------------------------------- 生命周期 */
+@@ -127,9 +135,12 @@ export class CrawlEngine {
+   async verifySession(): Promise<SessionVerifyResult> {
+     const cookie = this.deps.getCookie()
+     if (!cookie) return { ok: false, state: 'none', message: '还没有设置登录凭据' }
+-    this.http.configure({ cookie })
++    this.probe.configure({
++      cookie,
++      fetchImpl: this.deps.resolveFetch?.(this.deps.getSettings().proxy) ?? this.deps.fetchImpl
++    })
+     try {
+-      const { html } = await this.http.getHtml(`${SITE_ORIGIN}/`)
++      const { html } = await this.probe.getHtml(`${SITE_ORIGIN}/`)
+       const state = this.loginState(html)
+       if (state === 'in') return { ok: true, state, message: '登录态有效' }
+       if (state === 'out') {
+@@ -146,9 +157,6 @@ export class CrawlEngine {
+         state: 'error',
+         message: `校验失败：${err instanceof Error ? err.message : String(err)}`
+       }
+-    } finally {
+-      // 校验用的 cookie 不留在客户端上：正式抓取会在 start() 里按需重新配置
+-      this.http.configure({ cookie: '' })
+     }
+   }
+ 
+@@ -388,11 +396,11 @@ export class CrawlEngine {
+         id: raw.id,
+         detailUrl: raw.detailUrl,
+         sourceUrl,
+-        // 关键词搜索页里返回的详情链接仍然带着图片原本的 plate / word，
+-        // 但那不是「用户从哪儿找到它们的」。搜索类目标统一按目标本身归类，
+-        // 否则「泳装分享」抓回来的图会散进别的分类，它的计数永远是 0。
+-        plate: target.kind === 'search' ? null : raw.plate ?? target.plate ?? null,
+-        word: (target.kind === 'search' ? target.word : raw.word ?? target.word) ?? null,
++        // 站点给什么就是什么：搜索页返回的详情链接仍然带着图片原本的 plate/word，
++        // 那是这张图的真实分类，不能拿抓取目标去覆盖它 —— 否则同一条记录会在
++        // 两个分类之间来回跳。「用户是从哪个分类找到它的」另记在 item_targets。
++        plate: raw.plate ?? target.plate ?? null,
++        word: raw.word ?? target.word ?? null,
+         title: raw.title,
+         width: raw.width,
+         height: raw.height,
+@@ -405,6 +413,7 @@ export class CrawlEngine {
+         previewUrl: raw.remotePath ? previewUrl(raw.remotePath) : null,
+         downloadUrl: raw.remotePath ? originalUrl(raw.remotePath) : null,
+         page,
++        targetWord: target.kind === 'search' ? target.word ?? null : null,
+         // 搜索类目标额外补一个应用侧标签（站点自己不会给），方便单独筛出来
+         tags:
+           target.kind === 'search' && target.word
+diff --git a/src/main/crawler/http.ts b/src/main/crawler/http.ts
+index 29b0f84..de9a928 100644
+--- a/src/main/crawler/http.ts
++++ b/src/main/crawler/http.ts
+@@ -29,6 +29,12 @@ export interface HttpClientOptions {
+   cookie?: string | null
+   fetchImpl?: typeof fetch
+   onRetry?: (info: { url: string; attempt: number; reason: string; waitMs: number }) => void
++  /**
++   * 站点下发 Set-Cookie 时回调（只关心 PHPSESSID）。
++   * 站点的会话 cookie 会自己轮换，浏览器是因为跟着 Set-Cookie 走才一直保持登录，
++   * 所以这里也必须跟着换，否则本地存的很快就成了一份废票。
++   */
++  onSetCookie?: (setCookie: string) => void
+ }
+ 
+ export const DEFAULT_HTTP_OPTIONS: HttpClientOptions = {
+@@ -299,6 +305,7 @@ export class HttpClient {
+         if (!res.ok) {
+           throw new HttpError(`HTTP ${res.status}`, res.status, url, isRetryableStatus(res.status))
+         }
++        this.captureCookies(res)
+         const text = await res.text()
+         if (mode === 'text' && !isCompleteHtml(text)) {
+           throw new HttpError(`响应被截断（${text.length} 字符）`, res.status, url, true)
+@@ -313,6 +320,17 @@ export class HttpClient {
+     throw lastErr instanceof Error ? lastErr : new HttpError(String(lastErr), null, url, false)
+   }
+ 
++  /** 把 Set-Cookie 里的会话 cookie 交给上层（通常是 SessionStore） */
++  private captureCookies(res: Response): void {
++    const cb = this.opts.onSetCookie
++    if (!cb) return
++    const headers = res.headers as unknown as { getSetCookie?: () => string[] }
++    const list = typeof headers.getSetCookie === 'function' ? headers.getSetCookie() : []
++    for (const one of list) {
++      if (one && /PHPSESSID=/i.test(one)) cb(one)
++    }
++  }
++
+   private headers(extra: Record<string, string>): Record<string, string> {
+     const headers: Record<string, string> = {
+       'User-Agent': BROWSER_UA,
+diff --git a/src/main/session.ts b/src/main/session.ts
+index afed9bf..862af38 100644
+--- a/src/main/session.ts
++++ b/src/main/session.ts
+@@ -103,6 +103,37 @@ export class SessionStore {
+     await writeFile(this.file, safeStorage.encryptString(payload))
+   }
+ 
++  /**
++   * 跟着站点换 cookie。
++   *
++   * 浏览器之所以能一直保持登录，是因为它每次都按 Set-Cookie 更新本地值；
++   * 应用只存一份静态 cookie 的话，站点一换就是废票。这里做同样的事，
++   * 并且立刻重新加密落盘，免得重启后又用回旧值。
++   */
++  async adopt(setCookie: string): Promise<boolean> {
++    // 只有本来就登录着才跟着换。
++    // 站点给每个访客都会发一个 PHPSESSID，没有这道闸门的话，
++    // 匿名抓一把就会把应用「变成」已登录，泳装分享分类也会莫名其妙冒出来。
++    if (!this.cookie) return false
++    // 明确作废的 Set-Cookie 不能当成新会话
++    if (/(max-age=0|expires=thu,\s*01-jan-1970)/i.test(setCookie)) return false
++    const match = /PHPSESSID=([^;,\s]*)/i.exec(setCookie)
++    const value = (match?.[1] ?? '').trim()
++    if (!value || value.toLowerCase() === 'deleted') return false
++    const current = this.cookie?.includes('=') ? this.cookie.split('=').slice(1).join('=') : this.cookie
++    if (current === value) return false
++    this.cookie = `PHPSESSID=${value}`
++    this.savedAt = new Date().toISOString()
++    // 站点刚刚回过话，说明这份会话是活的
++    this.verified = true
++    this.verifyMessage = null
++    this.expiryNotified = false
++    if (!this.canEncrypt) return true
++    const payload = JSON.stringify({ cookie: this.cookie, savedAt: this.savedAt })
++    await writeFile(this.file, safeStorage.encryptString(payload)).catch(() => {})
++    return true
++  }
++
+   async clear(): Promise<void> {
+     this.cookie = null
+     this.savedAt = null
+diff --git a/src/main/store/repository.ts b/src/main/store/repository.ts
+index f41d100..93765f9 100644
+--- a/src/main/store/repository.ts
++++ b/src/main/store/repository.ts
+@@ -12,6 +12,7 @@ import type {
+   LibraryStats,
+   SourceRef
+ } from '@shared/types'
++import { categoryTagFor } from '@shared/categories'
+ import type { Database, Row } from './db'
+ import type { SqlValue } from 'sql.js'
+ 
+@@ -34,6 +35,8 @@ export interface ItemUpsert {
+   downloadUrl: string | null
+   /** 发现该条目的列表页码 */
+   page: number | null
++  /** 抓取目标的关键词（搜索类目标才有）：记录「用户是从哪个应用分类找到它的」 */
++  targetWord?: string | null
+   tags: string[]
+ }
+ 
+@@ -161,6 +164,11 @@ export class Repository {
+         )
+         if (!before) inserted += 1
+ 
++        // 来源分类：只增不删，同一条图被多个应用分类抓到时都会留下记录
++        if (it.targetWord) {
++          this.db.run('INSERT OR IGNORE INTO item_targets (item_id, word) VALUES (?,?)', [it.id, it.targetWord])
++        }
++
+         // 标签：增量替换，避免每次都全量重写
+         if (it.tags.length > 0) this.replaceTags(it.id, it.tags)
+       }
+@@ -169,8 +177,15 @@ export class Repository {
+   }
+ 
+   private replaceTags(itemId: number, tags: string[]): void {
++    // 站点标签是「替换」语义（作者改了标签我们也要跟着改），
++    // 但应用自己补的分类标签不能因此消失：它记的是「这条是从哪个分类抓来的」，
++    // 下次从别的分类再抓到同一张图时，站点标签会重写一遍，这个标签得留住。
++    const appTags = this.db
++      .all<Row>('SELECT word FROM item_targets WHERE item_id = ?', [itemId])
++      .map((r) => categoryTagFor(String(r.word)))
++    const merged = [...new Set([...tags, ...appTags])]
+     this.db.run('DELETE FROM item_tags WHERE item_id = ?', [itemId])
+-    for (const raw of tags) {
++    for (const raw of merged) {
+       const name = raw.trim()
+       if (!name) continue
+       this.db.run('INSERT OR IGNORE INTO tags (name) VALUES (?)', [name])
+@@ -362,6 +377,7 @@ export class Repository {
+     const marks = ids.map(() => '?').join(',')
+     this.db.transaction(() => {
+       this.db.run(`DELETE FROM item_tags WHERE item_id IN (${marks})`, ids)
++      this.db.run(`DELETE FROM item_targets WHERE item_id IN (${marks})`, ids)
+       this.db.run(`DELETE FROM files WHERE item_id IN (${marks})`, ids)
+       this.db.run(`DELETE FROM items WHERE id IN (${marks})`, ids)
+     })
+@@ -414,7 +430,7 @@ export class Repository {
+ 
+   /* --------------------------------------------------------------- 汇总 */
+ 
+-  facets(): { plates: PlateFacet[]; topTags: Facet[]; words: Facet[] } {
++  facets(): { plates: PlateFacet[]; topTags: Facet[]; words: Facet[]; targets: Facet[] } {
+     // 一次查询拿全「一级分类 -> 二级分类」树，避免侧栏展开时串味
+     const rows = this.db.all<Row>(
+       `SELECT plate AS plate, word AS word, COUNT(*) AS count
+@@ -446,7 +462,11 @@ export class Repository {
+     const words = this.db
+       .all<Row>('SELECT word AS name, COUNT(*) AS count FROM items WHERE word IS NOT NULL GROUP BY word')
+       .map((r) => ({ name: String(r.name), count: Number(r.count) }))
+-    return { plates, topTags, words }
++    // 应用分类的来源计数：搜索类目标（泳装分享）没有 plate，靠这张表统计
++    const targets = this.db
++      .all<Row>('SELECT word AS name, COUNT(*) AS count FROM item_targets GROUP BY word')
++      .map((r) => ({ name: String(r.name), count: Number(r.count) }))
++    return { plates, topTags, words, targets }
+   }
+ 
+   stats(libraryRoot: string): LibraryStats {
+@@ -587,6 +607,11 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] }
+     clauses.push("COALESCE(i.published_at, '') < ?")
+     params.push(`${nextMonth(query.monthTo)}-01 00:00`)
+   }
++  if (query.targetWord) {
++    // 按「从哪个应用分类抓来的」筛选（搜索类目标用），不影响站点自身的 plate/word
++    clauses.push('i.id IN (SELECT item_id FROM item_targets WHERE word = ?)')
++    params.push(query.targetWord)
++  }
+   if (query.pageFrom != null) {
+     clauses.push('i.page IS NOT NULL AND i.page >= ?')
+     params.push(query.pageFrom)
+diff --git a/src/main/store/schema.ts b/src/main/store/schema.ts
+index c8b07d5..211a05d 100644
+--- a/src/main/store/schema.ts
++++ b/src/main/store/schema.ts
+@@ -1,6 +1,6 @@
+ /** 数据库结构定义。改结构时同步 +1 SCHEMA_VERSION 并补充迁移逻辑。 */
+ 
+-export const SCHEMA_VERSION = 2
++export const SCHEMA_VERSION = 3
+ 
+ export const SCHEMA_SQL = /* sql */ `
+ PRAGMA journal_mode = MEMORY;
+@@ -77,6 +77,18 @@ CREATE TABLE IF NOT EXISTS item_tags (
+ 
+ CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags (tag_id);
+ 
++-- 条目是被哪个「应用分类」抓回来的（多对多，只增不删）。
++-- 为什么不能直接改 items.plate/word：那是站点对这张图的真实分类
++-- （站点搜索页返回的详情链接仍然指向图片原本的分类），拿抓取目标去覆盖它
++-- 会让同一条记录在两个分类之间来回跳，收藏/下载记录还在，分类却变了。
++CREATE TABLE IF NOT EXISTS item_targets (
++  item_id INTEGER NOT NULL,
++  word    TEXT    NOT NULL,
++  PRIMARY KEY (item_id, word)
++) WITHOUT ROWID;
++
++CREATE INDEX IF NOT EXISTS idx_item_targets_word ON item_targets (word);
++
+ -- 本地已下载的文件
+ CREATE TABLE IF NOT EXISTS files (
+   id            INTEGER PRIMARY KEY AUTOINCREMENT,
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index e94fe36..4c0002f 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -50,6 +50,8 @@ export interface Filters {
+   sort: SortKey
+   orientation: Orientation
+   minWidth: number
++  /** 来源分类（搜索类目标的关键词），null 表示不限 */
++  targetWord: string | null
+   /** 发布月份闭区间（YYYY-MM），空串表示不限 */
+   monthFrom: string
+   monthTo: string
+@@ -66,6 +68,7 @@ const INITIAL_FILTERS: Filters = {
+   sort: 'newest',
+   orientation: 'any',
+   minWidth: 0,
++  targetWord: null,
+   monthFrom: '',
+   monthTo: ''
+ }
+@@ -126,16 +129,29 @@ export default function App(): JSX.Element {
+   const [stats, setStats] = useState<LibraryStats | null>(null)
+   /** 关键词维度的分类计数（电脑壁纸这类有 plate，泳装分享这类没有） */
+   const [wordFacets, setWordFacets] = useState<Facet[]>([])
++  /** 来源分类计数：搜索类目标（泳装分享）没有 plate，只能靠 item_targets */
++  const [targetFacets, setTargetFacets] = useState<Facet[]>([])
+   const [topTags, setTopTags] = useState<Facet[]>([])
+ 
+   /** 摊平分类：只保留应用定义的几栏，并挂上各自的条目数 */
+   const categories = useMemo(() => {
+-    const counts = new Map<string, number>()
+-    for (const word of wordFacets) counts.set(word.name, word.count)
++    // 两类分类的计数来源不一样：
++    //   · 有站点分类的（Pixiv萌图 / 电脑壁纸 / 手机壁纸）看 items.word
++    //   · 搜索类目标在站点侧没有分类，看 item_targets 里记下的来源
++    const wordCounts = new Map<string, number>()
++    for (const word of wordFacets) wordCounts.set(word.name, word.count)
++    const targetCounts = new Map<string, number>()
++    for (const t of targetFacets) targetCounts.set(t.name, t.count)
+     return visibleCategories(session?.loggedIn === true)
+-      .map((c) => ({ id: c.id, name: c.name, word: c.word, count: counts.get(c.word) ?? 0 }))
++      .map((c) => ({
++        id: c.id,
++        name: c.name,
++        word: c.word,
++        kind: c.kind,
++        count: (c.kind === 'search' ? targetCounts.get(c.word) : wordCounts.get(c.word)) ?? 0
++      }))
+       .filter((c) => c.count > 0)
+-  }, [wordFacets, session?.loggedIn])
++  }, [wordFacets, targetFacets, session?.loggedIn])
+ 
+   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
+   const [debouncedText, setDebouncedText] = useState('')
+@@ -216,6 +232,7 @@ export default function App(): JSX.Element {
+       const [s, f] = await Promise.all([api.library.stats(), api.library.facets()])
+       setStats(s)
+       setWordFacets(f.words ?? [])
++      setTargetFacets(f.targets ?? [])
+       setTopTags(f.topTags)
+     } catch {
+       /* 图库目录刚切换时可能短暂读不到，忽略 */
+@@ -249,6 +266,7 @@ export default function App(): JSX.Element {
+       favorite: filters.favorite,
+       downloaded: filters.downloaded,
+       orientation: filters.orientation,
++      targetWord: filters.targetWord || undefined,
+       monthFrom: filters.monthFrom || undefined,
+       monthTo: filters.monthTo || undefined,
+       sort: filters.sort,
+@@ -288,7 +306,7 @@ export default function App(): JSX.Element {
+     setListEpoch((e) => e + 1)
+     void loadPage('reset')
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.monthFrom, filters.monthTo])
++  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.targetWord, filters.monthFrom, filters.monthTo])
+ 
+   // 滚动到底自动追加
+   /**
+@@ -377,8 +395,16 @@ export default function App(): JSX.Element {
+   const patchFilters = useCallback((patch: Partial<Filters>) => {
+     setFilters((prev) => {
+       const next = { ...prev, ...patch }
+-      // 换分类时必须清掉二级分类，否则会留下跨分类的无效条件
+-      if (patch.plate !== undefined) next.word = null
++      // 换一级分类时要清掉二级分类，否则会留下跨分类的无效条件。
++      // 但如果这次就把 word 一起给了（侧栏分类就是这么点的：plate=null + word=名字），
++      // 那就不能清 —— 之前无条件清空，等于侧栏分类点了没反应。
++      if (patch.plate !== undefined && patch.word === undefined) next.word = null
++      // 站点分类与来源分类互斥：两个一起生效只会得到空集
++      if (patch.word) next.targetWord = null
++      if (patch.targetWord) {
++        next.word = null
++        next.plate = null
++      }
+ 
+       if (patch.downloaded === 'never') {
+         next.favorite = false
+@@ -386,6 +412,7 @@ export default function App(): JSX.Element {
+         next.minWidth = 0
+         next.plate = null
+         next.word = null
++        next.targetWord = null
+         next.tags = []
+       } else {
+         const turnedOnOther =
+@@ -405,12 +432,21 @@ export default function App(): JSX.Element {
+     filters.downloaded === 'any' &&
+     !filters.favorite &&
+     !filters.plate &&
++    !filters.word &&
++    !filters.targetWord &&
+     filters.tags.length === 0 &&
+     filters.orientation === 'any' &&
+     filters.minWidth === 0 &&
+     filters.monthFrom === '' &&
+     filters.monthTo === ''
+ 
++  /** 筛选栏上显示来源分类的显示名（「泳装分享」而不是站点关键词） */
++  const activeTargetLabel = useMemo(() => {
++    if (!filters.targetWord) return ''
++    const found = visibleCategories(session?.loggedIn === true).find((c) => c.word === filters.targetWord)
++    return found?.name ?? filters.targetWord
++  }, [filters.targetWord, session?.loggedIn])
++
+   const quickFavorite = useCallback(async (item: ItemSummary) => {
+     const value = await api.library.favorite(item.id, !item.favorite)
+     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, favorite: value } : i)))
+@@ -483,6 +519,7 @@ export default function App(): JSX.Element {
+     if (filters.downloaded !== 'any') n += 1
+     if (filters.orientation !== 'any') n += 1
+     if (filters.minWidth > 0) n += 1
++    if (filters.targetWord) n += 1
+     if (filters.monthFrom || filters.monthTo) n += 1
+     return n
+   }, [filters])
+@@ -760,6 +797,7 @@ export default function App(): JSX.Element {
+                     tags: [],
+                     orientation: 'any',
+                     minWidth: 0,
++                    targetWord: '',
+                     monthFrom: '',
+                     monthTo: ''
+                   })
+@@ -803,6 +841,14 @@ export default function App(): JSX.Element {
+                 竖图
+               </button>
+ 
++              {filters.targetWord && (
++                <span className="pill active">
++                  {activeTargetLabel}
++                  <span className="x" onClick={() => patchFilters({ targetWord: null })} role="button">
++                    <IconClose width={11} height={11} />
++                  </span>
++                </span>
++              )}
+               {filters.plate && (
+                 <span className="pill active">
+                   {filters.plate}
+diff --git a/src/renderer/src/components/Sidebar.tsx b/src/renderer/src/components/Sidebar.tsx
+index 0018cd5..82a986a 100644
+--- a/src/renderer/src/components/Sidebar.tsx
++++ b/src/renderer/src/components/Sidebar.tsx
+@@ -8,7 +8,7 @@ interface Props {
+   collapsed: boolean
+   stats: LibraryStats | null
+   /** 摊平后的分类（名字 + 数据库里的 word + 条目数） */
+-  categories: { id: string; name: string; word: string; count: number }[]
++  categories: { id: string; name: string; word: string; kind: 'category' | 'search'; count: number }[]
+   topTags: Facet[]
+   filters: Filters
+   view: View
+@@ -59,7 +59,9 @@ export default function Sidebar({
+           <button
+             data-component="Sidebar/Item"
+             className={`side-item${isLibraryAll ? ' active' : ''}`}
+-            onClick={() => go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, tags: [] }))}
++            onClick={() =>
++              go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, targetWord: null, tags: [] }))
++            }
+             title="全部图片"
+           >
+             <IconImage />
+@@ -117,18 +119,33 @@ export default function Sidebar({
+             <div className="side-title">
+               <span>分类</span>
+             </div>
+-            {categories.map((category) => (
+-              <button
+-                key={category.id}
+-                data-component="Sidebar/Category"
+-                className={`side-item${filters.word === category.word && !filters.plate ? ' active' : ''}`}
+-                onClick={() => go(() => onFilters({ plate: null, word: category.word }))}
+-              >
+-                <IconFolder />
+-                <span className="label">{category.name}</span>
+-                <span className="count">{category.count}</span>
+-              </button>
+-            ))}
++            {categories.map((category) => {
++              // 搜索类目标在站点侧没有分类，筛选走「来源分类」而不是 word
++              const search = category.kind === 'search'
++              const on = search
++                ? filters.targetWord === category.word
++                : filters.word === category.word && !filters.plate
++              return (
++                <button
++                  key={category.id}
++                  data-component="Sidebar/Category"
++                  className={`side-item${on ? ' active' : ''}`}
++                  onClick={() =>
++                    go(() =>
++                      onFilters(
++                        search
++                          ? { plate: null, word: null, targetWord: category.word }
++                          : { plate: null, word: category.word, targetWord: null }
++                      )
++                    )
++                  }
++                >
++                  <IconFolder />
++                  <span className="label">{category.name}</span>
++                  <span className="count">{category.count}</span>
++                </button>
++              )
++            })}
+           </div>
+         )}
+ 
+diff --git a/src/shared/bridge.ts b/src/shared/bridge.ts
+index 90aa2d7..8eeedb7 100644
+--- a/src/shared/bridge.ts
++++ b/src/shared/bridge.ts
+@@ -46,7 +46,7 @@ export interface GuguBridge {
+   }
+   library: {
+     stats(): Promise<LibraryStats>
+-    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[]; words: Facet[] }>
++    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[]; words: Facet[]; targets: Facet[] }>
+     query(query: GalleryQuery): Promise<GalleryPage>
+     item(id: number): Promise<ItemDetail | null>
+     favorite(id: number, value: boolean): Promise<boolean>
+diff --git a/src/shared/types.ts b/src/shared/types.ts
+index f64617e..06dfd75 100644
+--- a/src/shared/types.ts
++++ b/src/shared/types.ts
+@@ -103,6 +103,8 @@ export interface GalleryQuery {
+   /** 只取来源页落在该区间的条目（下载阶段按页码范围过滤用） */
+   pageFrom?: number
+   pageTo?: number
++  /** 按「从哪个应用分类抓来的」筛选（搜索类目标用） */
++  targetWord?: string
+   /** 发布月份闭区间，格式 YYYY-MM（界面只精确到月） */
+   monthFrom?: string
+   monthTo?: string
