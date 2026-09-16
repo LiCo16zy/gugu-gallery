@@ -20,3 +20,6 @@ _research/
 
 # 图标生成的中间产物
 build/.make-icon.*
+
+# Windows-GNU 工具链需要的动态库（打包时随安装包一起带上）
+src-tauri/WebView2Loader.dll

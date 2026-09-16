@@ -529,3 +529,43 @@ devlog/rounds/0001-20260916-1917/
 
 ---
 
+## 二十、发布前发现并修复：安装后打不开（WebView2Loader.dll 缺失）
+
+用户实测反馈「安装包装完后程序打不开」，本地复现与定位：
+
+**复现**
+
+1. 只把 `gugu-gallery.exe` 拷到干净目录运行 → 进程立刻退出，命令行报
+   `error while loading shared libraries: WebView2Loader.dll: cannot open shared object file`（exit 127）；
+   把 `target/release/WebView2Loader.dll` 放到旁边 → 正常出窗口。
+2. 用 `cmd //c "...setup.exe /S /D=<临时目录>"` 静默安装 → 安装目录里**只有 exe 和 uninstall.exe**，
+   没有 `WebView2Loader.dll` → 装完当然打不开。
+3. 查生成的 `target/release/nsis/x64/installer.nsi`：确认没有任何 `File` 行带上这个 DLL。
+
+**根因**：windows-gnu 工具链下 `WebView2Loader` 是**动态依赖**（MSVC 工具链会静态链接掉）。
+tauri-bundler 里确实有一段「target 以 `-gnu` 结尾就自动带上这个 DLL」的逻辑，
+但本机这次 `tauri build` 没走 `--target`，那段判断没命中，于是安装包里就少了运行库。
+
+**修法**（双保险，且不依赖打包器的隐式行为）
+
+- `scripts/release.mjs`：编译完 release 后把 `target/release/WebView2Loader.dll` 复制到 `src-tauri/`
+  （复制不到就直接失败，不许出一个注定打不开的包）；
+- `src-tauri/tauri.conf.json`：`bundle.resources` 把它映射到程序目录根；
+- `src-tauri/WebView2Loader.dll` 进 `.gitignore`（构建产物，不入库）。
+
+**验证**
+
+1. 重新生成的 `installer.nsi` 里有 `File /a "/oname=WebView2Loader.dll" …`；
+2. 静默安装到临时目录 → 目录里 `WebView2Loader.dll` / `gugu-gallery.exe` / `uninstall.exe` 三件齐全；
+3. 直接启动**安装后**的 exe → 正常出窗口、截图与 DOM 体检正常；
+4. 首次启动向导正常出现（`setupMask: true`，建议 `图片\GuguGallery`）；
+5. `uninstall.exe /S` 正常卸载（图库目录不动）。
+
+**顺带记两个坑**
+
+- **Git Bash 会吃掉安装参数**：`./setup.exe /S /D=D:\path` 里的 `/S`、`/D=…` 被 MSYS 当路径转换，
+  结果是退出码 1、什么都没装；要用 `cmd //c "…"` 或 PowerShell。
+- 新安装包 2.83 MB（多了 160 KB 的 DLL，压缩后约 65 KB）。
+
+---
+

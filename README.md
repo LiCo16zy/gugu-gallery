@@ -384,6 +384,26 @@ npm run pack                  # 发布构建（release 可执行文件，不打�
 npm run dist                  # 发布构建 + NSIS 安装包（自动走无插件构建并扫描产物）
 ```
 
+**本地跑起来**
+
+```bash
+# 1) 开发模式：自动起前端热更新 + 编译 Rust + 开窗口（改界面改代码都用这个）
+npm run tauri:dev
+
+# 2) 只调样式：起前端服务器，浏览器打开 http://localhost:5173
+#    （浏览器里没有 window.gugu，数据是空的，只适合看样式与布局）
+npm run dev:web
+
+# 3) 直接跑发布产物（前端已经嵌在 exe 里，不需要额外起服务器）
+src-tauri/target/release/gugu-gallery.exe
+```
+
+> 在 Git Bash 里跑 exe，stdout/stderr 能直接看到（发布版是无控制台子系统：
+> 输出进管道或文件正常，直接双击看不到打印）。
+> **`WebView2Loader.dll` 必须和 exe 放在同一个目录** —— windows-gnu 工具链下它是动态依赖，
+> 缺了会立刻报 `error while loading shared libraries: WebView2Loader.dll`；
+> `target/release/` 与安装目录里都会有一份。
+
 五层验证各有分工：
 
 | 命令 | 覆盖范围 | 是否需要联网 |

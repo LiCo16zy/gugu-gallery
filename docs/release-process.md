@@ -122,7 +122,23 @@ npm run tauri:build      # = tauri build：先 npm run build:web，再编 Rust�
 cd src-tauri/target/release/bundle/nsis && sha256sum GuguGallery_0.6.3_x64-setup.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
 ```
 
-> 应用**未做代码签名**，SmartScreen 会提示「未知发布者」；安装包体积预期 **2–5 MB**（WebView2 走在线引导程序，运行时本体不打包）。
+> 应用**未做代码签名**，SmartScreen 会提示「未知发布者」；安装包体积实测 **2.8 MB**（WebView2 走在线引导程序，运行时本体不打包）。
+
+**windows-gnu 工具链的一个坑：`WebView2Loader.dll`**
+
+它是**动态依赖**，必须跟着 exe 一起装到同一个目录，否则装完双击只会闪一下打不开
+（命令行能看到 `error while loading shared libraries: WebView2Loader.dll`）。
+打包器只为**显式指定 `-gnu` target** 的构建自动带上它，所以本项目的做法是：
+`scripts/release.mjs` 先把 `target/release/WebView2Loader.dll` 复制到 `src-tauri/`，
+再由 `tauri.conf.json` 的 `bundle.resources` 把它装到程序目录根。改打包流程时别把这两步弄丢。
+
+**静默安装的坑（Git Bash）**：在 MSYS/Git Bash 里直接
+`./GuguGallery_0.7.0_x64-setup.exe /S /D=D:\path` 会被 MSYS 的路径转换吃掉参数，
+表现为**退出码 1、什么都没装**。要用：
+
+```bash
+cmd //c "release\\GuguGallery_0.7.0_x64-setup.exe /S /D=D:\\path\\to\\dir"
+```
 
 ---
 

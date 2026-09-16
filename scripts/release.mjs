@@ -9,7 +9,7 @@
  */
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { readdir, readFile } from 'node:fs/promises'
+import { copyFile, readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -76,15 +76,39 @@ if (problems.length > 0) {
 }
 console.log('✓ 渲染产物中没有任何插件代码')
 
-console.log(`\n== 编译 Rust（${mode === 'dist' ? 'release + NSIS 安装包' : 'release'}）`)
+console.log('\n== 编译 Rust（release）')
 const cargo = cargoBinary()
-const code =
-  mode === 'dist'
-    ? await sh('npx', ['tauri', 'build'], { env })
-    : await sh(cargo, ['build', '--release', '--manifest-path', 'src-tauri/Cargo.toml'], { env, shell: false })
+let code = await sh(cargo, ['build', '--release', '--manifest-path', 'src-tauri/Cargo.toml'], {
+  env,
+  shell: false
+})
 if (code !== 0) {
-  console.error('编译/打包失败')
+  console.error('编译失败')
   process.exit(code)
+}
+
+/*
+ * windows-gnu 工具链下 WebView2Loader 是**动态**依赖：exe 单独拷走会立刻
+ * "error while loading shared libraries: WebView2Loader.dll"。
+ * 打包器只为显式指定 -gnu target 的构建自动带上它，所以这里把它放到
+ * src-tauri/ 下并由 tauri.conf.json 的 bundle.resources 装进安装目录根。
+ */
+const loader = join(root, 'src-tauri', 'target', 'release', 'WebView2Loader.dll')
+if (existsSync(loader)) {
+  await copyFile(loader, join(root, 'src-tauri', 'WebView2Loader.dll'))
+  console.log('✓ WebView2Loader.dll 已就位（会随安装包一起安装到程序目录）')
+} else {
+  console.error('✗ 没找到 target/release/WebView2Loader.dll，安装包会缺少运行库')
+  process.exit(1)
+}
+
+if (mode === 'dist') {
+  console.log('\n== 打包 NSIS 安装包')
+  code = await sh('npx', ['tauri', 'build', '--bundles', 'nsis'], { env })
+  if (code !== 0) {
+    console.error('打包失败')
+    process.exit(code)
+  }
 }
 
 if (mode === 'dist') {

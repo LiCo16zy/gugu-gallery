@@ -34,6 +34,9 @@
     "icon": [
       "icons/icon.ico"
     ],
+    "resources": {
+      "WebView2Loader.dll": "WebView2Loader.dll"
+    },
     "publisher": "LiCo16zy",
     "shortDescription": "咕咕图库 · 桌面爬虫与本地图库浏览器",
     "windows": {
