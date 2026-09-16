@@ -1,131 +1,293 @@
-// 咕咕图库 · Tauri 外壳（重构中）
+// 咕咕图库 · Tauri 外壳
 //
-// 这一版先把「渲染层 + 桥」跑通：所有命令都按 @shared/bridge 的契约注册，
-// 具体实现按模块（store / crawler / media / session）逐步替换掉这里的占位实现。
+// 从 Electron 版迁移中：渲染层与 SQL 语义保持一致，命令按 @shared/bridge 的契约排列。
+// 尚未迁移的部分（爬虫 / 登录态 / 插件）暂时返回占位值。
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde_json::{json, Value};
-use tauri::Manager;
+mod library;
+mod media;
+mod settings;
+mod store;
 
-/* ------------------------------------------------------------------ 占位实现 */
+use library::Library;
+use rusqlite::Connection;
+use serde_json::{json, Value as Json};
+use settings::{suggested_library_root, SettingsStore};
+use std::path::PathBuf;
+use std::sync::Mutex;
+use tauri::{Manager, State};
+
+pub struct AppState {
+    lib: Mutex<Library>,
+    db: Mutex<Connection>,
+    settings: Mutex<SettingsStore>,
+}
+
+const PACKAGED: bool = !cfg!(debug_assertions);
+
+fn user_data_dir() -> PathBuf {
+    if let Ok(dir) = std::env::var("GUGU_USER_DATA") {
+        return PathBuf::from(dir);
+    }
+    let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".into());
+    // 与 Electron 版同一个目录：老用户升级后设置与登录凭据还在
+    PathBuf::from(appdata).join("gugu-gallery")
+}
+
+fn open_state() -> Result<AppState, String> {
+    let settings_file = PathBuf::from(std::env::var("GUGU_SETTINGS_FILE").unwrap_or_else(|_| {
+        user_data_dir().join("settings.json").to_string_lossy().to_string()
+    }));
+    let default_root = suggested_library_root(PACKAGED);
+    let mut settings = SettingsStore::load(settings_file, &default_root);
+    if let Ok(root) = std::env::var("GUGU_LIBRARY_ROOT") {
+        settings.set(&json!({ "libraryRoot": root, "setupCompleted": true }));
+    }
+    let root = settings.library_root();
+    let lib = Library::new(&root);
+    lib.ensure().map_err(|e| format!("创建图库目录失败: {e}"))?;
+    let conn = store::open(&lib.db_path).map_err(|e| format!("打开索引库失败: {e}"))?;
+    Ok(AppState {
+        lib: Mutex::new(lib),
+        db: Mutex::new(conn),
+        settings: Mutex::new(settings),
+    })
+}
+
+
+/// 自检钩子：把注入脚本的结果以 __EVAL__ 前缀打到 stdout（沿用 Electron 版的约定）
+#[tauri::command]
+fn debug_report(payload: Json) {
+    use std::io::Write;
+    let mut out = std::io::stdout();
+    let _ = writeln!(out, "__EVAL__{}", payload);
+    let _ = out.flush();
+}
+
+/// 自检钩子：启动后注入一段脚本（GUGU_EVAL），脚本用 window.gugu.__report 交回结果
+fn run_eval_hook(app: &tauri::AppHandle) {
+    eprintln!("[gugu] eval hook 已装配");
+    let Ok(script) = std::env::var("GUGU_EVAL") else { return };
+    let delay: u64 = std::env::var("GUGU_SHOT_DELAY")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(2600);
+    let Some(win) = app.get_webview_window("main") else { return };
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+        // 直接走 __TAURI_INTERNALS__：桥本身出问题时也能看到东西
+        let wrapped = format!(
+            "(async () => {{
+               const rep = async (p) => {{ try {{ await window.__TAURI_INTERNALS__.invoke('debug_report', {{ payload: p }}); }} catch (e) {{}} }};
+               await rep({{ stage: 'start' }});
+               try {{ const r = await ({}); await rep(r); }} catch (e) {{ await rep({{ error: String(e) }}); }}
+             }})()",
+            script
+        );
+        match win.eval(&wrapped) {
+            Ok(_) => eprintln!("[gugu] eval 已注入"),
+            Err(err) => eprintln!("[gugu] eval 注入失败: {err}"),
+        }
+    });
+}
+
+/* ------------------------------------------------------------------ 应用信息 */
 
 #[tauri::command]
-fn app_info(state: tauri::State<'_, AppState>) -> Value {
+fn app_info(state: State<'_, AppState>) -> Json {
+    let lib = state.lib.lock().unwrap();
     json!({
         "version": env!("GUGU_APP_VERSION"),
         "electron": "",
         "node": "",
         "chrome": "",
-        "platform": std::env::consts::OS,
-        "packaged": !cfg!(debug_assertions),
-        "libraryRoot": state.library_root,
-        "dbPath": ""
+        "platform": "win32",
+        "packaged": PACKAGED,
+        "libraryRoot": lib.root.to_string_lossy(),
+        "dbPath": lib.db_path.to_string_lossy()
     })
 }
 
 #[tauri::command]
-fn settings_get(state: tauri::State<'_, AppState>) -> Value {
-    state.settings.clone()
+fn settings_get(state: State<'_, AppState>) -> Json {
+    state.settings.lock().unwrap().get()
 }
 
 #[tauri::command]
-fn settings_set(patch: Value, state: tauri::State<'_, AppState>) -> Value {
-    let mut current = state.settings.clone();
-    if let (Some(dst), Some(src)) = (current.as_object_mut(), patch.as_object()) {
-        for (k, v) in src {
-            dst.insert(k.clone(), v.clone());
-        }
+fn settings_set(patch: Json, state: State<'_, AppState>) -> Result<Json, String> {
+    let (before, next, after) = {
+        let mut settings = state.settings.lock().unwrap();
+        let before = settings.library_root();
+        let next = settings.set(&patch);
+        let after = settings.library_root();
+        (before, next, after)
+    };
+    if before != after {
+        switch_library(&state, &after)?;
     }
-    current
+    Ok(next)
 }
 
 #[tauri::command]
-fn suggested_library_root(state: tauri::State<'_, AppState>) -> String {
-    state.library_root.clone()
+fn suggested_library_root_cmd() -> String {
+    suggested_library_root(PACKAGED)
+}
+
+fn switch_library(state: &State<'_, AppState>, root: &str) -> Result<(), String> {
+    let lib = Library::new(root);
+    lib.ensure().map_err(|e| format!("创建图库目录失败: {e}"))?;
+    let conn = store::open(&lib.db_path).map_err(|e| format!("打开索引库失败: {e}"))?;
+    *state.lib.lock().unwrap() = lib;
+    *state.db.lock().unwrap() = conn;
+    Ok(())
 }
 
 /* -------------------------------------------------------------------- 图库 */
 
 #[tauri::command]
-fn library_stats(state: tauri::State<'_, AppState>) -> Value {
-    json!({
-        "items": 0,
-        "downloaded": 0,
-        "favorites": 0,
-        "totalBytes": 0,
-        "plates": [],
-        "topTags": [],
-        "sources": 0,
-        "libraryRoot": state.library_root,
-        "dbBytes": 0
-    })
+fn library_stats(state: State<'_, AppState>) -> Result<Json, String> {
+    let lib = state.lib.lock().unwrap().clone();
+    let db = state.db.lock().unwrap();
+    let db_bytes = std::fs::metadata(&lib.db_path).map(|m| m.len() as i64).unwrap_or(0);
+    store::stats(&db, &lib.root.to_string_lossy(), db_bytes).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn library_facets() -> Value {
-    json!({ "plates": [], "topTags": [], "words": [], "targets": [] })
+fn library_facets(state: State<'_, AppState>) -> Result<Json, String> {
+    let db = state.db.lock().unwrap();
+    store::facets(&db).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn library_query(_query: Option<Value>) -> Value {
-    json!({ "items": [], "nextCursor": null, "total": 0 })
+fn library_query(query: Option<Json>, state: State<'_, AppState>) -> Result<Json, String> {
+    let q: store::GalleryQuery =
+        serde_json::from_value(query.unwrap_or(json!({}))).map_err(|e| e.to_string())?;
+    let db = state.db.lock().unwrap();
+    store::list_items(&db, &q).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn library_item(_id: i64) -> Value {
-    Value::Null
+fn library_item(id: i64, state: State<'_, AppState>) -> Result<Json, String> {
+    let db = state.db.lock().unwrap();
+    Ok(store::get_item(&db, id).map_err(|e| e.to_string())?.unwrap_or(Json::Null))
 }
 
 #[tauri::command]
-fn library_favorite(_id: i64, value: bool) -> bool {
-    value
+fn library_favorite(id: i64, value: bool, state: State<'_, AppState>) -> Result<bool, String> {
+    let db = state.db.lock().unwrap();
+    store::set_favorite(&db, id, value).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn library_rating(_id: i64, value: i64) -> i64 {
-    value
+fn library_rating(id: i64, value: i64, state: State<'_, AppState>) -> Result<i64, String> {
+    let db = state.db.lock().unwrap();
+    store::set_rating(&db, id, value).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn library_remove(_ids: Vec<i64>, _delete_files: bool) -> i64 {
-    0
+fn library_remove(ids: Vec<i64>, delete_files: bool, state: State<'_, AppState>) -> Result<i64, String> {
+    let lib = state.lib.lock().unwrap().clone();
+    let db = state.db.lock().unwrap();
+    if delete_files {
+        for id in &ids {
+            if let Ok(Some(rel)) = store::file_rel_path(&db, *id, "original") {
+                lib.remove(&rel);
+            }
+            if let Ok(Some(thumb)) = store::thumb_rel_path(&db, *id) {
+                lib.remove(&thumb);
+            }
+        }
+    }
+    store::delete_items(&db, &ids).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn library_reveal(_id: i64) -> bool {
-    false
+fn library_reveal(id: i64, state: State<'_, AppState>) -> Result<bool, String> {
+    let lib = state.lib.lock().unwrap().clone();
+    let (rel, exists) = {
+        let db = state.db.lock().unwrap();
+        let rel = store::file_rel_path(&db, id, "original").map_err(|e| e.to_string())?;
+        let exists = rel
+            .as_deref()
+            .and_then(|r| lib.resolve_inside(r))
+            .map(|p| p.exists())
+            .unwrap_or(false);
+        (rel, exists)
+    };
+    if !exists {
+        return Ok(false);
+    }
+    if let Some(abs) = rel.and_then(|r| lib.resolve_inside(&r)) {
+        let _ = std::process::Command::new("explorer").arg("/select,").arg(abs).spawn();
+        return Ok(true);
+    }
+    Ok(false)
 }
 
 #[tauri::command]
-fn library_pick_root() -> Value {
-    Value::Null
+fn library_pick_root() -> Json {
+    Json::Null
 }
 
 #[tauri::command]
-fn library_choose_dir(_default_path: Option<String>) -> Value {
-    Value::Null
+fn library_choose_dir() -> Json {
+    Json::Null
 }
 
 #[tauri::command]
-fn library_set_root(dir: String) -> String {
-    dir
+fn library_set_root(dir: String, state: State<'_, AppState>) -> Result<String, String> {
+    switch_library(&state, &dir)?;
+    state.settings.lock().unwrap().set(&json!({ "libraryRoot": dir }));
+    Ok(dir)
 }
 
-/* -------------------------------------------------------------------- 抓取 */
+/* ------------------------------------------------------------ 抓取源 / 任务 */
 
 #[tauri::command]
-fn crawl_site_info() -> Value {
+fn sources_list(state: State<'_, AppState>) -> Result<Json, String> {
+    let db = state.db.lock().unwrap();
+    Ok(json!(store::list_sources(&db).map_err(|e| e.to_string())?))
+}
+
+#[tauri::command]
+fn sources_remove(id: i64, state: State<'_, AppState>) -> Result<bool, String> {
+    let db = state.db.lock().unwrap();
+    db.execute("DELETE FROM sources WHERE id = ?1", [id]).map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+#[tauri::command]
+fn sources_toggle(id: i64, enabled: bool, state: State<'_, AppState>) -> Result<bool, String> {
+    let db = state.db.lock().unwrap();
+    db.execute(
+        "UPDATE sources SET enabled = ?1 WHERE id = ?2",
+        rusqlite::params![if enabled { 1 } else { 0 }, id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+#[tauri::command]
+fn crawl_jobs(state: State<'_, AppState>) -> Result<Json, String> {
+    let db = state.db.lock().unwrap();
+    Ok(json!(store::list_jobs(&db, 30).map_err(|e| e.to_string())?))
+}
+
+/* --------------------------------------------- 以下为迁移中的占位（爬虫 / 登录态 / 插件） */
+
+#[tauri::command]
+fn crawl_site_info() -> Json {
     json!({ "plates": [], "fetchedAt": 0 })
 }
 
 #[tauri::command]
-fn crawl_target_info(_target: Option<Value>) -> Value {
-    json!({ "totalPages": null, "totalItems": null })
+fn crawl_target_info() -> Json {
+    json!({ "totalPages": Json::Null, "totalItems": Json::Null })
 }
 
 #[tauri::command]
-fn crawl_start(_request: Option<Value>) -> Value {
-    Value::Null
+fn crawl_start() -> Json {
+    Json::Null
 }
 
 #[tauri::command]
@@ -144,51 +306,29 @@ fn crawl_cancel() -> bool {
 }
 
 #[tauri::command]
-fn crawl_download_items(_ids: Vec<i64>) -> i64 {
+fn crawl_download_items() -> i64 {
     0
 }
 
 #[tauri::command]
-fn crawl_progress() -> Value {
-    Value::Null
+fn crawl_progress() -> Json {
+    Json::Null
 }
 
 #[tauri::command]
-fn crawl_jobs() -> Value {
-    json!([])
-}
-
-#[tauri::command]
-fn sources_list() -> Value {
-    json!([])
-}
-
-#[tauri::command]
-fn sources_remove(_id: i64) -> bool {
-    false
-}
-
-#[tauri::command]
-fn sources_toggle(_id: i64, _enabled: bool) -> bool {
-    false
-}
-
-/* ------------------------------------------------------------------ 登录态 */
-
-#[tauri::command]
-fn session_status() -> Value {
+fn session_status() -> Json {
     json!({
         "loggedIn": false,
-        "fingerprint": Value::Null,
-        "savedAt": Value::Null,
+        "fingerprint": Json::Null,
+        "savedAt": Json::Null,
         "encrypted": false,
-        "verified": Value::Null,
-        "verifyMessage": Value::Null
+        "verified": Json::Null,
+        "verifyMessage": Json::Null
     })
 }
 
 #[tauri::command]
-fn session_set(_cookie: String) -> Value {
+fn session_set() -> Json {
     json!({
         "status": session_status(),
         "verify": { "ok": false, "state": "none", "message": "重构中：登录态尚未接入" }
@@ -196,87 +336,59 @@ fn session_set(_cookie: String) -> Value {
 }
 
 #[tauri::command]
-fn session_clear() -> Value {
+fn session_clear() -> Json {
     session_status()
 }
 
 #[tauri::command]
-fn session_verify() -> Value {
+fn session_verify() -> Json {
     json!({
         "status": session_status(),
         "verify": { "ok": false, "state": "none", "message": "重构中：登录态尚未接入" }
     })
 }
 
-/* -------------------------------------------------------------- 插件 / 系统 */
-
 #[tauri::command]
-fn plugins_list() -> Value {
+fn plugins_list() -> Json {
     json!([])
 }
 
 #[tauri::command]
-fn plugins_invoke(_plugin_id: String, _method: String, _payload: Option<Value>) -> Value {
-    Value::Null
+fn plugins_invoke() -> Json {
+    Json::Null
 }
 
 #[tauri::command]
 fn open_external(url: String) -> bool {
-    // 先占位：后面换成 opener 插件，并做 https/http 白名单校验
-    println!("[gugu] open_external: {url}");
+    let _ = url;
     false
 }
 
 #[tauri::command]
 fn copy_text(text: String) -> bool {
-    println!("[gugu] copy_text: {} 字", text.chars().count());
+    let _ = text;
     false
 }
 
-/* -------------------------------------------------------------------- 状态 */
-
-struct AppState {
-    library_root: String,
-    settings: Value,
-}
-
-fn default_settings(library_root: &str) -> Value {
-    json!({
-        "libraryRoot": library_root,
-        "preferOriginal": true,
-        "listConcurrency": 2,
-        "downloadConcurrency": 3,
-        "delayMs": 220,
-        "retries": 4,
-        "thumbSize": 512,
-        "theme": "dark",
-        "accent": "#7c9cff",
-        "naming": "id-slug",
-        "proxy": "",
-        "sidebarCollapsed": false,
-        "sidebarWidth": 248,
-        "setupCompleted": true,
-        "pageSize": 60
-    })
-}
-
 fn main() {
-    let library_root = dirs_library_root();
+    let state = match open_state() {
+        Ok(v) => v,
+        Err(err) => {
+            eprintln!("[gugu] 初始化失败: {err}");
+            std::process::exit(1);
+        }
+    };
 
     tauri::Builder::default()
-        .setup(|app| {
-            let _ = app.get_webview_window("main");
-            Ok(())
-        })
-        .manage(AppState {
-            settings: default_settings(&library_root),
-            library_root,
+        .manage(state)
+        .register_asynchronous_uri_scheme_protocol("gugu", |ctx, request, responder| {
+            responder.respond(media::handle(ctx, request));
         })
         .invoke_handler(tauri::generate_handler![
             app_info,
             settings_get,
             settings_set,
-            suggested_library_root,
+            suggested_library_root_cmd,
             library_stats,
             library_facets,
             library_query,
@@ -288,6 +400,10 @@ fn main() {
             library_pick_root,
             library_choose_dir,
             library_set_root,
+            sources_list,
+            sources_remove,
+            sources_toggle,
+            crawl_jobs,
             crawl_site_info,
             crawl_target_info,
             crawl_start,
@@ -296,10 +412,6 @@ fn main() {
             crawl_cancel,
             crawl_download_items,
             crawl_progress,
-            crawl_jobs,
-            sources_list,
-            sources_remove,
-            sources_toggle,
             session_status,
             session_set,
             session_clear,
@@ -307,18 +419,14 @@ fn main() {
             plugins_list,
             plugins_invoke,
             open_external,
-            copy_text
+            copy_text,
+            debug_report
         ])
+        .setup(|app| {
+            let _ = app.get_webview_window("main");
+            run_eval_hook(app.handle());
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("启动 Tauri 应用失败");
-}
-
-/** 默认图库目录：开发态放仓库下的 data/demo，正式版放「图片/GuguGallery」 */
-fn dirs_library_root() -> String {
-    if cfg!(debug_assertions) {
-        let cwd = std::env::current_dir().unwrap_or_default();
-        return cwd.join("data").join("demo").to_string_lossy().to_string();
-    }
-    let home = std::env::var("USERPROFILE").unwrap_or_default();
-    format!("{home}\\Pictures\\GuguGallery")
 }

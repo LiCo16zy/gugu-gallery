@@ -198,3 +198,29 @@ WebView2 在 Win10 1803+ 基本都自带，即使没有，Tauri 也能引导用�
 
 **下一步**：按模块把占位实现换成真实现 —— store（rusqlite + repository）→ media（落盘 / 魔数 / 缩略图 → 自定义协议）
 → crawler（http / parser / engine）→ session（DPAPI）→ 打包（NSIS）→ 对等性验收（30 单测 + 63 uicheck + 37 标注断言）。
+
+---
+
+## 九、里程碑 2：存储层 + 图片协议（已完成）
+
+**存储层换成原生 SQLite**（`rusqlite`，bundled 编译，不需要装 SQLite）：`src-tauri/src/store/`
+把 `schema.ts` + `repository.ts` 整段搬过来，筛选 / 排序 / 分页 / facets / stats / 收藏 / 评分 / 删除
+逐条对齐，SQL 语句与 `buildWhere` / `buildOrder` 保持同一语义 —— 否则界面上那 63 项交互断言就失去意义了。
+顺带解决了老架构的一个遗留问题：**索引不再整库常驻内存**（sql.js 是 WASM 版，写盘靠整库导出）。
+
+**其他新模块**
+
+- `library.rs`：图库布局、越权检查（`resolve_inside`）、命名策略（`safe_segment` / `build_slug` / `ext_of`）
+- `settings.rs`：`settings.json` 读写，沿用 `%APPDATA%/gugu-gallery` —— 老用户升级后设置与登录凭据都还在
+- `media.rs`：图片协议。渲染层拿到的地址本来由后端拼，所以这里保持 `/thumb/<id>` `/media/<id>` 的路径形状，
+  按 WebView2 的约定换成 `http://gugu.localhost/...`，**渲染层无感**
+- 自检钩子：`GUGU_EVAL` 注入脚本 + `debug_report` 命令把结果以 `__EVAL__` 前缀打回 stdout，
+  沿用 Electron 版的 harness 约定（`scripts/uicheck.mjs` 将来只需换掉 spawn 的那一行）
+
+**验证（真机）**
+
+| 检查 | 结果 |
+| --- | --- |
+| 真实数据 | 侧栏 2,129 条、已下载 5、待下载 2,124、分类 Pixiv萌图 2129、热门标签 15 个全部正确（直接读 demo 库） |
+| 图片协议 | 切到「已下载」→ 共 5 条，5 张缩略图全部经 `http://gugu.localhost/thumb/<id>` 加载成功（尺寸 512×512 / 512×353 / 315×512 …） |
+| 踩坑记录 | 给桥加 `__report` 时手滑把 `return {` 改成 `const bridge = {`，导致 `window.gugu` 变成 undefined、整页白屏 —— 自检钩子上线后，这类问题一条 eval 就能定位（后来干脆删掉了那个自检专用 API，harness 直接走 `__TAURI_INTERNALS__`） |
