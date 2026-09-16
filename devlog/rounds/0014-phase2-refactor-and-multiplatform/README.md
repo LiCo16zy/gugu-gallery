@@ -292,4 +292,47 @@ Rust 侧的解析器单测也补齐了：`cargo test` **16 项全部通过**（�
 指纹显示 `8i77…gk34`，与 curl 直接验证的结果一致 —— 说明校验逻辑对了，而不是「总是失败」。
 
 **遗留（下一批）**：GUGU_SHOT 截图（devlog / uicheck 的截图输出）、插件宿主（标注导出 / 轮次档案）、
-删除 Electron 代码、README 与文档更新、NSIS 打包（本机下不了 NSIS 工具，需要换源）。
+删除 Electron 代码、README 与文档更新。NSIS 打包的工具链缓存已备好（见第十三节），实际出包留到重构验收后。
+
+---
+
+## 十三、发布链路（GitHub Release 资产）实测
+
+用户要求「暂时不打包，但先把 GitHub Release 资产这条路讲清楚」，于是把打包器与上传通路都实测了一遍。
+
+**本机网络事实（实测）**
+
+| 通路 | 结果 |
+| --- | --- |
+| `github.com` / `api.github.com` / `uploads.github.com`（HTTPS 直连） | ✗ 全部 `000` |
+| `git@github.com`（SSH） | ✓ 正常（v0.6.3 的代码与标签就是这么推的） |
+| `objects.githubusercontent.com`（资产直链） | ✗ `000` |
+| `ghproxy.net`（GitHub 资产镜像） | ✓ `206`，下回来的文件 SHA1 与官方一致 |
+| `go.microsoft.com` → `msedge.sf.dl.delivery.mp.microsoft.com` | ✓ `301`/`206` |
+
+> 顺带确认：Windows 系统代理配置里存着 `127.0.0.1:10808`，但 `ProxyEnable=0` 且该端口没有监听 ——
+> 所以「浏览器能上 GitHub、命令行不能」不是错觉，是代理没开。
+
+**读打包器源码得到的确切事实**（`tauri-bundler 2.9.4`，比文档更可靠）
+
+- NSIS 工具链：`nsis-3.11.zip`（SHA1 `EF7FF767E5CBD9EDD22ADD3A32C9B8F4500BB10D`）
+  + `nsis_tauri_utils.dll`（v0.5.3，SHA1 `75197FEE3C6A814FE035788D1C34EAD39349B860`），
+  缓存目录 `%LOCALAPPDATA%\tauri\NSIS\`（必需文件清单见 `NSIS_REQUIRED_FILES`）；
+  WebView2 引导程序单独缓存在 `%LOCALAPPDATA%\tauri\MicrosoftEdgeWebview2Setup.exe`
+- 镜像支持：`TAURI_BUNDLER_TOOLS_GITHUB_MIRROR`（基础 URL，直接拼路径）与
+  `TAURI_BUNDLER_TOOLS_GITHUB_MIRROR_TEMPLATE`（占位符 `<owner>/<repo>/<version>/<asset>`）；
+  两者都只对 `https://github.com/…` 生效，另外标准代理环境变量也认
+
+**做完的事**：把工具链缓存一次性放好（NSIS 7.9 MB + WebView2 1.84 MB，共 9.7 MB），
+13 个必需文件逐个核验存在，两个下载物的 SHA1 与官方完全一致。
+**打包阶段现在可以完全离线跑**，不再受「下不了 GitHub 资产」影响。
+
+**上传的三条路**（详见新增的 `docs/release-process.md`）：浏览器上传 / `gh` CLI / REST API ——
+三条都需要能访问 `github.com`；外加第四条**推荐通路**：标签推送触发 GitHub Actions
+（`tauri-apps/tauri-action`）在云端出包并挂资产，GitHub 的机器走内网，本机只需要 `git push`（SSH，通）。
+
+新增文档：`docs/release-process.md`（版本号同步、产物命名、工具链补法、本地打包、四种上传方式、
+发布前检查清单）。
+
+---
+
