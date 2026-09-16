@@ -27,10 +27,15 @@
     "round": "node plugins/devlog/bin/round.mjs",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build:release && electron-builder",
-    "imgdiff": "electron scripts/imgdiff.cjs"
+    "imgdiff": "electron scripts/imgdiff.cjs",
+    "dev:web": "vite --config vite.renderer.config.ts",
+    "build:web": "vite build --config vite.renderer.config.ts",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
-    "sql.js": "^1.13.0"
+    "sql.js": "^1.13.0",
+    "@tauri-apps/api": "^2"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
@@ -45,7 +50,8 @@
     "react-dom": "^18.3.1",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "@tauri-apps/cli": "^2"
   },
   "build": {
     "appId": "com.gugu.gallery",
