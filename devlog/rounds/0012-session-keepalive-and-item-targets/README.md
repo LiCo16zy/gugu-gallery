@@ -69,3 +69,13 @@ schema 版本 2 → 3，新表用 `CREATE TABLE IF NOT EXISTS` 放在 `SCHEMA_SQ
 - 改动后截图（4 张）：`screenshots-after/`
 - 代码差异：`changes.patch` / `changes.md`
 - （本轮无界面标注）
+
+## 补记：已登录时也要能打开登录引导
+
+帮助里的登录按钮按要求在已登录时「变灰显示已登录」。但一开始我把它做成了 `disabled`，结果是**登录状态下再也打不开登录引导** —— 换账号、想主动清除凭据都做不到，只能去删 `session.bin`。
+
+改成：视觉上仍然是灰掉的「已登录」（新增 `.btn.done`），但依然可点，点开就是引导弹窗，里面能重新验证或清除。真正失效时按钮会变成警示色的「登录已失效」。
+
+截图：`screenshots-after/verify-login-logged-in.jpg`（已登录 8i77…gk34 · 已加密保存）。
+
+另：应用打开过 demo 库之后，`meta.schema_version` 已经由迁移逻辑补到 3，`item_targets` 表随之建好。

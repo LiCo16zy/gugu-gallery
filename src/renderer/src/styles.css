@@ -1256,6 +1256,18 @@ body.resizing * {
 .btn.danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--danger) 18%, transparent);
 }
+/* 已登录：按钮显示成灰掉的「已登录」，但依然可点（引导里能清除或重新验证） */
+.btn.done {
+  color: var(--text-faint);
+  border-color: var(--border);
+  background: transparent;
+  cursor: pointer;
+}
+.btn.done:hover {
+  color: var(--text-dim);
+  border-color: var(--border-strong);
+}
+
 /* 登录凭据过期：按钮不置灰，但用警示色提示需要重新登录 */
 .btn.warn {
   color: var(--warn);

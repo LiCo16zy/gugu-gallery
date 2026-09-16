@@ -1024,8 +1024,9 @@ export default function App(): JSX.Element {
             </dl>
             <div className="modal-actions">
               <button
-                className={`btn btn-left${sessionStale ? ' warn' : ''}`}
-                disabled={sessionOk}
+                // 已登录时按钮是「灰掉的已登录」，但仍可点开：
+                // 登录引导里还有「重新验证 / 清除」，不能把换账号、换凭据的路堵死
+                className={`btn btn-left${sessionStale ? ' warn' : ''}${sessionOk ? ' done' : ''}`}
                 onClick={() => {
                   setHelpOpen(false)
                   setLoginOpen(true)
