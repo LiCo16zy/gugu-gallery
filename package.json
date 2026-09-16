@@ -1,6 +1,6 @@
 {
   "name": "gugu-gallery",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "private": true,
   "description": "咕咕小站图片爬虫 + 本地图库浏览器（Tauri 2 桌面应用）",
   "author": "LiCo16zy",

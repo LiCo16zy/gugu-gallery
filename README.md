@@ -3,7 +3,9 @@
 > 针对 [咕咕小站](https://www.guguxz.com/) 的**桌面端爬虫 + 本地图库浏览器**。
 > 抓取 → 索引 → 下载原图 → 生成缩略图 → 用界面翻看，全流程离线可用。
 
-Electron 33 + React 18 + TypeScript；索引用 WebAssembly 版 SQLite，**零原生编译依赖**，`npm install` 之后直接能跑。
+**Tauri 2（Rust）+ React 18 + TypeScript**：界面与交互完全复用，外壳换成 Rust ——
+安装包 **85 MB → 2.8 MB**，可执行文件 **180 MB → 7.4 MB**，
+索引改用随程序编译进来的 SQLite（不再整库常驻内存）。
 
 ![图库网格](docs/images/gallery.jpg)
 
@@ -28,12 +30,13 @@ Electron 33 + React 18 + TypeScript；索引用 WebAssembly 版 SQLite，**零�
 
 ## 下载 & 安装
 
-**Windows x64 安装包（约 85 MB）** —— 到 [**Releases**](https://github.com/LiCo16zy/gugu-gallery/releases/latest) 下载 `GuguGallery-Setup-0.6.3.exe`。
+**Windows x64 安装包（约 2.8 MB）** —— 到 [**Releases**](https://github.com/LiCo16zy/gugu-gallery/releases/latest) 下载 `GuguGallery_0.7.0_x64-setup.exe`。
 
-- NSIS 安装包，可选安装位置，自动创建桌面 / 开始菜单快捷方式；
-- 首次启动会引导选择**图库目录**（默认放在安装目录下的 `GuguGallery`，之后可随时在「设置 → 图库位置」里改）；
+- NSIS 安装包，**按当前用户安装、不需要管理员**，可选安装位置，自动创建桌面 / 开始菜单快捷方式；
+- 安装包里不含 WebView2 运行时（Windows 10/11 自带；缺失时安装程序会引导在线装一个几 MB 的运行时）；
+- 首次启动会引导选择**图库目录**（默认建议 `图片\GuguGallery`，之后可随时在「设置 → 图库位置」里改）；
 - 应用**未做代码签名**，Windows SmartScreen 可能提示「未知发布者」—— 选「更多信息 → 仍要运行」即可；
-- 只提供 Windows x64 构建。想自己从源码构建，见[开发与测试](#开发与测试)。
+- 只提供 Windows x64 构建（Android 版本尚未开始）。想自己从源码构建，见[开发与测试](#开发与测试)。
 
 ---
 
@@ -41,9 +44,12 @@ Electron 33 + React 18 + TypeScript；索引用 WebAssembly 版 SQLite，**零�
 
 某天逛到旧站，发现原来的手机软件已经不能用了 —— 干脆自己写一个。
 
-算是兴趣驱动 + 拿真项目练手：Electron 主进程 / 渲染进程分离、React 手写设计系统、
-WebAssembly SQLite 的索引设计、HTML 解析与站点逆向、抓取限速与重试、
-以及一整套「**用页面标注驱动迭代**」的开发流程（见[插件 & Skill 工具](#插件--skill-工具)）。
+算是兴趣驱动 + 拿真项目练手：React 手写设计系统、SQLite 索引设计、HTML 解析与站点逆向、
+抓取限速与重试，以及一整套「**用页面标注驱动迭代**」的开发流程（见[插件 & Skill 工具](#插件--skill-工具)）。
+
+最初写的是 Electron 版；后来把外壳整体换成了 **Tauri 2（Rust）** —— 界面一行没改，
+主进程侧（爬虫 / 存储 / 登录态 / 插件宿主）全部重写为 Rust：安装包小了二十多倍，
+常驻内存与启动时间也跟着降下来。
 
 **仅供学习交流使用**，请勿用于商业用途或大规模镜像，详见[合规声明](#合规声明)。
 
@@ -68,7 +74,7 @@ WebAssembly SQLite 的索引设计、HTML 解析与站点逆向、抓取限速�
 
 ![抓取任务](docs/images/crawl.jpg)
 
-> 使用 `npm run build && npm run shot`，界面的截图会输出到 `screenshots/`。
+> 先 `cd src-tauri && cargo build` 编译出应用本体，再 `npm run shot`，界面的截图会输出到 `screenshots/`。
 
 ---
 
@@ -101,7 +107,7 @@ WebAssembly SQLite 的索引设计、HTML 解析与站点逆向、抓取限速�
 **登录态（可选）**
 
 - 站点有一部分内容（泳装分享）只在登录后可见；
-- 应用**不保存账号密码**：用浏览器登录后把会话 cookie 贴进来，用系统密钥链（Windows 下是 DPAPI）加密保存；
+- 应用**不保存账号密码**：用浏览器登录后把会话 cookie 贴进来，存进 **Windows 凭据管理器**（DPAPI 保护、绑定当前账户）；
 - 应用开着时定时保活；会话失效会明确提示「cookie 已过期，请重新登录」，且只提示一次。
 
 **稳健性**（这个站点的接口**很不稳**，这部分不是可选功能）
@@ -142,23 +148,29 @@ WebAssembly SQLite 的索引设计、HTML 解析与站点逆向、抓取限速�
 不打开界面直接抓取，适合放进计划任务：
 
 ```bash
-npm run build
+# 先编译应用本体：cd src-tauri && cargo build
 
 # 抓 3 页并下载，最多 60 张
-npm run crawl:dev -- --plate ACG图片 --word Pixiv萌图 --pages 3 --max 60
+npm run crawl -- --plate ACG图片 --word Pixiv萌图 --pages 3 --max 60
 
 # 只建索引，抓 50 页
-npm run crawl:dev -- --index-only --pages 50
+npm run crawl -- --index-only --pages 50
 
 # 关键词搜索类目标（泳装分享）
-npm run crawl:dev -- --search --word 泳装类分享 --pages 3 --index-only
+npm run crawl -- --search --word 泳装类分享 --pages 3 --index-only
 
 # 只保留含指定标签的图，排除另一些
-npm run crawl:dev -- --max 100 --include 碧蓝档案,女孩子 --exclude 泳装
+npm run crawl -- --max 100 --include 碧蓝档案,女孩子 --exclude 泳装
 
 # 指定图库目录与限速
-npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency 2
+npm run crawl -- --library D:/Pictures/GuguGallery --delay 300 --concurrency 2
 ```
+
+命令行模式就是**应用本体带参数启动**（`gugu-gallery.exe --…`），走的是和界面完全一样的引擎、
+HTTP 客户端与落盘逻辑，所以它同时是最省事的端到端自检（`npm run e2e` 就是这么做的）。
+
+> 打包后的版本是 Windows 无控制台子系统：直接双击或在终端里跑不会显示输出，
+> 但重定向到文件或管道（脚本里就是这么用的）一切正常。
 
 | 参数 | 说明 |
 | --- | --- |
@@ -277,8 +289,8 @@ npm run crawl:dev -- --library D:/Pictures/GuguGallery --delay 300 --concurrency
 ## 插件 & Skill 工具
 
 仓库里有两个**可选插件**：**页面标注工具**与**开发过程档案**。
-它们默认不进发布产物 —— 工具代码不该出现在给最终用户的应用里（`npm run build:release` 会把它们排除，
-并**实际扫描产物**确认没有残留）。
+它们默认不进发布产物 —— 工具代码不该出现在给最终用户的应用里（`npm run dist` 会把它们排除，
+并**实际扫描产物**确认没有残留）。插件也只在开发构建里启用：发布版连插件清单都是空的。
 
 > **为什么做成「插件 + Skill」，而不是直接写死在项目里？**
 >
@@ -352,99 +364,117 @@ devlog/rounds/0002-xxx/
 ## 开发与测试
 
 ```bash
-# 需要 Node >= 20
+# 需要 Node >= 20 与 Rust 工具链
+# （本机 Rust 装在 ~/.cargo/bin，不在 PATH 上就先 export PATH="$HOME/.cargo/bin:$PATH"）
 npm install
 
-npm run dev            # 开发模式（主进程 + 渲染进程热更新）
-npm run typecheck      # 主进程 / 渲染进程分别做严格类型检查
-npm test               # 单元测试：解析器、URL 规则、格式嗅探、分类映射（30 例）
-npm run uicheck        # 启动真实界面点一遍关键路径（63 项交互断言）
-npm run annotatecheck  # 驱动标注工具走完「点选 → 批注 → 框选 → 导出」（37 项断言）
-npm run e2e            # 真连目标站点跑一次端到端（需要联网）
-npm run shot           # 自动截图四个界面到 screenshots/
+cd src-tauri && cargo build   # 编译应用本体（debug）—— 界面自检都跑在它上面
+npm run dev:web               # 只起渲染层开发服务器（调界面时用）
+npm run tauri:dev             # 开发模式：Tauri 外壳 + 界面热更新
 
-npm run build          # 构建 + 本地预览（npm start）
-npm run pack           # 打包成免安装目录 release/win-unpacked（快）
-npm run dist           # 打包 NSIS 安装包（自动走无插件发布构建）
+npm run typecheck             # 渲染层严格类型检查
+npm test                      # 前端单测：应用分类表（7 例）
+cargo test --manifest-path src-tauri/Cargo.toml   # Rust 单测：解析器（16 例）
+npm run uicheck               # 启动真实界面点一遍关键路径（63 项交互断言）
+npm run annotatecheck         # 驱动标注工具走完「点选 → 批注 → 框选 → 导出」（37 项断言）
+npm run e2e                   # 真连目标站点跑一次端到端（需要联网）
+npm run shot                  # 自动截图四个界面到 screenshots/
+
+npm run pack                  # 发布构建（release 可执行文件，不打包安装包）
+npm run dist                  # 发布构建 + NSIS 安装包（自动走无插件构建并扫描产物）
 ```
 
 五层验证各有分工：
 
 | 命令 | 覆盖范围 | 是否需要联网 |
 | --- | --- | --- |
-| `npm test` | HTML 解析、URL 规则、base64、格式嗅探、分类映射 | 否 |
+| `cargo test` | 列表页 / 详情页解析、分页、导航、URL 规则（16 例） | 否 |
+| `npm test` | 应用分类表（7 例） | 否 |
 | `npm run uicheck` | 渲染、筛选、搜索、灯箱、键盘、主题、分类、登录引导 | 否（用本地图库） |
 | `npm run annotatecheck` | 标注工具的交互与导出产物 | 否（用临时目录） |
 | `npm run e2e` | 真实抓取 → 下载 → 落盘 → 缩略图 | 是 |
-| `npm run build:release` | 产物里不含任何插件代码 | 否 |
+| `npm run dist` | 产物里不含任何插件代码 | 否 |
 
-- 单元测试用的是**真实抓下来的 HTML 样本**（`tests/fixtures/`），站点改版时测试会第一时间失败。
+- 单元测试用的是**真实抓下来的 HTML 样本**（`tests/fixtures/`），站点改版时测试会第一时间失败；
+  Rust 侧解析器单测与旧版 vitest 用的是同一批样本。
 - `e2e` / `uicheck` / `shot` 支持用环境变量隔离：`GUGU_LIBRARY_ROOT` 指定图库目录、
-  `GUGU_SETTINGS_FILE` 指定配置文件、`GUGU_USER_DATA` 指定整个 userData 根目录
-  （自检不会碰到你日常使用中的设置与登录凭据）。
-- `uicheck` 与 `shot` 靠应用内建的 `GUGU_SHOT` / `GUGU_EVAL` 钩子驱动：
-  主进程加载完成后注入一段脚本、采集 `capturePage()` 截图与 DOM 体检数据。
-- **Windows 打包提示**：`electron-builder` 下载的 `winCodeSign` 包里带两个 macOS 用的符号链接，
-  普通权限下解压会失败（`Cannot create symbolic link`），结果是既出不了安装包、exe 版本信息也会缺失。
-  发布脚本已内置绕行方案（`scripts/fix-wincodesign.mjs`），`npm run dist` 会自动执行。
-- **网络提示**：`npm install` 需要下载 Electron 二进制，卡住的话在项目根目录建 `.npmrc`：
-  `electron_mirror=https://npmmirror.com/mirrors/electron/`
+  `GUGU_SETTINGS_FILE` 指定配置文件、`GUGU_USER_DATA` 指定用户数据根目录、
+  `GUGU_SESSION_EPHEMERAL=1` 表示不碰系统凭据库
+  （自检不会碰到你日常使用中的设置与登录态）。
+- `uicheck` 与 `shot` 靠应用内建的 `GUGU_SHOT` / `GUGU_EVAL` / `GUGU_DIAG` 钩子驱动：
+  窗口截图走 `PrintWindow`，注入脚本的结果以 `__EVAL__{…}` 打到 stdout ——
+  harness 约定与 Electron 版完全一致，所以自检脚本只是换了启动方式。
+- **打包提示**：Tauri 的 NSIS 工具链来自 GitHub Release 资产。本机直连
+  `objects.githubusercontent.com` 不通，已把工具链缓存放进 `%LOCALAPPDATA%\tauri\`
+  （NSIS 3.11 + WebView2 引导程序），打包阶段完全离线；换机器或清缓存后怎么补，
+  见 [`docs/release-process.md`](docs/release-process.md)。
+- **网络提示**：`cargo build` 首次要从 crates.io 拉依赖（不通的话在 `~/.cargo/config.toml` 里配镜像）；
+  `npm install` 只装前端依赖，不再需要下载 Electron 二进制。
 
 ### 代码结构
 
 ```
-src/                          应用本体 —— 发布产物只含这里
-├── main/                     Electron 主进程
-│   ├── index.ts              入口：窗口、自定义协议、截图自检钩子
-│   ├── cli.ts                无界面 CLI 抓取
-│   ├── context.ts            依赖装配（设置 / 图库 / 库表 / 引擎 / 登录态）
-│   ├── config.ts             设置持久化（userData/settings.json）
-│   ├── session.ts            会话 cookie 的加密保存与校验
-│   ├── ipc.ts                核心 IPC —— 不含任何插件相关通道
-│   ├── plugins.ts            插件宿主
-│   ├── workspace.ts          工作区根目录解析
-│   ├── crawler/              site / parser / http / engine
-│   ├── store/                schema / db(sql.js) / repository
-│   └── media/                library / thumbnail
-├── preload/index.ts          contextBridge 白名单
-├── renderer/                 React 界面（无 UI 库，纯手写 CSS 设计系统）
-│   └── src/
-│       ├── App.tsx           壳：布局、路由、状态、插件插槽
-│       ├── plugins.ts        插件宿主（渲染侧）
-│       ├── api.ts            桥接 + 展示层格式化
-│       ├── styles.css        设计系统
-│       └── components/       Sidebar / GalleryGrid / Lightbox / CrawlPanel / SettingsPanel / LoginGuide / Icons
-└── shared/                   两端共享的纯类型
+src-tauri/                    应用本体（Rust）—— 发布产物就是它
+├── src/
+│   ├── main.rs               入口：命令注册、窗口、自定义协议、自检钩子
+│   ├── cli.rs                无界面命令行模式 + imgdiff
+│   ├── shot.rs               窗口截图（PrintWindow）与 GUGU_SHOT 流程
+│   ├── library.rs            图库目录布局与越权检查
+│   ├── settings.rs           设置持久化（userData/settings.json）
+│   ├── session.rs            会话 cookie（Windows 凭据管理器）与校验
+│   ├── media.rs              自定义协议 gugu:// → 缩略图 / 原图
+│   ├── store/                索引库：schema / 查询 / 写入
+│   ├── crawler/              site / parser / http / engine（+ 解析器单测）
+│   └── plugins/              插件宿主 + devlog（轮次档案 / 标注导出）
+├── build.rs                  版本号与仓库根注入
+├── tauri.conf.json           窗口、CSP、打包配置
+└── icons/                    应用图标
+
+src/renderer/                 React 界面（无 UI 库，纯手写 CSS 设计系统）
+└── src/
+    ├── App.tsx               壳：布局、路由、状态、插件插槽
+    ├── tauri-bridge.ts       把 Tauri 的 invoke/listen 装成 window.gugu
+    ├── plugins.ts            插件宿主（渲染侧）
+    ├── api.ts                桥接 + 展示层格式化
+    ├── styles.css            设计系统
+    └── components/           Sidebar / GalleryGrid / Lightbox / CrawlPanel / SettingsPanel / LoginGuide / Icons
+
+src/shared/                   两端共享的纯类型与纯函数
     ├── types.ts              领域模型
-    ├── bridge.ts             preload 暴露的 API 契约
+    ├── bridge.ts             window.gugu 的 API 契约（外壳唯一耦合点）
     ├── plugin.ts             插件契约
-    └── categories.ts         应用分类表
+    └── categories.ts         应用分类表（含单测）
 
 plugins/                      可选工具 —— 默认不进发布产物
 ├── plugins.json              装载清单
 ├── annotator/                页面标注工具（renderer + bin + SKILL.md）
-└── devlog/                   开发过程档案（main + shared + bin + SKILL.md）
+└── devlog/                   开发过程档案（shared + bin + SKILL.md，主进程侧在 Rust）
 
 scripts/                      仓库级工具
+├── tauri-app.mjs             起 Vite / 跑应用本体的公共部分
 ├── shot.mjs                  界面截图
 ├── uicheck.mjs               界面交互回归
-├── e2e.mjs                   真实站点端到端
+├── annotatecheck（插件内）    标注工具自检
+├── e2e.mjs                   真实站点端到端（走命令行模式）
+├── crawl.mjs                 命令行抓取包装
 └── release.mjs               无插件发布构建 + 产物校验
 ```
 
 完整分层说明与设计取舍见 [`docs/architecture.md`](docs/architecture.md)，
 插件契约与开发指南见 [`docs/plugin-development.md`](docs/plugin-development.md)。
 
-**安全边界**：渲染进程没有 Node 集成、开了 `contextIsolation`，只能调用 preload 暴露的白名单方法；
-所有文件访问都经过 `Library.resolveInside()` 做越权检查；页面加载了 CSP，图片只能来自自定义协议或本地。
-账号密码从不经过本应用：登录态只保存站点会话 cookie，且用系统密钥链加密。
+**安全边界**：渲染进程没有 Node 集成，只能通过 `window.gugu` 调用注册过的命令；
+所有文件访问都经过 `Library.resolve_inside()` 做越权检查；页面加载了 CSP，
+图片只能来自 `gugu://` 自定义协议或本地 `data:`/`blob:`；
+外链只放行 `http/https`。账号密码从不经过本应用：登录态只保存站点会话 cookie，
+且存在 Windows 凭据管理器里。
 
 ---
 
 ## 已知限制
 
 - **登录态只覆盖「会话 cookie」这一条路**：站点需要过验证码，所以不做自动登录；cookie 过期后需要重新贴一次。站点没有提供长效凭据，应用侧拿不到更长的授权。
-- **索引在内存里**：sql.js 是 WASM 版 SQLite，整库常驻内存、写盘靠整库导出（1.5s 防抖），十万条量级（索引约 100 MB）仍可用。
+- **索引是本地 SQLite 文件**：随程序一起编译进 `rusqlite`（bundled），不再整库常驻内存；单连接串行写入，抓取与界面查询共用它，十万条量级依旧流畅。
 - **不做图片去重**：同一张图重复投稿会各自存一份。
 - **抓取速率保守**：默认并发 2~3、间隔 220ms，抓完整站需要等待一段时间。
 - **只提供 Windows x64 构建**，且未做代码签名，安装未签名安装包时 SmartScreen 会提示「未知发布者」。
