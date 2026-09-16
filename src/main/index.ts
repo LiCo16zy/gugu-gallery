@@ -3,7 +3,7 @@
  */
 import { createReadStream } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { extname, join } from 'node:path'
+import { extname, join, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { app, BrowserWindow, protocol, shell } from 'electron'
 import { AppContext } from './context'
@@ -20,6 +20,12 @@ const MIME: Record<string, string> = {
   '.avif': 'image/avif',
   '.bmp': 'image/bmp',
   '.heic': 'image/heic'
+}
+
+// 自检与多实例隔离用：把 userData 挪到别处，绝不碰用户真实的 session.bin 与设置。
+// 注意必须早于 app ready 调用；命令行传 --user-data-dir 在「以目录为应用入口」时并不可靠。
+if (process.env.GUGU_USER_DATA) {
+  app.setPath('userData', resolve(process.env.GUGU_USER_DATA))
 }
 
 let mainWindow: BrowserWindow | null = null

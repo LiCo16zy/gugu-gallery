@@ -1,0 +1,481 @@
+{
+  "roundId": "0013-20260916-0929",
+  "exportedAt": "2026-09-16T01:29:34.517Z",
+  "view": "crawl",
+  "note": "登录状态修改",
+  "viewport": {
+    "width": 1348,
+    "height": 716
+  },
+  "devicePixelRatio": 1.4249999523162842,
+  "appVersion": "0.6.2",
+  "annotations": [
+    {
+      "id": "vyuds8dw",
+      "index": 1,
+      "comment": "这是我想要的效果。\n如果用户点击此按钮，跳转到登录界面。\n处于已登录状态时，不跳转到登录界面。\n当用户点击已登陆时，文字上下小幅度抖动，点击第3次时，“已登录”字段平滑切换成“退出登录?”，按钮边框和字体变红。点击\"退出登录?\"用户退出当前登陆状态，登录凭据清理和数据安全你来考虑。\n点击\"退出登录?\"后字段切换成\"已退出\",变灰色且不可点击，仅下一次打开这个帮助界面时，可点击登录按钮。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789521056688,
+      "rect": {
+        "x": 416.7324523925781,
+        "y": 437.8179931640625,
+        "width": 68.377197265625,
+        "height": 33.99123001098633
+      },
+      "pageRect": {
+        "x": 416.7324523925781,
+        "y": 437.8179931640625,
+        "width": 68.377197265625,
+        "height": 33.99123001098633
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(2) > button.btn.btn-left:nth-of-type(1)",
+        "component": "App/Help › button.btn",
+        "tag": "button",
+        "classes": "btn btn-left done",
+        "text": "已登录",
+        "parentChain": [
+          "div.modal-actions",
+          "div.modal",
+          "div.modal-mask",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "center",
+          "align-items": "center",
+          "gap": "7px",
+          "grid-template-columns": "none",
+          "width": "68.3772px",
+          "height": "33.9912px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px 14px",
+          "margin": "0px 280.482px 0px 0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "normal",
+          "color": "rgb(151, 161, 181)",
+          "background-color": "rgb(26, 32, 45)",
+          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
+          "border-radius": "9px",
+          "white-space": "nowrap",
+          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          "── 对比度": "6.27:1（AA）"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "yf2ol592",
+      "index": 2,
+      "comment": "登录态 改为 登陆状态",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789521140526,
+      "rect": {
+        "x": 436.7324523925781,
+        "y": 256.7653503417969,
+        "width": 474.6052551269531,
+        "height": 20.15350914001465
+      },
+      "pageRect": {
+        "x": 436.7324523925781,
+        "y": 256.7653503417969,
+        "width": 474.6052551269531,
+        "height": 20.15350914001465
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.panel-title:nth-of-type(1)",
+        "component": "App/LoginGuide › div.panel-title",
+        "tag": "div",
+        "classes": "panel-title",
+        "text": "登录态已登录 8i77…gk34 · 已加密保存",
+        "parentChain": [
+          "div.modal.login-guide",
+          "div.modal-mask",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "8px",
+          "grid-template-columns": "none",
+          "width": "474.605px",
+          "height": "20.1535px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px 0px 8px",
+          "font-size": "13px",
+          "font-weight": "600",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "vvdi54hk",
+      "index": 3,
+      "comment": "删除此处3个按钮，移到下方\n“清除”按钮的功能由\"确定退出?\"替代",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789521311573,
+      "rect": {
+        "x": 436.7324523925781,
+        "y": 416.97369384765625,
+        "width": 474.6052551269531,
+        "height": 27.99342155456543
+      },
+      "pageRect": {
+        "x": 436.7324523925781,
+        "y": 416.97369384765625,
+        "width": 474.6052551269531,
+        "height": 27.99342155456543
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.row:nth-of-type(2)",
+        "component": "App/LoginGuide › div.row",
+        "tag": "div",
+        "classes": "row",
+        "text": "保存并验证重新验证清除",
+        "parentChain": [
+          "div.modal.login-guide",
+          "div.modal-mask",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "center",
+          "gap": "8px",
+          "grid-template-columns": "none",
+          "width": "474.605px",
+          "height": "27.9934px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "8px 0px 0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "e0fzuoyu",
+      "index": 4,
+      "comment": "此处放2个按钮，分别是：\n保存并验证、去浏览器登录\n\n保存并验证按钮，在点击后变灰，不可点击，1s后恢复正常，当成功登录后，变为“重新验证”，同样有1s触发冷却。\n去浏览器登录按钮同样有1s触发冷却",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789521540156,
+      "rect": {
+        "x": 436.7324523925781,
+        "y": 460.96490478515625,
+        "width": 474.6052551269531,
+        "height": 33.99123001098633
+      },
+      "pageRect": {
+        "x": 436.7324523925781,
+        "y": 460.96490478515625,
+        "width": 474.6052551269531,
+        "height": 33.99123001098633
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.modal-actions:nth-of-type(3)",
+        "component": "App/LoginGuide › div.modal-actions",
+        "tag": "div",
+        "classes": "modal-actions",
+        "text": "去浏览器登录关闭",
+        "parentChain": [
+          "div.modal.login-guide",
+          "div.modal-mask",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "flex-end",
+          "align-items": "normal",
+          "gap": "8px",
+          "grid-template-columns": "none",
+          "width": "474.605px",
+          "height": "33.9912px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "16px 0px 0px",
+          "font-size": "13px",
+          "font-weight": "400",
+          "line-height": "20.15px",
+          "color": "rgb(231, 235, 243)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(231, 235, 243)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "p6dzj6p0",
+      "index": 5,
+      "comment": "改为\ncookie 已过期，请重新登录",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789521801307,
+      "rect": {
+        "x": 436.7324523925781,
+        "y": 263.5855407714844,
+        "width": 474.6052551269531,
+        "height": 42.653507232666016
+      },
+      "pageRect": {
+        "x": 436.7324523925781,
+        "y": 263.5855407714844,
+        "width": 474.6052551269531,
+        "height": 42.653507232666016
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > p.setup-error:nth-of-type(1)",
+        "component": "App/LoginGuide › p.setup-error",
+        "tag": "p",
+        "classes": "setup-error",
+        "text": "站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期",
+        "parentChain": [
+          "div.modal.login-guide",
+          "div.modal-mask",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "474.605px",
+          "height": "42.6535px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "10px 13px",
+          "margin": "0px",
+          "font-size": "12.5px",
+          "font-weight": "400",
+          "line-height": "21.25px",
+          "color": "rgb(248, 113, 113)",
+          "background-color": "color(srgb 0.972549 0.443137 0.443137 / 0.12)",
+          "border": "0.701754px solid color(srgb 0.972549 0.443137 0.443137 / 0.34)",
+          "border-radius": "10px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "n8dp2vma",
+      "index": 6,
+      "comment": "删除文本\n\" · 只影响「泳装分享」分类\"",
+      "category": "content",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789521834223,
+      "rect": {
+        "x": 483.71710205078125,
+        "y": 236.6008758544922,
+        "width": 169.7258758544922,
+        "height": 17.817981719970703
+      },
+      "pageRect": {
+        "x": 483.71710205078125,
+        "y": 236.6008758544922,
+        "width": 169.7258758544922,
+        "height": 17.817981719970703
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.panel-title:nth-of-type(1) > span.hint",
+        "component": "App/LoginGuide › span.hint",
+        "tag": "span",
+        "classes": "hint",
+        "text": "未登录 · 只影响「泳装分享」分类",
+        "parentChain": [
+          "div.panel-title",
+          "div.modal.login-guide",
+          "div.modal-mask",
+          "div.app",
+          "div"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "169.726px",
+          "height": "17.818px",
+          "min-width": "auto",
+          "max-width": "none",
+          "padding": "0px",
+          "margin": "0px",
+          "font-size": "11.5px",
+          "font-weight": "400",
+          "line-height": "17.825px",
+          "color": "rgb(102, 112, 133)",
+          "background-color": "rgba(0, 0, 0, 0)",
+          "border": "0px none rgb(102, 112, 133)",
+          "border-radius": "0px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    },
+    {
+      "id": "53tgpdag",
+      "index": 7,
+      "comment": "这里的红字提示部分移到帮助界面下，包括“cookie 已过期，请重新登录”、“已清除本地登录凭据”等红字提示。\n红字提示在用户关闭当前窗口再打开时，红字提示部分不再显示。",
+      "category": "style",
+      "severity": "should",
+      "kind": "element",
+      "createdAt": 1789522064003,
+      "rect": {
+        "x": 436.7324523925781,
+        "y": 263.5855407714844,
+        "width": 474.6052551269531,
+        "height": 42.653507232666016
+      },
+      "pageRect": {
+        "x": 436.7324523925781,
+        "y": 263.5855407714844,
+        "width": 474.6052551269531,
+        "height": 42.653507232666016
+      },
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "target": {
+        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > p.setup-error:nth-of-type(1)",
+        "component": "App/LoginGuide › p.setup-error",
+        "tag": "p",
+        "classes": "setup-error",
+        "text": "已清除本地登录凭据",
+        "parentChain": [
+          "div.modal.login-guide",
+          "div.modal-mask",
+          "div.app",
+          "div",
+          "body"
+        ],
+        "styles": {
+          "flex-direction": "row",
+          "justify-content": "normal",
+          "align-items": "normal",
+          "gap": "normal",
+          "grid-template-columns": "none",
+          "width": "474.605px",
+          "height": "42.6535px",
+          "min-width": "0px",
+          "max-width": "none",
+          "padding": "10px 13px",
+          "margin": "0px",
+          "font-size": "12.5px",
+          "font-weight": "400",
+          "line-height": "21.25px",
+          "color": "rgb(248, 113, 113)",
+          "background-color": "color(srgb 0.972549 0.443137 0.443137 / 0.12)",
+          "border": "0.701754px solid color(srgb 0.972549 0.443137 0.443137 / 0.34)",
+          "border-radius": "10px",
+          "white-space": "normal",
+          "transition": "all"
+        },
+        "attributes": {}
+      },
+      "viewport": {
+        "width": 1348,
+        "height": 716
+      }
+    }
+  ]
+}

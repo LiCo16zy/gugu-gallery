@@ -286,11 +286,31 @@ const SCRIPT = `(async () => {
       document.querySelector('[data-component="App/LoginGuide"] .panel-title .hint') || {}
     ).textContent || ''
     out.helpClosedAfterLogin = !document.querySelector('[data-component="App/Help"]')
-    const closeBtn = Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn')).find(
-      (b) => b.textContent.trim() === '关闭'
-    )
-    closeBtn?.click()
-    await sleep(300)
+
+    // 引导里现在是两个按钮：保存并验证 / 去浏览器登录
+    const guide = () => document.querySelector('[data-component="App/LoginGuide"]')
+    const guideBtns = () => Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn'))
+    out.guideButtons = guideBtns().map((b) => b.textContent.trim())
+    out.guidePrimaryDisabledWhenEmpty = guideBtns()[0] ? guideBtns()[0].disabled === true : null
+    const box = document.querySelector('[data-component="App/LoginGuide"] .cookie-input')
+    if (box) {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
+      setter.call(box, 'PHPSESSID=uicheck-bogus-value')
+      box.dispatchEvent(new Event('input', { bubbles: true }))
+      await sleep(250)
+      out.guidePrimaryEnabled = guideBtns()[0] ? guideBtns()[0].disabled === false : null
+      guideBtns()[0]?.click()
+      // React 的状态更新是异步的，等一帧再读 disabled
+      await sleep(150)
+      out.guideCoolingDisabled = guideBtns()[0] ? guideBtns()[0].disabled === true : null
+      await sleep(1400)
+      out.guideCooldownOver = guideBtns()[0] ? guideBtns()[0].disabled === false : null
+      out.guideStatusTextAfter = (document.querySelector('[data-component="App/LoginGuide"] .panel-title .hint') || {}).textContent || ''
+    }
+    // 关掉引导：点遮罩（按钮里已经没有「关闭」了）
+    const mask = guide()?.parentElement
+    mask?.click()
+    await sleep(400)
     out.guideClosed = !document.querySelector('[data-component="App/LoginGuide"]')
   }
 
@@ -446,16 +466,15 @@ const env = {
   GUGU_SHOT_DELAY: '3200',
   GUGU_LIBRARY_ROOT: libraryRoot,
   GUGU_SETTINGS_FILE: join(root, 'data', 'uicheck-settings.json'),
+  // 比 --user-data-dir 可靠：主进程会把它当作 userData 根目录
+  GUGU_USER_DATA: userDataDir,
   GUGU_EVAL: SCRIPT
 }
 
 const output = await new Promise((resolvePromise) => {
   // userData 指向仓库内的临时目录：既别读用户真实的 session.bin，
   // 也别让自检写坏他的设置（登录态断言必须是确定性的）
-  const child = spawn(
-    electronBinary,
-    [join(root, 'out', 'main', 'index.js'), '--user-data-dir=' + join(root, 'data', 'uicheck-userdata')],
-    {
+  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
       cwd: root,
       env,
       stdio: ['ignore', 'pipe', 'pipe']
@@ -520,6 +539,10 @@ const checks = [
   ['帮助里有登录入口且未登录时不置灰', result.helpLoginButton === true && result.helpLoginDisabled === false],
   ['登录按钮贴左边', result.helpLoginOnLeft === true],
   ['点登录会关掉帮助并弹出登录引导', result.guideOpenedFromHelp === true && result.helpClosedAfterLogin === true],
+  ['登录引导底部是两个按钮', JSON.stringify(result.guideButtons) === '["保存并验证","去浏览器登录"]'],
+  ['没填 cookie 时保存按钮不可点', result.guidePrimaryDisabledWhenEmpty === true],
+  ['填入 cookie 后保存按钮可点', result.guidePrimaryEnabled === true],
+  ['点保存后按钮冷却 1s 再恢复', result.guideCoolingDisabled === true && result.guideCooldownOver === true],
   ['登录引导能关闭', result.guideClosed === true],
   ['切换排序生效', result.sortValue === 'views'],
   ['内容页无横向溢出', result.mainOverflowX === 0],

@@ -147,7 +147,7 @@ export class CrawlEngine {
         return {
           ok: false,
           state,
-          message: '站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期'
+          message: 'cookie 已过期，请重新登录'
         }
       }
       return { ok: false, state, message: '没法确认登录态：首页里既没有登录入口也没有退出入口' }

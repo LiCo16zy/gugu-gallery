@@ -1,6 +1,6 @@
 {
   "name": "gugu-gallery",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "private": true,
   "description": "咕咕小站图片爬虫 + 本地图库浏览器（Electron 桌面应用）",
   "author": "gugu-gallery",

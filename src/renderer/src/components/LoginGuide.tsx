@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SessionStatus } from '@shared/bridge'
 import type { ToastPayload } from './Toast'
 import { api } from '../api'
 
 interface Props {
   session: SessionStatus | null
-  /** 上一次操作的结果说明；由外层持有，登录态失效时也能带进来 */
-  message: string | null
   onSession: (status: SessionStatus) => void
-  onMessage: (message: string | null) => void
   onClose: () => void
   onToast: (text: string, duration?: number, kind?: ToastPayload['kind']) => void
 }
+
+/** 按钮点完冷却 1s：既是「点过了」的反馈，也顺手防连点 */
+const COOLDOWN_MS = 1000
 
 /**
  * 登录引导。
@@ -20,50 +20,57 @@ interface Props {
  * 所以这里不去模拟登录表单，而是让用户用浏览器登录、把会话 cookie 交过来 ——
  * 好处是**账号密码从头到尾不经过本应用**。
  */
-export default function LoginGuide({
-  session,
-  message,
-  onSession,
-  onMessage,
-  onClose,
-  onToast
-}: Props): JSX.Element {
+export default function LoginGuide({ session, onSession, onClose, onToast }: Props): JSX.Element {
   const [draft, setDraft] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [cooling, setCooling] = useState(false)
+
+  const loggedIn = session?.loggedIn === true && session?.verified !== false
+
+  // 每次打开都是干净的：上一次的提示不带进来
+  useEffect(() => {
+    setDraft('')
+    setMsg(null)
+    setCooling(false)
+  }, [])
+
+  /** 点一下冷却 1s */
+  const cooldown = (): void => {
+    setCooling(true)
+    setTimeout(() => setCooling(false), COOLDOWN_MS)
+  }
 
   const save = async (): Promise<void> => {
-    setBusy(true)
-    onMessage(null)
+    cooldown()
     try {
       const r = await api.session.set(draft.trim())
       onSession(r.status)
-      onMessage(r.verify.message)
       if (r.verify.ok) {
         setDraft('')
+        setMsg({ kind: 'ok', text: '登录态已生效' })
         onToast('登录态已生效', 1600, 'success')
-        onClose()
+      } else {
+        setMsg({ kind: 'error', text: r.verify.message })
       }
     } catch (err) {
-      onMessage(err instanceof Error ? err.message : '保存失败')
-    } finally {
-      setBusy(false)
+      setMsg({ kind: 'error', text: err instanceof Error ? err.message : '保存失败' })
     }
   }
 
   const verify = async (): Promise<void> => {
-    setBusy(true)
+    cooldown()
     try {
       const r = await api.session.verify()
       onSession(r.status)
-      onMessage(r.verify.message)
-    } finally {
-      setBusy(false)
+      setMsg({ kind: r.verify.ok ? 'ok' : 'error', text: r.verify.message })
+    } catch (err) {
+      setMsg({ kind: 'error', text: err instanceof Error ? err.message : '校验失败' })
     }
   }
 
-  const clear = async (): Promise<void> => {
-    onSession(await api.session.clear())
-    onMessage('已清除本地登录凭据')
+  const visit = (): void => {
+    cooldown()
+    void api.openExternal('https://www.guguxz.com/login.html')
   }
 
   return (
@@ -72,19 +79,19 @@ export default function LoginGuide({
         <h3>登录</h3>
 
         <div className="panel-title" style={{ marginBottom: 8 }}>
-          登录态
+          登陆状态
           <span className="hint">
             {session?.loggedIn
               ? (session.verified === false ? '凭据已失效 ' : '已登录 ') +
                 (session.fingerprint ?? '') +
                 (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
-              : '未登录 · 只影响「泳装分享」分类'}
+              : '未登录'}
           </span>
         </div>
 
-        {message && (
-          <p className="setup-error" style={{ marginTop: 0 }}>
-            {message}
+        {msg && (
+          <p className={msg.kind === 'error' ? 'setup-error' : 'setup-ok'} style={{ marginTop: 0 }}>
+            {msg.text}
           </p>
         )}
 
@@ -92,7 +99,7 @@ export default function LoginGuide({
           本应用<strong>不保存账号密码</strong>。请先用浏览器登录 guguxz.com，
           按 F12 → Console 输入 <code>document.cookie</code>，
           把 <code>PHPSESSID=...</code> 那一段粘到下面。
-          它会用系统密钥链加密后存在本地，随时可以清除。
+          它会用系统密钥链加密后存在本地。
         </p>
 
         <textarea
@@ -104,24 +111,16 @@ export default function LoginGuide({
           onChange={(e) => setDraft(e.target.value)}
         />
 
-        <div className="row" style={{ gap: 8, marginTop: 8 }}>
-          <button className="btn primary sm" disabled={busy || draft.trim() === ''} onClick={() => void save()}>
-            保存并验证
-          </button>
-          <button className="btn sm" disabled={busy || !session?.loggedIn} onClick={() => void verify()}>
-            重新验证
-          </button>
-          <button className="btn sm danger" disabled={busy || !session?.loggedIn} onClick={() => void clear()}>
-            清除
-          </button>
-        </div>
-
         <div className="modal-actions">
-          <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/login.html')}>
-            去浏览器登录
+          <button
+            className="btn primary"
+            disabled={cooling || (!loggedIn && draft.trim() === '')}
+            onClick={() => void (loggedIn ? verify() : save())}
+          >
+            {loggedIn ? '重新验证' : '保存并验证'}
           </button>
-          <button className="btn primary" onClick={onClose}>
-            关闭
+          <button className="btn" disabled={cooling} onClick={visit}>
+            去浏览器登录
           </button>
         </div>
       </div>

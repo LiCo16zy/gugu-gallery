@@ -176,6 +176,14 @@ export default function App(): JSX.Element {
   const [helpOpen, setHelpOpen] = useState(false)
   /** 登录引导弹窗：帮助里的「登录」按钮会把它叫起来 */
   const [loginOpen, setLoginOpen] = useState(false)
+  /**
+   * 帮助里登录按钮的本地状态机：
+   *   normal（登录 / 已登录 / 登录已失效）→ 连点三次「已登录」→ confirm（退出登录?）→ signedOut（已退出）
+   * 「已退出」要等下一次重新打开帮助才恢复成可点的「登录」。
+   */
+  const [loginPhase, setLoginPhase] = useState<'normal' | 'confirm' | 'signedOut'>('normal')
+  const [loginTaps, setLoginTaps] = useState(0)
+  const [loginJitter, setLoginJitter] = useState(0)
   /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
   const [reflowing, setReflowing] = useState(false)
   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
@@ -361,6 +369,17 @@ export default function App(): JSX.Element {
     setSidebarWidth(settings.sidebarWidth || DEFAULT_SETTINGS.sidebarWidth)
   }, [settings.sidebarWidth])
 
+  // 帮助界面：打开时登录按钮回到初始态，关闭时红字提示不再留着
+  useEffect(() => {
+    if (helpOpen) {
+      setLoginPhase('normal')
+      setLoginTaps(0)
+      setLoginJitter(0)
+    } else {
+      setSessionMsg(null)
+    }
+  }, [helpOpen])
+
   // 排序菜单 / 日期面板：点空白处关闭
   useEffect(() => {
     if (!sortOpen && !dateOpen) return
@@ -439,6 +458,50 @@ export default function App(): JSX.Element {
     filters.minWidth === 0 &&
     filters.monthFrom === '' &&
     filters.monthTo === ''
+
+  /**
+   * 「登录中」= 本地存了 cookie 且没被判失效。
+   * 只看 loggedIn 的话，过期的 cookie 会一直显示成「已登录」，反而误导。
+   */
+  const sessionOk = session?.loggedIn === true && session?.verified !== false
+  const sessionStale = session?.loggedIn === true && session?.verified === false
+
+  const openLoginGuide = useCallback(() => {
+    setHelpOpen(false)
+    setLoginOpen(true)
+  }, [])
+
+  /**
+   * 帮助里那颗登录按钮。
+   * 未登录 / 凭据失效 → 打开登录引导；
+   * 已登录 → 不跳转，点一下抖一下，第三下才切成「退出登录?」，避免误触把登录态清掉。
+   */
+  const onLoginButton = useCallback((): void => {
+    if (loginPhase === 'signedOut') return
+    if (loginPhase === 'confirm') {
+      void (async () => {
+        setSession(await api.session.clear())
+        setLoginPhase('signedOut')
+        setSessionMsg('已清除本地登录凭据')
+        // 登录专属分类会立刻从侧栏消失，别把「来源分类」筛选留在那儿
+        setFilters((prev) => (prev.targetWord ? { ...prev, targetWord: null } : prev))
+        showToast('已退出登录', 1800, 'info')
+      })()
+      return
+    }
+    if (sessionOk) {
+      setLoginJitter((n) => n + 1)
+      const taps = loginTaps + 1
+      if (taps >= 3) {
+        setLoginTaps(0)
+        setLoginPhase('confirm')
+      } else {
+        setLoginTaps(taps)
+      }
+      return
+    }
+    openLoginGuide()
+  }, [loginPhase, loginTaps, sessionOk, showToast, openLoginGuide])
 
   /** 筛选栏上显示来源分类的显示名（「泳装分享」而不是站点关键词） */
   const activeTargetLabel = useMemo(() => {
@@ -527,12 +590,7 @@ export default function App(): JSX.Element {
   const jobActive =
     progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
 
-  /**
-   * 「登录中」= 本地存了 cookie 且没被判失效。
-   * 只看 loggedIn 的话，过期的 cookie 会一直显示成「已登录」，反而误导。
-   */
-  const sessionOk = session?.loggedIn === true && session?.verified !== false
-  const sessionStale = session?.loggedIn === true && session?.verified === false
+
 
   /* 右键菜单项：收藏 / 复制 pid / 打开于…（折叠子项） */
   const contextEntries: MenuEntry[] = contextMenu
@@ -1022,17 +1080,37 @@ export default function App(): JSX.Element {
               <dt>图库目录</dt>
               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
             </dl>
+            {sessionMsg && (
+              <p className="setup-error" style={{ margin: '0 0 10px' }}>
+                {sessionMsg}
+              </p>
+            )}
+
             <div className="modal-actions">
               <button
-                // 已登录时按钮是「灰掉的已登录」，但仍可点开：
-                // 登录引导里还有「重新验证 / 清除」，不能把换账号、换凭据的路堵死
-                className={`btn btn-left${sessionStale ? ' warn' : ''}${sessionOk ? ' done' : ''}`}
-                onClick={() => {
-                  setHelpOpen(false)
-                  setLoginOpen(true)
-                }}
+                className={`btn btn-left${
+                  loginPhase === 'confirm'
+                    ? ' quit'
+                    : sessionOk || loginPhase === 'signedOut'
+                      ? ' done'
+                      : sessionStale
+                        ? ' warn'
+                        : ''
+                }`}
+                disabled={loginPhase === 'signedOut'}
+                onClick={onLoginButton}
               >
-                {sessionOk ? '已登录' : sessionStale ? '登录已失效' : '登录'}
+                <span key={loginJitter} className={loginJitter > 0 ? 'jitter' : ''}>
+                  {loginPhase === 'signedOut'
+                    ? '已退出'
+                    : loginPhase === 'confirm'
+                      ? '退出登录?'
+                      : sessionOk
+                        ? '已登录'
+                        : sessionStale
+                          ? '登录已失效'
+                          : '登录'}
+                </span>
               </button>
 
               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
@@ -1049,9 +1127,7 @@ export default function App(): JSX.Element {
       {loginOpen && (
         <LoginGuide
           session={session}
-          message={sessionMsg}
           onSession={setSession}
-          onMessage={setSessionMsg}
           onClose={() => setLoginOpen(false)}
           onToast={showToast}
         />
