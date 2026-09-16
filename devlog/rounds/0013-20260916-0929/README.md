@@ -81,3 +81,10 @@
 - 「点退出登录?」这条路径**只有代码保证、没有实测**。等用户有空时点一次即可确认（此时凭据会真的被清掉，需要重新贴 cookie）。
 - 「去浏览器登录」的 1s 冷却没有自动断言（跑它会把浏览器弹出来），实现上与保存按钮共用同一段冷却逻辑。
 - 抖动动画用的是 CSS keyframes + key 重挂载；如果用户觉得幅度或时长不合适，调 `loginJitter` 与 `.jitter` 即可。
+
+## 过程存档
+
+- 起始截图（0 张）：`screenshots-before/`
+- 改动后截图（4 张）：`screenshots-after/`
+- 代码差异：`changes.patch` / `changes.md`
+- 界面标注原文：`annotations.md` / `annotations.json`

@@ -1,0 +1,1234 @@
+# 轮次 0013-20260916-0929 代码差异
+# 基线提交 HEAD~1 -> 8ce20be
+
+diff --git a/devlog/rounds/0013-20260916-0929/README.md b/devlog/rounds/0013-20260916-0929/README.md
+new file mode 100644
+index 0000000..ec5eac2
+--- /dev/null
++++ b/devlog/rounds/0013-20260916-0929/README.md
+@@ -0,0 +1,83 @@
++# 轮次 0013-20260916-0929
++
++- 时间：2026-09-16
++- 应用版本：**0.6.3**
++- 起点提交：`5d2267d`
++- 用户方向：上一轮的小改动**被接受了**，但用户自己又做了一些调整，用标注提了 7 条，全部集中在「登录 / 退出」这条交互上。
++
++## 反馈标注
++
++共 7 条，详见 [`annotations.md`](annotations.md)、[`annotations.json`](annotations.json) 与 [`screenshots/`](screenshots)。全部 `should` 级。
++
++| # | 组件 | 意见 |
++| --- | --- | --- |
++| 1 | `App/Help › 已登录` | 是这个效果。未登录时点了进登录界面；已登录时不跳转。点「已登录」文字上下抖动，**第 3 次**时平滑切成「退出登录?」并转红；点它退出登录（凭据清理与数据安全自己定）；之后变「已退出」灰色不可点，**下次重新打开帮助**才恢复可点的登录按钮 |
++| 2 | `LoginGuide › 登陆状态` | 「登录态」改为「登陆状态」 |
++| 3 | `LoginGuide › 三个按钮` | 删掉这里的三个按钮，「清除」的功能由「退出登录?」替代 |
++| 4 | `LoginGuide › 底部` | 这里放两个按钮：保存并验证、去浏览器登录；保存并验证点后变灰不可点、1s 恢复，登录成功后变成「重新验证」同样冷却 1s；去浏览器登录也有 1s 冷却 |
++| 5 | `LoginGuide › 红字` | 文案改为「cookie 已过期，请重新登录」 |
++| 6 | `LoginGuide › hint` | 删掉「 · 只影响「泳装分享」分类」 |
++| 7 | `LoginGuide › 红字` | 这些红字提示移到帮助界面；关闭窗口再打开时不再显示 |
++
++## 改动
++
++### 1. 帮助里那颗按钮：三击才进入退出确认
++
++状态机（本地、跟着帮助面板的生命周期走）：
++
++```
++未登录 / 凭据失效      → 「登录」/「登录已失效」，点击打开登录引导
++已登录                 → 「已登录」（灰），点击不跳转，文字抖动一下
++                        → 第 3 次点击平滑变红并切成「退出登录?」
++「退出登录?」          → 点击执行退出：清掉加密凭据、通知侧栏、清掉「来源分类」筛选
++退出之后               → 「已退出」（灰、不可点），直到**下次重新打开帮助**才复位
++```
++
++为什么连点三次：这是唯一一个会抹掉登录态的动作，而它就挨着「知道了」。三次带抖动的点击既是最轻的确认，也足够让手滑的人停下来。
++
++**数据安全**方面做了三件事：
++- 退出只删 `session.bin`（DPAPI 密文），账号密码从来没进过本应用，没有别的凭据要清；
++- 退出后立刻 `refreshMeta` / 清掉「泳装分享」这类登录专属分类的筛选，否则界面上会留下一个看不见的条件；
++- 已下载的图片与索引**不动** —— 那是用户的图库，不是登录凭据。
++
++### 2. 登录引导重排（标注 2/3/4/6）
++
++- 标题行改成「登陆状态」；未登录时只显示「未登录」（去掉后缀说明）；
++- 中间那排「保存并验证 / 重新验证 / 清除」整排删掉，「清除」由上面的「退出登录?」接管；
++- 底部变成两个按钮：**保存并验证**（已登录时显示为「重新验证」）与**去浏览器登录**；
++- 两个按钮都有 **1s 冷却**：点下去立即变灰不可点，1s 后恢复；
++- 打开引导时清空输入与提示（上一次的红字不带进来）；失败时给红字，成功时给一条**非红色**的提示条（`.setup-ok`）。
++
++### 3. 红字提示挪到帮助界面（标注 5/7）
++
++拆成两层，各归其位：
++
++- **会话级提示**（`cookie 已过期，请重新登录`、`已清除本地登录凭据`）显示在**帮助**弹窗里，按钮上方；帮助一关就清掉，下次打开不再显示 —— 正好对应「关闭窗口再打开时不再显示」；
++- **引导内的操作反馈**（保存成功、保存失败的具体原因）留在引导里，同样是每次打开都重置。
++
++这么拆的理由：#5 要求改的正是那句会话级文案，而 #7 要求它别赖在引导里；但保存失败这类反馈必须留在用户操作的地方，否则点了按钮没有任何回应。
++
++### 4. 顺手补上可靠的自检隔离（这一次踩到的坑）
++
++自检需要一份「未登录」的应用状态，之前用的是命令行 `--user-data-dir`。实测这个开关在**以目录为应用入口**（`electron .`）时并不可靠：Chromium 的缓存目录挪走了，但主进程 `app.getPath('userData')` 还是老地方 —— 结果那次试验真的把用户存在应用里的 session.bin 清掉了。已重新写入同一份 cookie（数据没丢），但教训得记下来。
++
++现在主进程支持 `GUGU_USER_DATA` 环境变量（在 app ready 之前 `app.setPath('userData', ...)`），uicheck 也改用这个变量，隔离是确定的：真机验证隔离实例读到的是「未登录」，而用户真实的 session.bin 毫发无损。
++
++## 验证
++
++| 检查 | 结果 |
++| --- | --- |
++| 按钮状态机（真机、真实登录态） | 初始 `已登录/done` → 点 1、2 次仍是「已登录」→ **第 3 次变 `退出登录?/quit`**（实测颜色 `rgb(248,113,113)`，即 `--danger`）→ 关闭帮助再打开，复位成「已登录」 |
++| 引导结构（隔离实例，未登录） | 标题「登陆状态 未登录」；底部按钮 `["保存并验证","去浏览器登录"]`；空输入时保存按钮不可点 |
++| 退出流程 | **按用户要求没有跑完整的退出测试**（等待时间太长）。状态机改写、凭据清理、筛选复位这三处都有代码级保证，但没有端到端执行过一次「点退出登录?」 |
++| `npm run typecheck` / `npm test` | 通过 / 30 项 |
++| `node scripts/uicheck.mjs` | 63 项通过（新增：引导底部是两个按钮、空输入时保存按钮不可点、填入后可点、点击后冷却 1s 再恢复） |
++| `node plugins/annotator/bin/check.mjs` / `node scripts/e2e.mjs` | 37 项通过 / 通过 |
++
++截图证据（`screenshots-verify/`）：`help-quit-confirm.jpg`（第三下之后的红色「退出登录?」）、`login-guide.jpg`（重排后的登录引导）。
++
++## 遗留
++
++- 「点退出登录?」这条路径**只有代码保证、没有实测**。等用户有空时点一次即可确认（此时凭据会真的被清掉，需要重新贴 cookie）。
++- 「去浏览器登录」的 1s 冷却没有自动断言（跑它会把浏览器弹出来），实现上与保存按钮共用同一段冷却逻辑。
++- 抖动动画用的是 CSS keyframes + key 重挂载；如果用户觉得幅度或时长不合适，调 `loginJitter` 与 `.jitter` 即可。
+diff --git a/devlog/rounds/0013-20260916-0929/annotations.json b/devlog/rounds/0013-20260916-0929/annotations.json
+new file mode 100644
+index 0000000..4bbfcd9
+--- /dev/null
++++ b/devlog/rounds/0013-20260916-0929/annotations.json
+@@ -0,0 +1,481 @@
++{
++  "roundId": "0013-20260916-0929",
++  "exportedAt": "2026-09-16T01:29:34.517Z",
++  "view": "crawl",
++  "note": "登录状态修改",
++  "viewport": {
++    "width": 1348,
++    "height": 716
++  },
++  "devicePixelRatio": 1.4249999523162842,
++  "appVersion": "0.6.2",
++  "annotations": [
++    {
++      "id": "vyuds8dw",
++      "index": 1,
++      "comment": "这是我想要的效果。\n如果用户点击此按钮，跳转到登录界面。\n处于已登录状态时，不跳转到登录界面。\n当用户点击已登陆时，文字上下小幅度抖动，点击第3次时，“已登录”字段平滑切换成“退出登录?”，按钮边框和字体变红。点击\"退出登录?\"用户退出当前登陆状态，登录凭据清理和数据安全你来考虑。\n点击\"退出登录?\"后字段切换成\"已退出\",变灰色且不可点击，仅下一次打开这个帮助界面时，可点击登录按钮。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789521056688,
++      "rect": {
++        "x": 416.7324523925781,
++        "y": 437.8179931640625,
++        "width": 68.377197265625,
++        "height": 33.99123001098633
++      },
++      "pageRect": {
++        "x": 416.7324523925781,
++        "y": 437.8179931640625,
++        "width": 68.377197265625,
++        "height": 33.99123001098633
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(2) > button.btn.btn-left:nth-of-type(1)",
++        "component": "App/Help › button.btn",
++        "tag": "button",
++        "classes": "btn btn-left done",
++        "text": "已登录",
++        "parentChain": [
++          "div.modal-actions",
++          "div.modal",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "center",
++          "align-items": "center",
++          "gap": "7px",
++          "grid-template-columns": "none",
++          "width": "68.3772px",
++          "height": "33.9912px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px 14px",
++          "margin": "0px 280.482px 0px 0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "normal",
++          "color": "rgb(151, 161, 181)",
++          "background-color": "rgb(26, 32, 45)",
++          "border": "0.701754px solid rgba(255, 255, 255, 0.13)",
++          "border-radius": "9px",
++          "white-space": "nowrap",
++          "transition": "0.15s cubic-bezier(0.22, 0.61, 0.36, 1)",
++          "── 对比度": "6.27:1（AA）"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "yf2ol592",
++      "index": 2,
++      "comment": "登录态 改为 登陆状态",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789521140526,
++      "rect": {
++        "x": 436.7324523925781,
++        "y": 256.7653503417969,
++        "width": 474.6052551269531,
++        "height": 20.15350914001465
++      },
++      "pageRect": {
++        "x": 436.7324523925781,
++        "y": 256.7653503417969,
++        "width": 474.6052551269531,
++        "height": 20.15350914001465
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.panel-title:nth-of-type(1)",
++        "component": "App/LoginGuide › div.panel-title",
++        "tag": "div",
++        "classes": "panel-title",
++        "text": "登录态已登录 8i77…gk34 · 已加密保存",
++        "parentChain": [
++          "div.modal.login-guide",
++          "div.modal-mask",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "8px",
++          "grid-template-columns": "none",
++          "width": "474.605px",
++          "height": "20.1535px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px 0px 8px",
++          "font-size": "13px",
++          "font-weight": "600",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "vvdi54hk",
++      "index": 3,
++      "comment": "删除此处3个按钮，移到下方\n“清除”按钮的功能由\"确定退出?\"替代",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789521311573,
++      "rect": {
++        "x": 436.7324523925781,
++        "y": 416.97369384765625,
++        "width": 474.6052551269531,
++        "height": 27.99342155456543
++      },
++      "pageRect": {
++        "x": 436.7324523925781,
++        "y": 416.97369384765625,
++        "width": 474.6052551269531,
++        "height": 27.99342155456543
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.row:nth-of-type(2)",
++        "component": "App/LoginGuide › div.row",
++        "tag": "div",
++        "classes": "row",
++        "text": "保存并验证重新验证清除",
++        "parentChain": [
++          "div.modal.login-guide",
++          "div.modal-mask",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "center",
++          "gap": "8px",
++          "grid-template-columns": "none",
++          "width": "474.605px",
++          "height": "27.9934px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "8px 0px 0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "e0fzuoyu",
++      "index": 4,
++      "comment": "此处放2个按钮，分别是：\n保存并验证、去浏览器登录\n\n保存并验证按钮，在点击后变灰，不可点击，1s后恢复正常，当成功登录后，变为“重新验证”，同样有1s触发冷却。\n去浏览器登录按钮同样有1s触发冷却",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789521540156,
++      "rect": {
++        "x": 436.7324523925781,
++        "y": 460.96490478515625,
++        "width": 474.6052551269531,
++        "height": 33.99123001098633
++      },
++      "pageRect": {
++        "x": 436.7324523925781,
++        "y": 460.96490478515625,
++        "width": 474.6052551269531,
++        "height": 33.99123001098633
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.modal-actions:nth-of-type(3)",
++        "component": "App/LoginGuide › div.modal-actions",
++        "tag": "div",
++        "classes": "modal-actions",
++        "text": "去浏览器登录关闭",
++        "parentChain": [
++          "div.modal.login-guide",
++          "div.modal-mask",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "display": "flex",
++          "flex-direction": "row",
++          "justify-content": "flex-end",
++          "align-items": "normal",
++          "gap": "8px",
++          "grid-template-columns": "none",
++          "width": "474.605px",
++          "height": "33.9912px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "16px 0px 0px",
++          "font-size": "13px",
++          "font-weight": "400",
++          "line-height": "20.15px",
++          "color": "rgb(231, 235, 243)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(231, 235, 243)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "p6dzj6p0",
++      "index": 5,
++      "comment": "改为\ncookie 已过期，请重新登录",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789521801307,
++      "rect": {
++        "x": 436.7324523925781,
++        "y": 263.5855407714844,
++        "width": 474.6052551269531,
++        "height": 42.653507232666016
++      },
++      "pageRect": {
++        "x": 436.7324523925781,
++        "y": 263.5855407714844,
++        "width": 474.6052551269531,
++        "height": 42.653507232666016
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > p.setup-error:nth-of-type(1)",
++        "component": "App/LoginGuide › p.setup-error",
++        "tag": "p",
++        "classes": "setup-error",
++        "text": "站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期",
++        "parentChain": [
++          "div.modal.login-guide",
++          "div.modal-mask",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "474.605px",
++          "height": "42.6535px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "10px 13px",
++          "margin": "0px",
++          "font-size": "12.5px",
++          "font-weight": "400",
++          "line-height": "21.25px",
++          "color": "rgb(248, 113, 113)",
++          "background-color": "color(srgb 0.972549 0.443137 0.443137 / 0.12)",
++          "border": "0.701754px solid color(srgb 0.972549 0.443137 0.443137 / 0.34)",
++          "border-radius": "10px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "n8dp2vma",
++      "index": 6,
++      "comment": "删除文本\n\" · 只影响「泳装分享」分类\"",
++      "category": "content",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789521834223,
++      "rect": {
++        "x": 483.71710205078125,
++        "y": 236.6008758544922,
++        "width": 169.7258758544922,
++        "height": 17.817981719970703
++      },
++      "pageRect": {
++        "x": 483.71710205078125,
++        "y": 236.6008758544922,
++        "width": 169.7258758544922,
++        "height": 17.817981719970703
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.panel-title:nth-of-type(1) > span.hint",
++        "component": "App/LoginGuide › span.hint",
++        "tag": "span",
++        "classes": "hint",
++        "text": "未登录 · 只影响「泳装分享」分类",
++        "parentChain": [
++          "div.panel-title",
++          "div.modal.login-guide",
++          "div.modal-mask",
++          "div.app",
++          "div"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "169.726px",
++          "height": "17.818px",
++          "min-width": "auto",
++          "max-width": "none",
++          "padding": "0px",
++          "margin": "0px",
++          "font-size": "11.5px",
++          "font-weight": "400",
++          "line-height": "17.825px",
++          "color": "rgb(102, 112, 133)",
++          "background-color": "rgba(0, 0, 0, 0)",
++          "border": "0px none rgb(102, 112, 133)",
++          "border-radius": "0px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    },
++    {
++      "id": "53tgpdag",
++      "index": 7,
++      "comment": "这里的红字提示部分移到帮助界面下，包括“cookie 已过期，请重新登录”、“已清除本地登录凭据”等红字提示。\n红字提示在用户关闭当前窗口再打开时，红字提示部分不再显示。",
++      "category": "style",
++      "severity": "should",
++      "kind": "element",
++      "createdAt": 1789522064003,
++      "rect": {
++        "x": 436.7324523925781,
++        "y": 263.5855407714844,
++        "width": 474.6052551269531,
++        "height": 42.653507232666016
++      },
++      "pageRect": {
++        "x": 436.7324523925781,
++        "y": 263.5855407714844,
++        "width": 474.6052551269531,
++        "height": 42.653507232666016
++      },
++      "scroll": {
++        "x": 0,
++        "y": 0
++      },
++      "target": {
++        "selector": "div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > p.setup-error:nth-of-type(1)",
++        "component": "App/LoginGuide › p.setup-error",
++        "tag": "p",
++        "classes": "setup-error",
++        "text": "已清除本地登录凭据",
++        "parentChain": [
++          "div.modal.login-guide",
++          "div.modal-mask",
++          "div.app",
++          "div",
++          "body"
++        ],
++        "styles": {
++          "flex-direction": "row",
++          "justify-content": "normal",
++          "align-items": "normal",
++          "gap": "normal",
++          "grid-template-columns": "none",
++          "width": "474.605px",
++          "height": "42.6535px",
++          "min-width": "0px",
++          "max-width": "none",
++          "padding": "10px 13px",
++          "margin": "0px",
++          "font-size": "12.5px",
++          "font-weight": "400",
++          "line-height": "21.25px",
++          "color": "rgb(248, 113, 113)",
++          "background-color": "color(srgb 0.972549 0.443137 0.443137 / 0.12)",
++          "border": "0.701754px solid color(srgb 0.972549 0.443137 0.443137 / 0.34)",
++          "border-radius": "10px",
++          "white-space": "normal",
++          "transition": "all"
++        },
++        "attributes": {}
++      },
++      "viewport": {
++        "width": 1348,
++        "height": 716
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/devlog/rounds/0013-20260916-0929/annotations.md b/devlog/rounds/0013-20260916-0929/annotations.md
+new file mode 100644
+index 0000000..a82ec75
+--- /dev/null
++++ b/devlog/rounds/0013-20260916-0929/annotations.md
+@@ -0,0 +1,109 @@
++# 界面标注 · 轮次 0013-20260916-0929
++
++- 导出时间：2026-09-16T01:29:34.517Z
++- 所在界面：crawl
++- 视口：1348×716（DPR 1.4249999523162842）
++- 应用版本：0.6.2
++- 标注条数：7
++
++## 总体说明
++
++登录状态修改
++
++## 逐条标注
++
++### 1. 这是我想要的效果。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/Help › button.btn`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal > div.modal-actions:nth-of-type(2) > button.btn.btn-left:nth-of-type(1)`
++- **父级链**：`div.modal-actions` ← `div.modal` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：已登录
++- **位置尺寸**：x=417 y=438 68×34
++- **关键样式**：display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 7px; grid-template-columns: none; width: 68.3772px; height: 33.9912px; min-width: auto; max-width: none; padding: 0px 14px; margin: 0px 280.482px 0px 0px; font-size: 13px; font-weight: 400; line-height: normal; color: rgb(151, 161, 181); background-color: rgb(26, 32, 45); border: 0.701754px solid rgba(255, 255, 255, 0.13); border-radius: 9px; white-space: nowrap; transition: 0.15s cubic-bezier(0.22, 0.61, 0.36, 1); ── 对比度: 6.27:1（AA）
++
++> 这是我想要的效果。
++> 如果用户点击此按钮，跳转到登录界面。
++> 处于已登录状态时，不跳转到登录界面。
++> 当用户点击已登陆时，文字上下小幅度抖动，点击第3次时，“已登录”字段平滑切换成“退出登录?”，按钮边框和字体变红。点击"退出登录?"用户退出当前登陆状态，登录凭据清理和数据安全你来考虑。
++> 点击"退出登录?"后字段切换成"已退出",变灰色且不可点击，仅下一次打开这个帮助界面时，可点击登录按钮。
++
++### 2. 登录态 改为 登陆状态
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/LoginGuide › div.panel-title`
++- **选择器**：`div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.panel-title:nth-of-type(1)`
++- **父级链**：`div.modal.login-guide` ← `div.modal-mask` ← `div.app` ← `div` ← `body`
++- **元素文本**：登录态已登录 8i77…gk34 · 已加密保存
++- **位置尺寸**：x=437 y=257 475×20
++- **关键样式**：display: flex; flex-direction: row; justify-content: normal; align-items: center; gap: 8px; grid-template-columns: none; width: 474.605px; height: 20.1535px; min-width: 0px; max-width: none; padding: 0px; margin: 0px 0px 8px; font-size: 13px; font-weight: 600; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 登录态 改为 登陆状态
++
++### 3. 删除此处3个按钮，移到下方
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/LoginGuide › div.row`
++- **选择器**：`div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.row:nth-of-type(2)`
++- **父级链**：`div.modal.login-guide` ← `div.modal-mask` ← `div.app` ← `div` ← `body`
++- **元素文本**：保存并验证重新验证清除
++- **位置尺寸**：x=437 y=417 475×28
++- **关键样式**：display: flex; flex-direction: row; justify-content: normal; align-items: center; gap: 8px; grid-template-columns: none; width: 474.605px; height: 27.9934px; min-width: 0px; max-width: none; padding: 0px; margin: 8px 0px 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 删除此处3个按钮，移到下方
++> “清除”按钮的功能由"确定退出?"替代
++
++### 4. 此处放2个按钮，分别是：
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/LoginGuide › div.modal-actions`
++- **选择器**：`div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.modal-actions:nth-of-type(3)`
++- **父级链**：`div.modal.login-guide` ← `div.modal-mask` ← `div.app` ← `div` ← `body`
++- **元素文本**：去浏览器登录关闭
++- **位置尺寸**：x=437 y=461 475×34
++- **关键样式**：display: flex; flex-direction: row; justify-content: flex-end; align-items: normal; gap: 8px; grid-template-columns: none; width: 474.605px; height: 33.9912px; min-width: 0px; max-width: none; padding: 0px; margin: 16px 0px 0px; font-size: 13px; font-weight: 400; line-height: 20.15px; color: rgb(231, 235, 243); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(231, 235, 243); border-radius: 0px; white-space: normal; transition: all
++
++> 此处放2个按钮，分别是：
++> 保存并验证、去浏览器登录
++> 
++> 保存并验证按钮，在点击后变灰，不可点击，1s后恢复正常，当成功登录后，变为“重新验证”，同样有1s触发冷却。
++> 去浏览器登录按钮同样有1s触发冷却
++
++### 5. 改为
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/LoginGuide › p.setup-error`
++- **选择器**：`div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > p.setup-error:nth-of-type(1)`
++- **父级链**：`div.modal.login-guide` ← `div.modal-mask` ← `div.app` ← `div` ← `body`
++- **元素文本**：站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期
++- **位置尺寸**：x=437 y=264 475×43
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 474.605px; height: 42.6535px; min-width: 0px; max-width: none; padding: 10px 13px; margin: 0px; font-size: 12.5px; font-weight: 400; line-height: 21.25px; color: rgb(248, 113, 113); background-color: color(srgb 0.972549 0.443137 0.443137 / 0.12); border: 0.701754px solid color(srgb 0.972549 0.443137 0.443137 / 0.34); border-radius: 10px; white-space: normal; transition: all
++
++> 改为
++> cookie 已过期，请重新登录
++
++### 6. 删除文本
++
++- **类别**：文案内容 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/LoginGuide › span.hint`
++- **选择器**：`div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > div.panel-title:nth-of-type(1) > span.hint`
++- **父级链**：`div.panel-title` ← `div.modal.login-guide` ← `div.modal-mask` ← `div.app` ← `div`
++- **元素文本**：未登录 · 只影响「泳装分享」分类
++- **位置尺寸**：x=484 y=237 170×18
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 169.726px; height: 17.818px; min-width: auto; max-width: none; padding: 0px; margin: 0px; font-size: 11.5px; font-weight: 400; line-height: 17.825px; color: rgb(102, 112, 133); background-color: rgba(0, 0, 0, 0); border: 0px none rgb(102, 112, 133); border-radius: 0px; white-space: normal; transition: all
++
++> 删除文本
++> " · 只影响「泳装分享」分类"
++
++### 7. 这里的红字提示部分移到帮助界面下，包括“cookie 已过期，请重新登录”、“已清除本地登录凭据”等红字提示。
++
++- **类别**：视觉样式 ｜ **优先级**：建议改 ｜ **方式**：点选元素
++- **组件**：`App/LoginGuide › p.setup-error`
++- **选择器**：`div > div.app > div.modal-mask:nth-of-type(4) > div.modal.login-guide > p.setup-error:nth-of-type(1)`
++- **父级链**：`div.modal.login-guide` ← `div.modal-mask` ← `div.app` ← `div` ← `body`
++- **元素文本**：已清除本地登录凭据
++- **位置尺寸**：x=437 y=264 475×43
++- **关键样式**：flex-direction: row; justify-content: normal; align-items: normal; gap: normal; grid-template-columns: none; width: 474.605px; height: 42.6535px; min-width: 0px; max-width: none; padding: 10px 13px; margin: 0px; font-size: 12.5px; font-weight: 400; line-height: 21.25px; color: rgb(248, 113, 113); background-color: color(srgb 0.972549 0.443137 0.443137 / 0.12); border: 0.701754px solid color(srgb 0.972549 0.443137 0.443137 / 0.34); border-radius: 10px; white-space: normal; transition: all
++
++> 这里的红字提示部分移到帮助界面下，包括“cookie 已过期，请重新登录”、“已清除本地登录凭据”等红字提示。
++> 红字提示在用户关闭当前窗口再打开时，红字提示部分不再显示。
+diff --git a/devlog/rounds/0013-20260916-0929/screenshots-verify/help-quit-confirm.jpg b/devlog/rounds/0013-20260916-0929/screenshots-verify/help-quit-confirm.jpg
+new file mode 100644
+index 0000000..84d2d65
+Binary files /dev/null and b/devlog/rounds/0013-20260916-0929/screenshots-verify/help-quit-confirm.jpg differ
+diff --git a/devlog/rounds/0013-20260916-0929/screenshots-verify/login-guide.jpg b/devlog/rounds/0013-20260916-0929/screenshots-verify/login-guide.jpg
+new file mode 100644
+index 0000000..2304886
+Binary files /dev/null and b/devlog/rounds/0013-20260916-0929/screenshots-verify/login-guide.jpg differ
+diff --git a/devlog/rounds/0013-20260916-0929/screenshots/00-full.png b/devlog/rounds/0013-20260916-0929/screenshots/00-full.png
+new file mode 100644
+index 0000000..0094223
+Binary files /dev/null and b/devlog/rounds/0013-20260916-0929/screenshots/00-full.png differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/001-\350\277\231\346\230\257\346\210\221\346\203\263\350\246\201\347\232\204\346\225\210\346\236\234.png" "b/devlog/rounds/0013-20260916-0929/screenshots/001-\350\277\231\346\230\257\346\210\221\346\203\263\350\246\201\347\232\204\346\225\210\346\236\234.png"
+new file mode 100644
+index 0000000..c215055
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/001-\350\277\231\346\230\257\346\210\221\346\203\263\350\246\201\347\232\204\346\225\210\346\236\234.png" differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/002-\347\231\273\345\275\225\346\200\201-\346\224\271\344\270\272-\347\231\273\351\231\206\347\212\266\346\200\201.png" "b/devlog/rounds/0013-20260916-0929/screenshots/002-\347\231\273\345\275\225\346\200\201-\346\224\271\344\270\272-\347\231\273\351\231\206\347\212\266\346\200\201.png"
+new file mode 100644
+index 0000000..43be511
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/002-\347\231\273\345\275\225\346\200\201-\346\224\271\344\270\272-\347\231\273\351\231\206\347\212\266\346\200\201.png" differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/003-\345\210\240\351\231\244\346\255\244\345\244\2043\344\270\252\346\214\211\351\222\256\347\247\273\345\210\260\344\270\213\346\226\271.png" "b/devlog/rounds/0013-20260916-0929/screenshots/003-\345\210\240\351\231\244\346\255\244\345\244\2043\344\270\252\346\214\211\351\222\256\347\247\273\345\210\260\344\270\213\346\226\271.png"
+new file mode 100644
+index 0000000..dfd9abd
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/003-\345\210\240\351\231\244\346\255\244\345\244\2043\344\270\252\346\214\211\351\222\256\347\247\273\345\210\260\344\270\213\346\226\271.png" differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/004-\346\255\244\345\244\204\346\224\2762\344\270\252\346\214\211\351\222\256\345\210\206\345\210\253\346\230\257.png" "b/devlog/rounds/0013-20260916-0929/screenshots/004-\346\255\244\345\244\204\346\224\2762\344\270\252\346\214\211\351\222\256\345\210\206\345\210\253\346\230\257.png"
+new file mode 100644
+index 0000000..22719ca
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/004-\346\255\244\345\244\204\346\224\2762\344\270\252\346\214\211\351\222\256\345\210\206\345\210\253\346\230\257.png" differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/005-\346\224\271\344\270\272.png" "b/devlog/rounds/0013-20260916-0929/screenshots/005-\346\224\271\344\270\272.png"
+new file mode 100644
+index 0000000..8cc3cfe
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/005-\346\224\271\344\270\272.png" differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/006-\345\210\240\351\231\244\346\226\207\346\234\254.png" "b/devlog/rounds/0013-20260916-0929/screenshots/006-\345\210\240\351\231\244\346\226\207\346\234\254.png"
+new file mode 100644
+index 0000000..a019d4c
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/006-\345\210\240\351\231\244\346\226\207\346\234\254.png" differ
+diff --git "a/devlog/rounds/0013-20260916-0929/screenshots/007-\350\277\231\351\207\214\347\232\204\347\272\242\345\255\227\346\217\220\347\244\272\351\203\250\345\210\206\347\247\273\345\210\260\345\270\256\345\212\251\347\225\214\351\235\242\344\270\213\345\214\205\346\213\254\342\200\234cookie-\345\267\262\350\277\207.png" "b/devlog/rounds/0013-20260916-0929/screenshots/007-\350\277\231\351\207\214\347\232\204\347\272\242\345\255\227\346\217\220\347\244\272\351\203\250\345\210\206\347\247\273\345\210\260\345\270\256\345\212\251\347\225\214\351\235\242\344\270\213\345\214\205\346\213\254\342\200\234cookie-\345\267\262\350\277\207.png"
+new file mode 100644
+index 0000000..8cc3cfe
+Binary files /dev/null and "b/devlog/rounds/0013-20260916-0929/screenshots/007-\350\277\231\351\207\214\347\232\204\347\272\242\345\255\227\346\217\220\347\244\272\351\203\250\345\210\206\347\247\273\345\210\260\345\270\256\345\212\251\347\225\214\351\235\242\344\270\213\345\214\205\346\213\254\342\200\234cookie-\345\267\262\350\277\207.png" differ
+diff --git a/package.json b/package.json
+index ef93937..1fc0bda 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "gugu-gallery",
+-  "version": "0.6.2",
++  "version": "0.6.3",
+   "private": true,
+   "description": "咕咕小站图片爬虫 + 本地图库浏览器（Electron 桌面应用）",
+   "author": "gugu-gallery",
+diff --git a/scripts/uicheck.mjs b/scripts/uicheck.mjs
+index 530d319..ea751c0 100644
+--- a/scripts/uicheck.mjs
++++ b/scripts/uicheck.mjs
+@@ -286,11 +286,31 @@ const SCRIPT = `(async () => {
+       document.querySelector('[data-component="App/LoginGuide"] .panel-title .hint') || {}
+     ).textContent || ''
+     out.helpClosedAfterLogin = !document.querySelector('[data-component="App/Help"]')
+-    const closeBtn = Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn')).find(
+-      (b) => b.textContent.trim() === '关闭'
+-    )
+-    closeBtn?.click()
+-    await sleep(300)
++
++    // 引导里现在是两个按钮：保存并验证 / 去浏览器登录
++    const guide = () => document.querySelector('[data-component="App/LoginGuide"]')
++    const guideBtns = () => Array.from(document.querySelectorAll('[data-component="App/LoginGuide"] .modal-actions .btn'))
++    out.guideButtons = guideBtns().map((b) => b.textContent.trim())
++    out.guidePrimaryDisabledWhenEmpty = guideBtns()[0] ? guideBtns()[0].disabled === true : null
++    const box = document.querySelector('[data-component="App/LoginGuide"] .cookie-input')
++    if (box) {
++      const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
++      setter.call(box, 'PHPSESSID=uicheck-bogus-value')
++      box.dispatchEvent(new Event('input', { bubbles: true }))
++      await sleep(250)
++      out.guidePrimaryEnabled = guideBtns()[0] ? guideBtns()[0].disabled === false : null
++      guideBtns()[0]?.click()
++      // React 的状态更新是异步的，等一帧再读 disabled
++      await sleep(150)
++      out.guideCoolingDisabled = guideBtns()[0] ? guideBtns()[0].disabled === true : null
++      await sleep(1400)
++      out.guideCooldownOver = guideBtns()[0] ? guideBtns()[0].disabled === false : null
++      out.guideStatusTextAfter = (document.querySelector('[data-component="App/LoginGuide"] .panel-title .hint') || {}).textContent || ''
++    }
++    // 关掉引导：点遮罩（按钮里已经没有「关闭」了）
++    const mask = guide()?.parentElement
++    mask?.click()
++    await sleep(400)
+     out.guideClosed = !document.querySelector('[data-component="App/LoginGuide"]')
+   }
+ 
+@@ -446,16 +466,15 @@ const env = {
+   GUGU_SHOT_DELAY: '3200',
+   GUGU_LIBRARY_ROOT: libraryRoot,
+   GUGU_SETTINGS_FILE: join(root, 'data', 'uicheck-settings.json'),
++  // 比 --user-data-dir 可靠：主进程会把它当作 userData 根目录
++  GUGU_USER_DATA: userDataDir,
+   GUGU_EVAL: SCRIPT
+ }
+ 
+ const output = await new Promise((resolvePromise) => {
+   // userData 指向仓库内的临时目录：既别读用户真实的 session.bin，
+   // 也别让自检写坏他的设置（登录态断言必须是确定性的）
+-  const child = spawn(
+-    electronBinary,
+-    [join(root, 'out', 'main', 'index.js'), '--user-data-dir=' + join(root, 'data', 'uicheck-userdata')],
+-    {
++  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
+       cwd: root,
+       env,
+       stdio: ['ignore', 'pipe', 'pipe']
+@@ -520,6 +539,10 @@ const checks = [
+   ['帮助里有登录入口且未登录时不置灰', result.helpLoginButton === true && result.helpLoginDisabled === false],
+   ['登录按钮贴左边', result.helpLoginOnLeft === true],
+   ['点登录会关掉帮助并弹出登录引导', result.guideOpenedFromHelp === true && result.helpClosedAfterLogin === true],
++  ['登录引导底部是两个按钮', JSON.stringify(result.guideButtons) === '["保存并验证","去浏览器登录"]'],
++  ['没填 cookie 时保存按钮不可点', result.guidePrimaryDisabledWhenEmpty === true],
++  ['填入 cookie 后保存按钮可点', result.guidePrimaryEnabled === true],
++  ['点保存后按钮冷却 1s 再恢复', result.guideCoolingDisabled === true && result.guideCooldownOver === true],
+   ['登录引导能关闭', result.guideClosed === true],
+   ['切换排序生效', result.sortValue === 'views'],
+   ['内容页无横向溢出', result.mainOverflowX === 0],
+diff --git a/src/main/crawler/engine.ts b/src/main/crawler/engine.ts
+index 6b91997..e07ee4a 100644
+--- a/src/main/crawler/engine.ts
++++ b/src/main/crawler/engine.ts
+@@ -147,7 +147,7 @@ export class CrawlEngine {
+         return {
+           ok: false,
+           state,
+-          message: '站点仍然把我当成未登录（首页还是「登录 / 注册」），cookie 可能已过期'
++          message: 'cookie 已过期，请重新登录'
+         }
+       }
+       return { ok: false, state, message: '没法确认登录态：首页里既没有登录入口也没有退出入口' }
+diff --git a/src/main/index.ts b/src/main/index.ts
+index 75141cf..d3c91bf 100644
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -3,7 +3,7 @@
+  */
+ import { createReadStream } from 'node:fs'
+ import { writeFile } from 'node:fs/promises'
+-import { extname, join } from 'node:path'
++import { extname, join, resolve } from 'node:path'
+ import { Readable } from 'node:stream'
+ import { app, BrowserWindow, protocol, shell } from 'electron'
+ import { AppContext } from './context'
+@@ -22,6 +22,12 @@ const MIME: Record<string, string> = {
+   '.heic': 'image/heic'
+ }
+ 
++// 自检与多实例隔离用：把 userData 挪到别处，绝不碰用户真实的 session.bin 与设置。
++// 注意必须早于 app ready 调用；命令行传 --user-data-dir 在「以目录为应用入口」时并不可靠。
++if (process.env.GUGU_USER_DATA) {
++  app.setPath('userData', resolve(process.env.GUGU_USER_DATA))
++}
++
+ let mainWindow: BrowserWindow | null = null
+ const ctx = new AppContext()
+ 
+diff --git a/src/renderer/src/App.tsx b/src/renderer/src/App.tsx
+index 621ca16..1731b2d 100644
+--- a/src/renderer/src/App.tsx
++++ b/src/renderer/src/App.tsx
+@@ -176,6 +176,14 @@ export default function App(): JSX.Element {
+   const [helpOpen, setHelpOpen] = useState(false)
+   /** 登录引导弹窗：帮助里的「登录」按钮会把它叫起来 */
+   const [loginOpen, setLoginOpen] = useState(false)
++  /**
++   * 帮助里登录按钮的本地状态机：
++   *   normal（登录 / 已登录 / 登录已失效）→ 连点三次「已登录」→ confirm（退出登录?）→ signedOut（已退出）
++   * 「已退出」要等下一次重新打开帮助才恢复成可点的「登录」。
++   */
++  const [loginPhase, setLoginPhase] = useState<'normal' | 'confirm' | 'signedOut'>('normal')
++  const [loginTaps, setLoginTaps] = useState(0)
++  const [loginJitter, setLoginJitter] = useState(0)
+   /** 侧栏开合 / 密度切换时给内容页加一层「变暗 -> 重排 -> 变亮」的过渡 */
+   const [reflowing, setReflowing] = useState(false)
+   /** 品牌图标允许被外部图标覆盖，取不到就退回默认的「咕」字 */
+@@ -361,6 +369,17 @@ export default function App(): JSX.Element {
+     setSidebarWidth(settings.sidebarWidth || DEFAULT_SETTINGS.sidebarWidth)
+   }, [settings.sidebarWidth])
+ 
++  // 帮助界面：打开时登录按钮回到初始态，关闭时红字提示不再留着
++  useEffect(() => {
++    if (helpOpen) {
++      setLoginPhase('normal')
++      setLoginTaps(0)
++      setLoginJitter(0)
++    } else {
++      setSessionMsg(null)
++    }
++  }, [helpOpen])
++
+   // 排序菜单 / 日期面板：点空白处关闭
+   useEffect(() => {
+     if (!sortOpen && !dateOpen) return
+@@ -440,6 +459,50 @@ export default function App(): JSX.Element {
+     filters.monthFrom === '' &&
+     filters.monthTo === ''
+ 
++  /**
++   * 「登录中」= 本地存了 cookie 且没被判失效。
++   * 只看 loggedIn 的话，过期的 cookie 会一直显示成「已登录」，反而误导。
++   */
++  const sessionOk = session?.loggedIn === true && session?.verified !== false
++  const sessionStale = session?.loggedIn === true && session?.verified === false
++
++  const openLoginGuide = useCallback(() => {
++    setHelpOpen(false)
++    setLoginOpen(true)
++  }, [])
++
++  /**
++   * 帮助里那颗登录按钮。
++   * 未登录 / 凭据失效 → 打开登录引导；
++   * 已登录 → 不跳转，点一下抖一下，第三下才切成「退出登录?」，避免误触把登录态清掉。
++   */
++  const onLoginButton = useCallback((): void => {
++    if (loginPhase === 'signedOut') return
++    if (loginPhase === 'confirm') {
++      void (async () => {
++        setSession(await api.session.clear())
++        setLoginPhase('signedOut')
++        setSessionMsg('已清除本地登录凭据')
++        // 登录专属分类会立刻从侧栏消失，别把「来源分类」筛选留在那儿
++        setFilters((prev) => (prev.targetWord ? { ...prev, targetWord: null } : prev))
++        showToast('已退出登录', 1800, 'info')
++      })()
++      return
++    }
++    if (sessionOk) {
++      setLoginJitter((n) => n + 1)
++      const taps = loginTaps + 1
++      if (taps >= 3) {
++        setLoginTaps(0)
++        setLoginPhase('confirm')
++      } else {
++        setLoginTaps(taps)
++      }
++      return
++    }
++    openLoginGuide()
++  }, [loginPhase, loginTaps, sessionOk, showToast, openLoginGuide])
++
+   /** 筛选栏上显示来源分类的显示名（「泳装分享」而不是站点关键词） */
+   const activeTargetLabel = useMemo(() => {
+     if (!filters.targetWord) return ''
+@@ -527,12 +590,7 @@ export default function App(): JSX.Element {
+   const jobActive =
+     progress != null && !['done', 'cancelled', 'failed'].includes(progress.phase)
+ 
+-  /**
+-   * 「登录中」= 本地存了 cookie 且没被判失效。
+-   * 只看 loggedIn 的话，过期的 cookie 会一直显示成「已登录」，反而误导。
+-   */
+-  const sessionOk = session?.loggedIn === true && session?.verified !== false
+-  const sessionStale = session?.loggedIn === true && session?.verified === false
++
+ 
+   /* 右键菜单项：收藏 / 复制 pid / 打开于…（折叠子项） */
+   const contextEntries: MenuEntry[] = contextMenu
+@@ -1022,17 +1080,37 @@ export default function App(): JSX.Element {
+               <dt>图库目录</dt>
+               <dd className="mono" style={{ fontSize: 11 }}>{info?.libraryRoot ?? '—'}</dd>
+             </dl>
++            {sessionMsg && (
++              <p className="setup-error" style={{ margin: '0 0 10px' }}>
++                {sessionMsg}
++              </p>
++            )}
++
+             <div className="modal-actions">
+               <button
+-                // 已登录时按钮是「灰掉的已登录」，但仍可点开：
+-                // 登录引导里还有「重新验证 / 清除」，不能把换账号、换凭据的路堵死
+-                className={`btn btn-left${sessionStale ? ' warn' : ''}${sessionOk ? ' done' : ''}`}
+-                onClick={() => {
+-                  setHelpOpen(false)
+-                  setLoginOpen(true)
+-                }}
++                className={`btn btn-left${
++                  loginPhase === 'confirm'
++                    ? ' quit'
++                    : sessionOk || loginPhase === 'signedOut'
++                      ? ' done'
++                      : sessionStale
++                        ? ' warn'
++                        : ''
++                }`}
++                disabled={loginPhase === 'signedOut'}
++                onClick={onLoginButton}
+               >
+-                {sessionOk ? '已登录' : sessionStale ? '登录已失效' : '登录'}
++                <span key={loginJitter} className={loginJitter > 0 ? 'jitter' : ''}>
++                  {loginPhase === 'signedOut'
++                    ? '已退出'
++                    : loginPhase === 'confirm'
++                      ? '退出登录?'
++                      : sessionOk
++                        ? '已登录'
++                        : sessionStale
++                          ? '登录已失效'
++                          : '登录'}
++                </span>
+               </button>
+ 
+               <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/')}>
+@@ -1049,9 +1127,7 @@ export default function App(): JSX.Element {
+       {loginOpen && (
+         <LoginGuide
+           session={session}
+-          message={sessionMsg}
+           onSession={setSession}
+-          onMessage={setSessionMsg}
+           onClose={() => setLoginOpen(false)}
+           onToast={showToast}
+         />
+diff --git a/src/renderer/src/components/LoginGuide.tsx b/src/renderer/src/components/LoginGuide.tsx
+index 3a72fef..b10e9e9 100644
+--- a/src/renderer/src/components/LoginGuide.tsx
++++ b/src/renderer/src/components/LoginGuide.tsx
+@@ -1,18 +1,18 @@
+-import { useState } from 'react'
++import { useEffect, useState } from 'react'
+ import type { SessionStatus } from '@shared/bridge'
+ import type { ToastPayload } from './Toast'
+ import { api } from '../api'
+ 
+ interface Props {
+   session: SessionStatus | null
+-  /** 上一次操作的结果说明；由外层持有，登录态失效时也能带进来 */
+-  message: string | null
+   onSession: (status: SessionStatus) => void
+-  onMessage: (message: string | null) => void
+   onClose: () => void
+   onToast: (text: string, duration?: number, kind?: ToastPayload['kind']) => void
+ }
+ 
++/** 按钮点完冷却 1s：既是「点过了」的反馈，也顺手防连点 */
++const COOLDOWN_MS = 1000
++
+ /**
+  * 登录引导。
+  *
+@@ -20,50 +20,57 @@ interface Props {
+  * 所以这里不去模拟登录表单，而是让用户用浏览器登录、把会话 cookie 交过来 ——
+  * 好处是**账号密码从头到尾不经过本应用**。
+  */
+-export default function LoginGuide({
+-  session,
+-  message,
+-  onSession,
+-  onMessage,
+-  onClose,
+-  onToast
+-}: Props): JSX.Element {
++export default function LoginGuide({ session, onSession, onClose, onToast }: Props): JSX.Element {
+   const [draft, setDraft] = useState('')
+-  const [busy, setBusy] = useState(false)
++  const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
++  const [cooling, setCooling] = useState(false)
++
++  const loggedIn = session?.loggedIn === true && session?.verified !== false
++
++  // 每次打开都是干净的：上一次的提示不带进来
++  useEffect(() => {
++    setDraft('')
++    setMsg(null)
++    setCooling(false)
++  }, [])
++
++  /** 点一下冷却 1s */
++  const cooldown = (): void => {
++    setCooling(true)
++    setTimeout(() => setCooling(false), COOLDOWN_MS)
++  }
+ 
+   const save = async (): Promise<void> => {
+-    setBusy(true)
+-    onMessage(null)
++    cooldown()
+     try {
+       const r = await api.session.set(draft.trim())
+       onSession(r.status)
+-      onMessage(r.verify.message)
+       if (r.verify.ok) {
+         setDraft('')
++        setMsg({ kind: 'ok', text: '登录态已生效' })
+         onToast('登录态已生效', 1600, 'success')
+-        onClose()
++      } else {
++        setMsg({ kind: 'error', text: r.verify.message })
+       }
+     } catch (err) {
+-      onMessage(err instanceof Error ? err.message : '保存失败')
+-    } finally {
+-      setBusy(false)
++      setMsg({ kind: 'error', text: err instanceof Error ? err.message : '保存失败' })
+     }
+   }
+ 
+   const verify = async (): Promise<void> => {
+-    setBusy(true)
++    cooldown()
+     try {
+       const r = await api.session.verify()
+       onSession(r.status)
+-      onMessage(r.verify.message)
+-    } finally {
+-      setBusy(false)
++      setMsg({ kind: r.verify.ok ? 'ok' : 'error', text: r.verify.message })
++    } catch (err) {
++      setMsg({ kind: 'error', text: err instanceof Error ? err.message : '校验失败' })
+     }
+   }
+ 
+-  const clear = async (): Promise<void> => {
+-    onSession(await api.session.clear())
+-    onMessage('已清除本地登录凭据')
++  const visit = (): void => {
++    cooldown()
++    void api.openExternal('https://www.guguxz.com/login.html')
+   }
+ 
+   return (
+@@ -72,19 +79,19 @@ export default function LoginGuide({
+         <h3>登录</h3>
+ 
+         <div className="panel-title" style={{ marginBottom: 8 }}>
+-          登录态
++          登陆状态
+           <span className="hint">
+             {session?.loggedIn
+               ? (session.verified === false ? '凭据已失效 ' : '已登录 ') +
+                 (session.fingerprint ?? '') +
+                 (session.encrypted ? ' · 已加密保存' : ' · 仅本次有效')
+-              : '未登录 · 只影响「泳装分享」分类'}
++              : '未登录'}
+           </span>
+         </div>
+ 
+-        {message && (
+-          <p className="setup-error" style={{ marginTop: 0 }}>
+-            {message}
++        {msg && (
++          <p className={msg.kind === 'error' ? 'setup-error' : 'setup-ok'} style={{ marginTop: 0 }}>
++            {msg.text}
+           </p>
+         )}
+ 
+@@ -92,7 +99,7 @@ export default function LoginGuide({
+           本应用<strong>不保存账号密码</strong>。请先用浏览器登录 guguxz.com，
+           按 F12 → Console 输入 <code>document.cookie</code>，
+           把 <code>PHPSESSID=...</code> 那一段粘到下面。
+-          它会用系统密钥链加密后存在本地，随时可以清除。
++          它会用系统密钥链加密后存在本地。
+         </p>
+ 
+         <textarea
+@@ -104,24 +111,16 @@ export default function LoginGuide({
+           onChange={(e) => setDraft(e.target.value)}
+         />
+ 
+-        <div className="row" style={{ gap: 8, marginTop: 8 }}>
+-          <button className="btn primary sm" disabled={busy || draft.trim() === ''} onClick={() => void save()}>
+-            保存并验证
+-          </button>
+-          <button className="btn sm" disabled={busy || !session?.loggedIn} onClick={() => void verify()}>
+-            重新验证
+-          </button>
+-          <button className="btn sm danger" disabled={busy || !session?.loggedIn} onClick={() => void clear()}>
+-            清除
+-          </button>
+-        </div>
+-
+         <div className="modal-actions">
+-          <button className="btn" onClick={() => void api.openExternal('https://www.guguxz.com/login.html')}>
+-            去浏览器登录
++          <button
++            className="btn primary"
++            disabled={cooling || (!loggedIn && draft.trim() === '')}
++            onClick={() => void (loggedIn ? verify() : save())}
++          >
++            {loggedIn ? '重新验证' : '保存并验证'}
+           </button>
+-          <button className="btn primary" onClick={onClose}>
+-            关闭
++          <button className="btn" disabled={cooling} onClick={visit}>
++            去浏览器登录
+           </button>
+         </div>
+       </div>
+diff --git a/src/renderer/src/styles.css b/src/renderer/src/styles.css
+index 14d3e04..ef3e32a 100644
+--- a/src/renderer/src/styles.css
++++ b/src/renderer/src/styles.css
+@@ -1256,6 +1256,38 @@ body.resizing * {
+ .btn.danger:hover:not(:disabled) {
+   background: color-mix(in srgb, var(--danger) 18%, transparent);
+ }
++/* 连点「已登录」时的抖动：上下小幅晃一下，作为「点了但还不作数」的反馈 */
++@keyframes loginJitter {
++  0%, 100% { transform: translateY(0); }
++  25% { transform: translateY(-2px); }
++  50% { transform: translateY(1.5px); }
++  75% { transform: translateY(-1px); }
++}
++.jitter {
++  display: inline-block;
++  animation: loginJitter 0.42s var(--ease);
++}
++/* 第三下之后进入退出确认：边框与文字平滑转红 */
++.btn.quit {
++  color: var(--danger);
++  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
++  background: color-mix(in srgb, var(--danger) 10%, transparent);
++  transition: color 0.24s var(--ease), border-color 0.24s var(--ease), background 0.24s var(--ease);
++}
++.btn.quit:hover:not(:disabled) {
++  background: color-mix(in srgb, var(--danger) 20%, transparent);
++}
++/* 登录成功后引导里的提示：不是错误，别用红色 */
++.setup-ok {
++  margin: 0 0 10px;
++  padding: 8px 10px;
++  border-radius: 8px;
++  font-size: 12px;
++  color: color-mix(in srgb, var(--accent) 82%, var(--text));
++  background: var(--accent-soft);
++  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
++}
++
+ /* 已登录：按钮显示成灰掉的「已登录」，但依然可点（引导里能清除或重新验证） */
+ .btn.done {
+   color: var(--text-faint);
