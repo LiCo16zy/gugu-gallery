@@ -50,6 +50,8 @@ export interface Filters {
   sort: SortKey
   orientation: Orientation
   minWidth: number
+  /** 来源分类（搜索类目标的关键词），null 表示不限 */
+  targetWord: string | null
   /** 发布月份闭区间（YYYY-MM），空串表示不限 */
   monthFrom: string
   monthTo: string
@@ -66,6 +68,7 @@ const INITIAL_FILTERS: Filters = {
   sort: 'newest',
   orientation: 'any',
   minWidth: 0,
+  targetWord: null,
   monthFrom: '',
   monthTo: ''
 }
@@ -126,16 +129,29 @@ export default function App(): JSX.Element {
   const [stats, setStats] = useState<LibraryStats | null>(null)
   /** 关键词维度的分类计数（电脑壁纸这类有 plate，泳装分享这类没有） */
   const [wordFacets, setWordFacets] = useState<Facet[]>([])
+  /** 来源分类计数：搜索类目标（泳装分享）没有 plate，只能靠 item_targets */
+  const [targetFacets, setTargetFacets] = useState<Facet[]>([])
   const [topTags, setTopTags] = useState<Facet[]>([])
 
   /** 摊平分类：只保留应用定义的几栏，并挂上各自的条目数 */
   const categories = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const word of wordFacets) counts.set(word.name, word.count)
+    // 两类分类的计数来源不一样：
+    //   · 有站点分类的（Pixiv萌图 / 电脑壁纸 / 手机壁纸）看 items.word
+    //   · 搜索类目标在站点侧没有分类，看 item_targets 里记下的来源
+    const wordCounts = new Map<string, number>()
+    for (const word of wordFacets) wordCounts.set(word.name, word.count)
+    const targetCounts = new Map<string, number>()
+    for (const t of targetFacets) targetCounts.set(t.name, t.count)
     return visibleCategories(session?.loggedIn === true)
-      .map((c) => ({ id: c.id, name: c.name, word: c.word, count: counts.get(c.word) ?? 0 }))
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        word: c.word,
+        kind: c.kind,
+        count: (c.kind === 'search' ? targetCounts.get(c.word) : wordCounts.get(c.word)) ?? 0
+      }))
       .filter((c) => c.count > 0)
-  }, [wordFacets, session?.loggedIn])
+  }, [wordFacets, targetFacets, session?.loggedIn])
 
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
   const [debouncedText, setDebouncedText] = useState('')
@@ -216,6 +232,7 @@ export default function App(): JSX.Element {
       const [s, f] = await Promise.all([api.library.stats(), api.library.facets()])
       setStats(s)
       setWordFacets(f.words ?? [])
+      setTargetFacets(f.targets ?? [])
       setTopTags(f.topTags)
     } catch {
       /* 图库目录刚切换时可能短暂读不到，忽略 */
@@ -249,6 +266,7 @@ export default function App(): JSX.Element {
       favorite: filters.favorite,
       downloaded: filters.downloaded,
       orientation: filters.orientation,
+      targetWord: filters.targetWord || undefined,
       monthFrom: filters.monthFrom || undefined,
       monthTo: filters.monthTo || undefined,
       sort: filters.sort,
@@ -288,7 +306,7 @@ export default function App(): JSX.Element {
     setListEpoch((e) => e + 1)
     void loadPage('reset')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.monthFrom, filters.monthTo])
+  }, [debouncedText, filters.plate, filters.word, filters.tags, filters.tagMode, filters.favorite, filters.downloaded, filters.sort, filters.orientation, filters.minWidth, filters.targetWord, filters.monthFrom, filters.monthTo])
 
   // 滚动到底自动追加
   /**
@@ -377,8 +395,16 @@ export default function App(): JSX.Element {
   const patchFilters = useCallback((patch: Partial<Filters>) => {
     setFilters((prev) => {
       const next = { ...prev, ...patch }
-      // 换分类时必须清掉二级分类，否则会留下跨分类的无效条件
-      if (patch.plate !== undefined) next.word = null
+      // 换一级分类时要清掉二级分类，否则会留下跨分类的无效条件。
+      // 但如果这次就把 word 一起给了（侧栏分类就是这么点的：plate=null + word=名字），
+      // 那就不能清 —— 之前无条件清空，等于侧栏分类点了没反应。
+      if (patch.plate !== undefined && patch.word === undefined) next.word = null
+      // 站点分类与来源分类互斥：两个一起生效只会得到空集
+      if (patch.word) next.targetWord = null
+      if (patch.targetWord) {
+        next.word = null
+        next.plate = null
+      }
 
       if (patch.downloaded === 'never') {
         next.favorite = false
@@ -386,6 +412,7 @@ export default function App(): JSX.Element {
         next.minWidth = 0
         next.plate = null
         next.word = null
+        next.targetWord = null
         next.tags = []
       } else {
         const turnedOnOther =
@@ -405,11 +432,20 @@ export default function App(): JSX.Element {
     filters.downloaded === 'any' &&
     !filters.favorite &&
     !filters.plate &&
+    !filters.word &&
+    !filters.targetWord &&
     filters.tags.length === 0 &&
     filters.orientation === 'any' &&
     filters.minWidth === 0 &&
     filters.monthFrom === '' &&
     filters.monthTo === ''
+
+  /** 筛选栏上显示来源分类的显示名（「泳装分享」而不是站点关键词） */
+  const activeTargetLabel = useMemo(() => {
+    if (!filters.targetWord) return ''
+    const found = visibleCategories(session?.loggedIn === true).find((c) => c.word === filters.targetWord)
+    return found?.name ?? filters.targetWord
+  }, [filters.targetWord, session?.loggedIn])
 
   const quickFavorite = useCallback(async (item: ItemSummary) => {
     const value = await api.library.favorite(item.id, !item.favorite)
@@ -483,6 +519,7 @@ export default function App(): JSX.Element {
     if (filters.downloaded !== 'any') n += 1
     if (filters.orientation !== 'any') n += 1
     if (filters.minWidth > 0) n += 1
+    if (filters.targetWord) n += 1
     if (filters.monthFrom || filters.monthTo) n += 1
     return n
   }, [filters])
@@ -760,6 +797,7 @@ export default function App(): JSX.Element {
                     tags: [],
                     orientation: 'any',
                     minWidth: 0,
+                    targetWord: '',
                     monthFrom: '',
                     monthTo: ''
                   })
@@ -803,6 +841,14 @@ export default function App(): JSX.Element {
                 竖图
               </button>
 
+              {filters.targetWord && (
+                <span className="pill active">
+                  {activeTargetLabel}
+                  <span className="x" onClick={() => patchFilters({ targetWord: null })} role="button">
+                    <IconClose width={11} height={11} />
+                  </span>
+                </span>
+              )}
               {filters.plate && (
                 <span className="pill active">
                   {filters.plate}

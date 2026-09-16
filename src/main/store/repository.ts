@@ -12,6 +12,7 @@ import type {
   LibraryStats,
   SourceRef
 } from '@shared/types'
+import { categoryTagFor } from '@shared/categories'
 import type { Database, Row } from './db'
 import type { SqlValue } from 'sql.js'
 
@@ -34,6 +35,8 @@ export interface ItemUpsert {
   downloadUrl: string | null
   /** 发现该条目的列表页码 */
   page: number | null
+  /** 抓取目标的关键词（搜索类目标才有）：记录「用户是从哪个应用分类找到它的」 */
+  targetWord?: string | null
   tags: string[]
 }
 
@@ -161,6 +164,11 @@ export class Repository {
         )
         if (!before) inserted += 1
 
+        // 来源分类：只增不删，同一条图被多个应用分类抓到时都会留下记录
+        if (it.targetWord) {
+          this.db.run('INSERT OR IGNORE INTO item_targets (item_id, word) VALUES (?,?)', [it.id, it.targetWord])
+        }
+
         // 标签：增量替换，避免每次都全量重写
         if (it.tags.length > 0) this.replaceTags(it.id, it.tags)
       }
@@ -169,8 +177,15 @@ export class Repository {
   }
 
   private replaceTags(itemId: number, tags: string[]): void {
+    // 站点标签是「替换」语义（作者改了标签我们也要跟着改），
+    // 但应用自己补的分类标签不能因此消失：它记的是「这条是从哪个分类抓来的」，
+    // 下次从别的分类再抓到同一张图时，站点标签会重写一遍，这个标签得留住。
+    const appTags = this.db
+      .all<Row>('SELECT word FROM item_targets WHERE item_id = ?', [itemId])
+      .map((r) => categoryTagFor(String(r.word)))
+    const merged = [...new Set([...tags, ...appTags])]
     this.db.run('DELETE FROM item_tags WHERE item_id = ?', [itemId])
-    for (const raw of tags) {
+    for (const raw of merged) {
       const name = raw.trim()
       if (!name) continue
       this.db.run('INSERT OR IGNORE INTO tags (name) VALUES (?)', [name])
@@ -362,6 +377,7 @@ export class Repository {
     const marks = ids.map(() => '?').join(',')
     this.db.transaction(() => {
       this.db.run(`DELETE FROM item_tags WHERE item_id IN (${marks})`, ids)
+      this.db.run(`DELETE FROM item_targets WHERE item_id IN (${marks})`, ids)
       this.db.run(`DELETE FROM files WHERE item_id IN (${marks})`, ids)
       this.db.run(`DELETE FROM items WHERE id IN (${marks})`, ids)
     })
@@ -414,7 +430,7 @@ export class Repository {
 
   /* --------------------------------------------------------------- 汇总 */
 
-  facets(): { plates: PlateFacet[]; topTags: Facet[]; words: Facet[] } {
+  facets(): { plates: PlateFacet[]; topTags: Facet[]; words: Facet[]; targets: Facet[] } {
     // 一次查询拿全「一级分类 -> 二级分类」树，避免侧栏展开时串味
     const rows = this.db.all<Row>(
       `SELECT plate AS plate, word AS word, COUNT(*) AS count
@@ -446,7 +462,11 @@ export class Repository {
     const words = this.db
       .all<Row>('SELECT word AS name, COUNT(*) AS count FROM items WHERE word IS NOT NULL GROUP BY word')
       .map((r) => ({ name: String(r.name), count: Number(r.count) }))
-    return { plates, topTags, words }
+    // 应用分类的来源计数：搜索类目标（泳装分享）没有 plate，靠这张表统计
+    const targets = this.db
+      .all<Row>('SELECT word AS name, COUNT(*) AS count FROM item_targets GROUP BY word')
+      .map((r) => ({ name: String(r.name), count: Number(r.count) }))
+    return { plates, topTags, words, targets }
   }
 
   stats(libraryRoot: string): LibraryStats {
@@ -586,6 +606,11 @@ function buildWhere(query: GalleryQuery): { where: string; params: SqlValue[] } 
     // 上界用「下个月 1 号 00:00」，这样「到 2026-09」是包含整个 9 月的闭区间
     clauses.push("COALESCE(i.published_at, '') < ?")
     params.push(`${nextMonth(query.monthTo)}-01 00:00`)
+  }
+  if (query.targetWord) {
+    // 按「从哪个应用分类抓来的」筛选（搜索类目标用），不影响站点自身的 plate/word
+    clauses.push('i.id IN (SELECT item_id FROM item_targets WHERE word = ?)')
+    params.push(query.targetWord)
   }
   if (query.pageFrom != null) {
     clauses.push('i.page IS NOT NULL AND i.page >= ?')

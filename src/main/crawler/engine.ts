@@ -50,6 +50,8 @@ export interface EngineDeps {
   getCookie: () => string | null
   /** 会话失效时回调一次，用于提醒用户重新登录 */
   onSessionExpired: (message: string) => void
+  /** 站点轮换了会话 cookie，上层负责更新本地保存的那一份 */
+  onCookieRotated?: (setCookie: string) => void
 }
 
 interface EngineState {
@@ -73,6 +75,8 @@ interface EngineState {
 
 export class CrawlEngine {
   private http: HttpClient
+  /** 只用来探登录态，和抓取流水线互不影响 */
+  private probe: HttpClient
   private state: EngineState | null = null
   private paused = false
   private cancelled = false
@@ -84,17 +88,21 @@ export class CrawlEngine {
 
   constructor(private deps: EngineDeps) {
     const s = deps.getSettings()
-    this.http = new HttpClient({
+    const base = {
       delayMs: s.delayMs,
       retries: s.retries,
       timeoutMs: 25_000,
       stallMs: 30_000,
       concurrency: Math.max(s.listConcurrency, s.downloadConcurrency),
       fetchImpl: deps.fetchImpl,
-      onRetry: ({ attempt, reason, waitMs, url }) => {
+      onSetCookie: (setCookie: string) => deps.onCookieRotated?.(setCookie),
+      onRetry: ({ attempt, reason, waitMs, url }: { attempt: number; reason: string; waitMs: number; url: string }) => {
         this.log('warn', `第 ${attempt} 次重试（${reason}），${Math.round(waitMs / 100) / 10}s 后重试 ${shortUrl(url)}`)
       }
-    })
+    }
+    this.http = new HttpClient(base)
+    // 校验登录态单独用一条客户端：抓取进行中也不能被验证请求改掉 cookie
+    this.probe = new HttpClient({ ...base, retries: 1, concurrency: 1, delayMs: 0 })
   }
 
   /* ------------------------------------------------------------- 生命周期 */
@@ -127,9 +135,12 @@ export class CrawlEngine {
   async verifySession(): Promise<SessionVerifyResult> {
     const cookie = this.deps.getCookie()
     if (!cookie) return { ok: false, state: 'none', message: '还没有设置登录凭据' }
-    this.http.configure({ cookie })
+    this.probe.configure({
+      cookie,
+      fetchImpl: this.deps.resolveFetch?.(this.deps.getSettings().proxy) ?? this.deps.fetchImpl
+    })
     try {
-      const { html } = await this.http.getHtml(`${SITE_ORIGIN}/`)
+      const { html } = await this.probe.getHtml(`${SITE_ORIGIN}/`)
       const state = this.loginState(html)
       if (state === 'in') return { ok: true, state, message: '登录态有效' }
       if (state === 'out') {
@@ -146,9 +157,6 @@ export class CrawlEngine {
         state: 'error',
         message: `校验失败：${err instanceof Error ? err.message : String(err)}`
       }
-    } finally {
-      // 校验用的 cookie 不留在客户端上：正式抓取会在 start() 里按需重新配置
-      this.http.configure({ cookie: '' })
     }
   }
 
@@ -388,11 +396,11 @@ export class CrawlEngine {
         id: raw.id,
         detailUrl: raw.detailUrl,
         sourceUrl,
-        // 关键词搜索页里返回的详情链接仍然带着图片原本的 plate / word，
-        // 但那不是「用户从哪儿找到它们的」。搜索类目标统一按目标本身归类，
-        // 否则「泳装分享」抓回来的图会散进别的分类，它的计数永远是 0。
-        plate: target.kind === 'search' ? null : raw.plate ?? target.plate ?? null,
-        word: (target.kind === 'search' ? target.word : raw.word ?? target.word) ?? null,
+        // 站点给什么就是什么：搜索页返回的详情链接仍然带着图片原本的 plate/word，
+        // 那是这张图的真实分类，不能拿抓取目标去覆盖它 —— 否则同一条记录会在
+        // 两个分类之间来回跳。「用户是从哪个分类找到它的」另记在 item_targets。
+        plate: raw.plate ?? target.plate ?? null,
+        word: raw.word ?? target.word ?? null,
         title: raw.title,
         width: raw.width,
         height: raw.height,
@@ -405,6 +413,7 @@ export class CrawlEngine {
         previewUrl: raw.remotePath ? previewUrl(raw.remotePath) : null,
         downloadUrl: raw.remotePath ? originalUrl(raw.remotePath) : null,
         page,
+        targetWord: target.kind === 'search' ? target.word ?? null : null,
         // 搜索类目标额外补一个应用侧标签（站点自己不会给），方便单独筛出来
         tags:
           target.kind === 'search' && target.word

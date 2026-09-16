@@ -18,6 +18,7 @@ export class AppContext {
   private repo!: Repository
   private lib!: Library
   private engine!: CrawlEngine
+  private keepAliveTimer: NodeJS.Timeout | null = null
 
   private progressListeners = new Set<(p: CrawlProgress, logs: CrawlProgress['logs']) => void>()
   private sessionExpiredListeners = new Set<(message: string) => void>()
@@ -25,6 +26,9 @@ export class AppContext {
   constructor() {
     this.settings = new SettingsStore()
   }
+
+  /** 会话保活间隔：够密到不会闲置被回收，又不会给对方添麻烦 */
+  private static readonly KEEP_ALIVE_MS = 30 * 60 * 1000
 
   onSessionExpired(listener: (message: string) => void): () => void {
     this.sessionExpiredListeners.add(listener)
@@ -43,6 +47,24 @@ export class AppContext {
     // 存了 cookie 就顺手验一次：失效得在界面上说出来，
     // 否则帮助里的按钮会一直显示「已登录」，用户以为还能用
     void this.verifySessionQuietly()
+    this.startSessionKeepAlive()
+  }
+
+  /**
+   * 会话保活。
+   *
+   * 站点侧是一份服务端会话：应用只要一直不用它，它就会因为闲置被回收，
+   * 用户第二天打开就得重新登录。浏览器之所以没事，是因为用户一直在浏览。
+   * 这里在应用开着的时候每隔一段时间探一次，顺带把站点轮换的 cookie 收下来。
+   */
+  private startSessionKeepAlive(): void {
+    if (this.keepAliveTimer) return
+    this.keepAliveTimer = setInterval(() => {
+      if (this.engine.isRunning()) return
+      void this.verifySessionQuietly()
+    }, AppContext.KEEP_ALIVE_MS)
+    // 只是保活，不该拖住应用退出
+    this.keepAliveTimer.unref?.()
   }
 
   /** 静默校验一次登录态：确认有效就记下来，明确失效才提醒（且只提醒一次） */
@@ -76,6 +98,10 @@ export class AppContext {
       getSettings: () => this.settings.get(),
       resolveFetch: (proxy) => (proxy.trim() ? electronFetch : undefined),
       getCookie: () => this.session.cookieHeader,
+      onCookieRotated: (setCookie) => {
+        // 站点换了会话 cookie 就跟着换，否则本地那份很快就成废票
+        void this.session.adopt(setCookie)
+      },
       onSessionExpired: (message) => {
         // 只提醒一次：会话失效后反复弹窗只会让人烦
         if (!this.session.shouldNotifyExpiry()) return

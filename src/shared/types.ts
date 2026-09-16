@@ -103,6 +103,8 @@ export interface GalleryQuery {
   /** 只取来源页落在该区间的条目（下载阶段按页码范围过滤用） */
   pageFrom?: number
   pageTo?: number
+  /** 按「从哪个应用分类抓来的」筛选（搜索类目标用） */
+  targetWord?: string
   /** 发布月份闭区间，格式 YYYY-MM（界面只精确到月） */
   monthFrom?: string
   monthTo?: string

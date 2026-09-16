@@ -46,7 +46,7 @@ export interface GuguBridge {
   }
   library: {
     stats(): Promise<LibraryStats>
-    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[]; words: Facet[] }>
+    facets(): Promise<{ plates: PlateFacet[]; topTags: Facet[]; words: Facet[]; targets: Facet[] }>
     query(query: GalleryQuery): Promise<GalleryPage>
     item(id: number): Promise<ItemDetail | null>
     favorite(id: number, value: boolean): Promise<boolean>

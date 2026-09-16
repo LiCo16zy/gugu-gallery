@@ -29,6 +29,12 @@ export interface HttpClientOptions {
   cookie?: string | null
   fetchImpl?: typeof fetch
   onRetry?: (info: { url: string; attempt: number; reason: string; waitMs: number }) => void
+  /**
+   * 站点下发 Set-Cookie 时回调（只关心 PHPSESSID）。
+   * 站点的会话 cookie 会自己轮换，浏览器是因为跟着 Set-Cookie 走才一直保持登录，
+   * 所以这里也必须跟着换，否则本地存的很快就成了一份废票。
+   */
+  onSetCookie?: (setCookie: string) => void
 }
 
 export const DEFAULT_HTTP_OPTIONS: HttpClientOptions = {
@@ -299,6 +305,7 @@ export class HttpClient {
         if (!res.ok) {
           throw new HttpError(`HTTP ${res.status}`, res.status, url, isRetryableStatus(res.status))
         }
+        this.captureCookies(res)
         const text = await res.text()
         if (mode === 'text' && !isCompleteHtml(text)) {
           throw new HttpError(`响应被截断（${text.length} 字符）`, res.status, url, true)
@@ -311,6 +318,17 @@ export class HttpClient {
       }
     }
     throw lastErr instanceof Error ? lastErr : new HttpError(String(lastErr), null, url, false)
+  }
+
+  /** 把 Set-Cookie 里的会话 cookie 交给上层（通常是 SessionStore） */
+  private captureCookies(res: Response): void {
+    const cb = this.opts.onSetCookie
+    if (!cb) return
+    const headers = res.headers as unknown as { getSetCookie?: () => string[] }
+    const list = typeof headers.getSetCookie === 'function' ? headers.getSetCookie() : []
+    for (const one of list) {
+      if (one && /PHPSESSID=/i.test(one)) cb(one)
+    }
   }
 
   private headers(extra: Record<string, string>): Record<string, string> {

@@ -1,6 +1,6 @@
 /** 数据库结构定义。改结构时同步 +1 SCHEMA_VERSION 并补充迁移逻辑。 */
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export const SCHEMA_SQL = /* sql */ `
 PRAGMA journal_mode = MEMORY;
@@ -76,6 +76,18 @@ CREATE TABLE IF NOT EXISTS item_tags (
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags (tag_id);
+
+-- 条目是被哪个「应用分类」抓回来的（多对多，只增不删）。
+-- 为什么不能直接改 items.plate/word：那是站点对这张图的真实分类
+-- （站点搜索页返回的详情链接仍然指向图片原本的分类），拿抓取目标去覆盖它
+-- 会让同一条记录在两个分类之间来回跳，收藏/下载记录还在，分类却变了。
+CREATE TABLE IF NOT EXISTS item_targets (
+  item_id INTEGER NOT NULL,
+  word    TEXT    NOT NULL,
+  PRIMARY KEY (item_id, word)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_item_targets_word ON item_targets (word);
 
 -- 本地已下载的文件
 CREATE TABLE IF NOT EXISTS files (

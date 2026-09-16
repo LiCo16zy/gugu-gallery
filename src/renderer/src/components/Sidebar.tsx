@@ -8,7 +8,7 @@ interface Props {
   collapsed: boolean
   stats: LibraryStats | null
   /** 摊平后的分类（名字 + 数据库里的 word + 条目数） */
-  categories: { id: string; name: string; word: string; count: number }[]
+  categories: { id: string; name: string; word: string; kind: 'category' | 'search'; count: number }[]
   topTags: Facet[]
   filters: Filters
   view: View
@@ -59,7 +59,9 @@ export default function Sidebar({
           <button
             data-component="Sidebar/Item"
             className={`side-item${isLibraryAll ? ' active' : ''}`}
-            onClick={() => go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, tags: [] }))}
+            onClick={() =>
+              go(() => onFilters({ favorite: false, downloaded: 'any', plate: null, word: null, targetWord: null, tags: [] }))
+            }
             title="全部图片"
           >
             <IconImage />
@@ -117,18 +119,33 @@ export default function Sidebar({
             <div className="side-title">
               <span>分类</span>
             </div>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                data-component="Sidebar/Category"
-                className={`side-item${filters.word === category.word && !filters.plate ? ' active' : ''}`}
-                onClick={() => go(() => onFilters({ plate: null, word: category.word }))}
-              >
-                <IconFolder />
-                <span className="label">{category.name}</span>
-                <span className="count">{category.count}</span>
-              </button>
-            ))}
+            {categories.map((category) => {
+              // 搜索类目标在站点侧没有分类，筛选走「来源分类」而不是 word
+              const search = category.kind === 'search'
+              const on = search
+                ? filters.targetWord === category.word
+                : filters.word === category.word && !filters.plate
+              return (
+                <button
+                  key={category.id}
+                  data-component="Sidebar/Category"
+                  className={`side-item${on ? ' active' : ''}`}
+                  onClick={() =>
+                    go(() =>
+                      onFilters(
+                        search
+                          ? { plate: null, word: null, targetWord: category.word }
+                          : { plate: null, word: category.word, targetWord: null }
+                      )
+                    )
+                  }
+                >
+                  <IconFolder />
+                  <span className="label">{category.name}</span>
+                  <span className="count">{category.count}</span>
+                </button>
+              )
+            })}
           </div>
         )}
 

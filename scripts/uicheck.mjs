@@ -7,7 +7,7 @@
  * 需要先 npm run build；依赖 GUGU_LIBRARY_ROOT（默认 data/demo）里的图库数据。
  */
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { cp, mkdir, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -183,6 +183,9 @@ const SCRIPT = `(async () => {
       await sleep(1100)
       out.categoryMeta = meta()
       out.categoryActive = first.className.includes('active')
+      out.allPillAfterCategory = (
+        Array.from(document.querySelectorAll('.filter-bar .pill')).find((b) => b.textContent.trim() === '全部') || {}
+      ).className || ''
       const reset = byText('.filter-bar .pill', '清空筛选')
       if (reset) { reset.click(); await sleep(900) }
     }
@@ -432,6 +435,10 @@ const SCRIPT = `(async () => {
   return out
 })()`
 
+// 自检用的 userData 每次清掉登录态：断言必须与用户本机的登录状态无关
+const userDataDir = join(root, 'data', 'uicheck-userdata')
+rmSync(join(userDataDir, 'session.bin'), { force: true })
+
 const env = {
   ...process.env,
   GUGU_SHOT: outDir,
@@ -497,7 +504,8 @@ const checks = [
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
   ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
   ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
-  ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '')],
+  ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '') && result.categoryActive === true],
+  ['选中分类后「全部」不再高亮', !String(result.allPillAfterCategory).includes('active')],
   ['未登录时登录引导显示未登录', /未登录/.test(result.guideStatusText || '')],
   ['未登录时侧栏不出现登录专属分类', result.swimsuitHiddenInSidebar === true],
   ['未登录时抓取目标不出现登录专属分类', result.swimsuitHiddenInCrawl === true],
