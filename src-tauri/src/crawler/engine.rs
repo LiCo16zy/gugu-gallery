@@ -37,6 +37,9 @@ pub struct CrawlRequest {
     pub resume_from_marks: bool,
     pub min_width: i64,
     pub min_bytes: i64,
+    /// 文件命名规则（来自设置：id-slug / id / pixiv / hash），由命令层注入
+    #[serde(default)]
+    pub naming: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -63,6 +66,8 @@ struct RunState {
     bytes: u64,
     current_label: Option<String>,
     logs: Vec<LogLine>,
+    /// 最近一次失败的原因（单张下载失败时界面要能说清楚）
+    last_error: Option<String>,
 }
 
 pub struct Engine {
@@ -405,6 +410,7 @@ impl EngineHandle {
             if let Err(err) = self.download_one(&item, request).await {
                 let mut st = self.state.lock().unwrap();
                 st.failed += 1;
+                st.last_error = Some(format!("#{} {err}", item.id));
                 drop(st);
                 self.log("warn", &format!("#{} 下载失败：{err}", item.id));
             }
@@ -611,6 +617,7 @@ impl EngineHandle {
             if let Err(err) = self.download_one(&item, request).await {
                 let mut st = self.state.lock().unwrap();
                 st.failed += 1;
+                st.last_error = Some(format!("#{} {err}", item.id));
                 drop(st);
                 self.log("warn", &format!("#{} 下载失败：{err}", item.id));
             }
@@ -630,7 +637,11 @@ impl EngineHandle {
                 .map_err(|e| e.to_string())?
                 .unwrap_or((None, None, String::new(), None))
         };
-        let naming = "id-slug".to_string();
+        let naming = if request.naming.trim().is_empty() {
+            "id-slug".to_string()
+        } else {
+            request.naming.clone()
+        };
         let _ = &title;
         let tags = {
             let db = self.db.lock().unwrap();
@@ -785,6 +796,7 @@ fn progress_json(st: &RunState) -> Json {
         "speedBps": speed.round(),
         "etaSeconds": Json::Null,
         "currentLabel": st.current_label,
+        "lastError": st.last_error,
         "logs": []
     })
 }

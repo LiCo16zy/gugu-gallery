@@ -10,11 +10,13 @@
     "node": ">=20"
   },
   "scripts": {
+    "dev": "node scripts/demo.mjs",
     "dev:web": "vite --config vite.renderer.config.ts",
     "build:web": "vite build --config vite.renderer.config.ts",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "build": "npm run typecheck && tauri build --no-bundle",
     "crawl": "node scripts/crawl.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",

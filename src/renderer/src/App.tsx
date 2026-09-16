@@ -654,7 +654,7 @@ export default function App(): JSX.Element {
         ['--sidebar-w' as string]: (settings.sidebarCollapsed ? 64 : sidebarWidth) + 'px'
       }}
     >
-      <div className="brand" data-component="App/Brand">
+      <div className="brand" data-component="App/Brand" data-tauri-drag-region>
         {/* 品牌区同时是侧栏开关：鼠标移上去图标渐变为「展开/收起侧栏」 */}
         <button
           className="brand-mark"
@@ -678,7 +678,7 @@ export default function App(): JSX.Element {
         )}
       </div>
 
-      <header className="topbar" data-component="App/TopBar">
+      <header className="topbar" data-component="App/TopBar" data-tauri-drag-region>
         <button
           className="view-toggle"
           onClick={() => {

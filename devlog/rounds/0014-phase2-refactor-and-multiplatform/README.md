@@ -569,3 +569,69 @@ tauri-bundler 里确实有一段「target 以 `-gnu` 结尾就自动带上这个
 
 ---
 
+## 二十一、用户实测反馈的三个问题与修复
+
+### 1）最小化 / 最大化 / 关闭点了没反应
+
+**根因**：Tauri 2 里 `core:window` 这类能力**必须显式授权**，而仓库里漏了 capabilities 文件 ——
+`win.minimize()` / `toggleMaximize()` / `close()` / `isMaximized()` 全部被拒，
+渲染层的 `void api.window.xxx()` 又把 rejection 吞掉了，于是表现成"点了没反应"。
+
+**修复**：新增 `src-tauri/capabilities/default.json`（`core:default` +
+最小化 / 最大化 / close / is-maximized / start-dragging）；
+桥里的 `toggleMaximize` 改成返回真实状态（界面靠它切「最大化 ↔ 向下还原」图标）。
+
+### 2）窗口拖不动（同一个坑的另一半）
+
+CSS 里的 `-webkit-app-region: drag` 是 Electron 的机制，WebView2 不认。
+Tauri 的方式是 `data-tauri-drag-region` 属性 —— 已加到 `.topbar` 与 `.brand` 上，
+并放行 `core:window:allow-start-dragging`。旧 CSS 保留（uicheck 的拖动区断言不用改）。
+
+### 3）单张「下载此图」失败时没有反馈
+
+灯箱只在 `fileStatus === 'ready'` 时停转圈，任务失败就一直转 —— 看起来像卡死。
+
+**修复**：Rust 侧新增 `RunState.last_error` 并透出到进度 JSON 的 `lastError`；
+灯箱在任务进入终态（done / cancelled / error）而文件仍未就绪时停下转圈，
+并提示具体原因（例如 `#19538 HTTP 403`），完整日志仍在「抓取任务」页。
+
+**顺带修掉一个对等性缺口**：下载文件的命名规则一直写死 `id-slug`，
+**设置里的命名规则（仅编号 / Pixiv ID / 内容哈希）根本没生效**。
+现在由命令层把设置里的 `naming` 注入 `CrawlRequest`。
+
+### 4）安装包再次运行：卸载完又让选安装目录
+
+这是 Tauri NSIS 模板的**既定流程**：再次运行安装包进的是"维护页"（重装 / 卸载 / 升级），
+选卸载后它会继续走安装流程，所以又出现选择目录的页面 —— 不是坏。
+**只想卸载**请走：Windows「设置 → 应用 → 已安装的应用 → 咕咕图库 → 卸载」，
+或开始菜单里的卸载项（安装时已注册）。
+
+---
+
+## 二十二、工作区整理与统一入口
+
+- 清掉 Electron 时代遗留：`build/`（旧图标源）以及这轮测试产生的一堆 `data/_*` 临时目录；
+  `data/` 现在只剩 `demo/`（演示图库）与几个自检用的配置文件
+- **统一入口**（对齐 Electron 时代的使用习惯）：
+
+  | 命令 | 作用 |
+  | --- | --- |
+  | `npm run dev` | **一站式开发模式**：demo 图库 + 插件（标注工具 Ctrl+Shift+A）+ 界面热更新（新增 `scripts/demo.mjs`） |
+  | `npm run build` | typecheck + release 可执行文件（`tauri build --no-bundle`） |
+  | `npm run pack` / `npm run dist` | 无插件发布构建 / 再加 NSIS 安装包 |
+  | `npm run crawl` / `shot` / `uicheck` / `e2e` / `annotatecheck` / `round` | 与旧版同名同用法 |
+
+- **目录分工（保持 Tauri 惯例，没有把 src-tauri 挪进 src）**：
+  `src/` = 前端（`renderer/` + `shared/`），`src-tauri/` = Rust 外壳与打包配置。
+  tauri CLI、cargo、`build.rs` 的相对路径、以及文档全都锚在 `src-tauri/` 上，
+  挪进 `src/` 只是换个名字，却要同步改一堆路径与工具默认值 —— 不划算。
+
+**验证**
+
+- 能力修好后实测：最大化 → `maximized: true` 且按钮图标变「向下还原」；还原 → `false`；
+  最小化 → 成功（不再出现 `window.minimize not allowed`）；点关闭 → 应用进程退出码 0
+- `npm run dev` 实测：`libraryRoot = data/demo`、`plugins = ["devlog","annotator"]`、
+  `.topbar`/`.brand` 的拖动属性在位
+
+---
+

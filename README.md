@@ -368,9 +368,10 @@ devlog/rounds/0002-xxx/
 # （本机 Rust 装在 ~/.cargo/bin，不在 PATH 上就先 export PATH="$HOME/.cargo/bin:$PATH"）
 npm install
 
-cd src-tauri && cargo build   # 编译应用本体（debug）—— 界面自检都跑在它上面
-npm run dev:web               # 只起渲染层开发服务器（调界面时用）
-npm run tauri:dev             # 开发模式：Tauri 外壳 + 界面热更新
+npm run dev                   # 开发模式：demo 图库 + 插件（标注工具）+ 界面热更新
+cd src-tauri && cargo build   # 只编译应用本体（界面自检都跑在它上面）
+npm run dev:web               # 只起渲染层开发服务器（调样式时用）
+npm run tauri:dev             # 开发模式：但用你自己的设置与图库
 
 npm run typecheck             # 渲染层严格类型检查
 npm test                      # 前端单测：应用分类表（7 例）
@@ -387,8 +388,8 @@ npm run dist                  # 发布构建 + NSIS 安装包（自动走无插�
 **本地跑起来**
 
 ```bash
-# 1) 开发模式：自动起前端热更新 + 编译 Rust + 开窗口（改界面改代码都用这个）
-npm run tauri:dev
+# 1) 一站式开发模式：demo 图库 + 插件（页面标注工具按 Ctrl+Shift+A）+ 界面热更新
+npm run dev
 
 # 2) 只调样式：起前端服务器，浏览器打开 http://localhost:5173
 #    （浏览器里没有 window.gugu，数据是空的，只适合看样式与布局）

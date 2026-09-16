@@ -23,8 +23,14 @@ let immersivePreference = false
 interface Props {
   id: number
   items: ItemSummary[]
-  /** 抓取进度：下载此图时用来同步进度条 */
-  progress: { phase: string; downloaded: number; downloadTotal: number | null; bytesDownloaded: number } | null
+  /** 抓取进度：下载此图时用来同步进度条；lastError 是最近一次下载失败的原因 */
+  progress: {
+    phase: string
+    downloaded: number
+    downloadTotal: number | null
+    bytesDownloaded: number
+    lastError?: string | null
+  } | null
   onClose: () => void
   onSelect: (id: number) => void
   onToggleTag: (tag: string) => void
@@ -48,6 +54,8 @@ export default function Lightbox({
   const [immersive, setImmersive] = useState(immersivePreference)
   const [delState, setDelState] = useState<'idle' | 'confirm' | 'done'>('idle')
   const [downloading, setDownloading] = useState(false)
+  /** 是否真的看到过任务在跑：避免拿着上一个任务的 done 误判成失败 */
+  const downloadRunning = useRef(false)
   const [dragState, setDragState] = useState<{ active: boolean }>({ active: false })
   /**
    * 沉浸模式右下角的标题条，是个四态机：
@@ -128,7 +136,8 @@ export default function Lightbox({
     return () => clearTimeout(timer)
   }, [capPhase, capNonce])
 
-  // 下载启动后轮询直到文件就绪，解决「下载完预览界面不刷新」
+  // 下载启动后轮询直到文件就绪，解决「下载完预览界面不刷新」；
+  // 任务已结束但文件仍未就绪 = 这次下载失败了，必须把转圈停下来并说明原因
   useEffect(() => {
     if (!downloading) return
     let alive = true
@@ -136,14 +145,28 @@ export default function Lightbox({
       void api.library.item(id).then((d) => {
         if (!alive || !d) return
         setDetail((prevDetail) => (prevDetail ? { ...prevDetail, ...d } : d))
-        if (d.fileStatus === 'ready') setDownloading(false)
+        if (d.fileStatus === 'ready') {
+          downloadRunning.current = false
+          setDownloading(false)
+          return
+        }
+        const phase = progress?.phase
+        if (phase === 'queued' || phase === 'downloading' || phase === 'indexing') {
+          downloadRunning.current = true
+          return
+        }
+        if (downloadRunning.current && (phase === 'done' || phase === 'cancelled' || phase === 'error')) {
+          downloadRunning.current = false
+          setDownloading(false)
+          onToast(`下载失败：${progress?.lastError ?? '原因见「抓取任务」页的日志'}`)
+        }
       })
     }, 900)
     return () => {
       alive = false
       clearInterval(timer)
     }
-  }, [downloading, id])
+  }, [downloading, id, progress?.phase, progress?.lastError, onToast])
 
   const step = useCallback(
     (delta: number) => {
@@ -414,6 +437,7 @@ export default function Lightbox({
               onClick={async () => {
                 try {
                   await api.crawl.downloadItems([id])
+                  downloadRunning.current = false
                   setDownloading(true)
                   onToast('已加入下载队列')
                 } catch (err) {

@@ -88,7 +88,8 @@ function buildBridge(): GuguBridge {
       },
       toggleMaximize: async () => {
         await win.toggleMaximize()
-        return true
+        // 返回真实状态：界面靠它切换「最大化 / 向下还原」图标
+        return await win.isMaximized()
       },
       close: async () => {
         await win.close()

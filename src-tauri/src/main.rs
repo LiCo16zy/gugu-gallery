@@ -367,8 +367,24 @@ async fn crawl_target_info(target: Option<Json>, state: State<'_, AppState>) -> 
 #[tauri::command]
 fn crawl_start(request: Option<Json>, state: State<'_, AppState>) -> Result<i64, String> {
     let engine = state.engine.lock().unwrap().clone().ok_or("引擎尚未就绪")?;
-    let request: CrawlRequest = serde_json::from_value(request.unwrap_or(json!({}))).map_err(|e| e.to_string())?;
+    let mut request: CrawlRequest = serde_json::from_value(request.unwrap_or(json!({}))).map_err(|e| e.to_string())?;
+    if request.naming.trim().is_empty() {
+        request.naming = naming_from_settings(&state);
+    }
     engine.start(request)
+}
+
+/// 文件命名规则来自设置（渲染层不传这个参数，由命令层补齐）
+fn naming_from_settings(state: &State<'_, AppState>) -> String {
+    state
+        .settings
+        .lock()
+        .unwrap()
+        .get()
+        .get("naming")
+        .and_then(|v| v.as_str())
+        .unwrap_or("id-slug")
+        .to_string()
 }
 
 #[tauri::command]
@@ -396,6 +412,7 @@ fn crawl_download_items(ids: Vec<i64>, state: State<'_, AppState>) -> Result<i64
         delay_ms: settings.get("delayMs").and_then(|v| v.as_u64()).unwrap_or(220),
         retries: settings.get("retries").and_then(|v| v.as_u64()).unwrap_or(4) as u32,
         download_concurrency: settings.get("downloadConcurrency").and_then(|v| v.as_u64()).unwrap_or(3) as usize,
+        naming: settings.get("naming").and_then(|v| v.as_str()).unwrap_or("id-slug").to_string(),
         ..Default::default()
     };
     engine.start_ids(ids, request)
