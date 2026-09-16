@@ -19,7 +19,7 @@ use library::Library;
 use rusqlite::Connection;
 use serde_json::{json, Value as Json};
 use session::SessionStore;
-use settings::{suggested_library_root, SettingsStore};
+use settings::SettingsStore;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::{Manager, State};
@@ -47,7 +47,7 @@ fn open_state() -> Result<AppState, String> {
     let settings_file = PathBuf::from(std::env::var("GUGU_SETTINGS_FILE").unwrap_or_else(|_| {
         user_data_dir().join("settings.json").to_string_lossy().to_string()
     }));
-    let default_root = suggested_library_root(PACKAGED);
+    let default_root = settings::suggested_library_root(PACKAGED);
     let mut settings = SettingsStore::load(settings_file, &default_root);
     if let Ok(root) = std::env::var("GUGU_LIBRARY_ROOT") {
         settings.set(&json!({ "libraryRoot": root, "setupCompleted": true }));
@@ -162,8 +162,8 @@ fn settings_set(patch: Json, state: State<'_, AppState>) -> Result<Json, String>
 }
 
 #[tauri::command]
-fn suggested_library_root_cmd() -> String {
-    suggested_library_root(PACKAGED)
+fn suggested_library_root() -> String {
+    settings::suggested_library_root(PACKAGED)
 }
 
 fn switch_library(state: &State<'_, AppState>, root: &str) -> Result<(), String> {
@@ -567,7 +567,7 @@ fn main() {
             app_info,
             settings_get,
             settings_set,
-            suggested_library_root_cmd,
+            suggested_library_root,
             library_stats,
             library_facets,
             library_query,
