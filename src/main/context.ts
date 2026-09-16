@@ -98,10 +98,6 @@ export class AppContext {
       getSettings: () => this.settings.get(),
       resolveFetch: (proxy) => (proxy.trim() ? electronFetch : undefined),
       getCookie: () => this.session.cookieHeader,
-      onCookieRotated: (setCookie) => {
-        // 站点换了会话 cookie 就跟着换，否则本地那份很快就成废票
-        void this.session.adopt(setCookie)
-      },
       onSessionExpired: (message) => {
         // 只提醒一次：会话失效后反复弹窗只会让人烦
         if (!this.session.shouldNotifyExpiry()) return

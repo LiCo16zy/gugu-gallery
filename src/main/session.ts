@@ -103,37 +103,6 @@ export class SessionStore {
     await writeFile(this.file, safeStorage.encryptString(payload))
   }
 
-  /**
-   * 跟着站点换 cookie。
-   *
-   * 浏览器之所以能一直保持登录，是因为它每次都按 Set-Cookie 更新本地值；
-   * 应用只存一份静态 cookie 的话，站点一换就是废票。这里做同样的事，
-   * 并且立刻重新加密落盘，免得重启后又用回旧值。
-   */
-  async adopt(setCookie: string): Promise<boolean> {
-    // 只有本来就登录着才跟着换。
-    // 站点给每个访客都会发一个 PHPSESSID，没有这道闸门的话，
-    // 匿名抓一把就会把应用「变成」已登录，泳装分享分类也会莫名其妙冒出来。
-    if (!this.cookie) return false
-    // 明确作废的 Set-Cookie 不能当成新会话
-    if (/(max-age=0|expires=thu,\s*01-jan-1970)/i.test(setCookie)) return false
-    const match = /PHPSESSID=([^;,\s]*)/i.exec(setCookie)
-    const value = (match?.[1] ?? '').trim()
-    if (!value || value.toLowerCase() === 'deleted') return false
-    const current = this.cookie?.includes('=') ? this.cookie.split('=').slice(1).join('=') : this.cookie
-    if (current === value) return false
-    this.cookie = `PHPSESSID=${value}`
-    this.savedAt = new Date().toISOString()
-    // 站点刚刚回过话，说明这份会话是活的
-    this.verified = true
-    this.verifyMessage = null
-    this.expiryNotified = false
-    if (!this.canEncrypt) return true
-    const payload = JSON.stringify({ cookie: this.cookie, savedAt: this.savedAt })
-    await writeFile(this.file, safeStorage.encryptString(payload)).catch(() => {})
-    return true
-  }
-
   async clear(): Promise<void> {
     this.cookie = null
     this.savedAt = null

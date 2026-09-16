@@ -50,8 +50,6 @@ export interface EngineDeps {
   getCookie: () => string | null
   /** 会话失效时回调一次，用于提醒用户重新登录 */
   onSessionExpired: (message: string) => void
-  /** 站点轮换了会话 cookie，上层负责更新本地保存的那一份 */
-  onCookieRotated?: (setCookie: string) => void
 }
 
 interface EngineState {
@@ -95,7 +93,6 @@ export class CrawlEngine {
       stallMs: 30_000,
       concurrency: Math.max(s.listConcurrency, s.downloadConcurrency),
       fetchImpl: deps.fetchImpl,
-      onSetCookie: (setCookie: string) => deps.onCookieRotated?.(setCookie),
       onRetry: ({ attempt, reason, waitMs, url }: { attempt: number; reason: string; waitMs: number; url: string }) => {
         this.log('warn', `第 ${attempt} 次重试（${reason}），${Math.round(waitMs / 100) / 10}s 后重试 ${shortUrl(url)}`)
       }
