@@ -9,6 +9,7 @@ Electron + React + TypeScript，索引用 WebAssembly 版 SQLite（**零原生�
 
 ## 目录
 
+- [下载](#下载)
 - [它长什么样](#它长什么样)
 - [功能](#功能)
 - [快速开始](#快速开始)
@@ -22,6 +23,13 @@ Electron + React + TypeScript，索引用 WebAssembly 版 SQLite（**零原生�
 - [开发与测试](#开发与测试)
 - [已知限制](#已知限制)
 - [合规声明](#合规声明)
+
+## 下载
+
+- **Windows x64 安装包**：[`GuguGallery-Setup-0.6.3.exe`](https://github.com/LiCo16zy/gugu-gallery/releases/latest)（约 85 MB，NSIS，可选安装位置）
+- 想自己从源码构建？见下面的[快速开始](#快速开始)。
+
+> 应用未做代码签名，Windows SmartScreen 可能提示「未知发布者」，选择「更多信息 → 仍要运行」即可。
 
 ---
 
