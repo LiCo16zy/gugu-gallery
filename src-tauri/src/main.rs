@@ -68,10 +68,15 @@ fn open_state() -> Result<AppState, String> {
 }
 
 
+/// 注入脚本是否已经回报过结果（给超时看门狗用）
+pub(crate) static EVAL_REPORTED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 /// 自检钩子：把注入脚本的结果以 __EVAL__ 前缀打到 stdout（沿用 Electron 版的约定）
 #[tauri::command]
 fn debug_report(payload: Json) {
     use std::io::Write;
+    EVAL_REPORTED.store(true, std::sync::atomic::Ordering::SeqCst);
     let mut out = std::io::stdout();
     let _ = writeln!(out, "__EVAL__{}", payload);
     let _ = out.flush();
@@ -90,9 +95,10 @@ fn debug_diag(view: String, payload: Json, app: tauri::AppHandle) {
     }
 }
 
-/// eval 脚本跑完后的补拍（渲染进程回调），拍完退出
+/// eval 脚本跑完后的补拍（渲染进程回调），拍完退出。
+/// 同样必须是 async：抓图不能占着主线程。
 #[tauri::command]
-fn shot_after_eval(app: tauri::AppHandle) {
+async fn shot_after_eval(app: tauri::AppHandle) {
     shot::capture_after_eval(&app);
 }
 
@@ -480,8 +486,10 @@ fn plugins_list() -> Json {
 }
 
 /// 插件方法调用：宿主只按 (插件 id, 方法名) 分发，核心代码不知道具体插件
+// 注意：一定要 async —— 同步命令跑在主线程上，而导出标注要抓窗口截图
+//（PrintWindow 会等窗口线程处理消息），堵在主线程上有死锁风险。
 #[tauri::command]
-fn plugins_invoke(
+async fn plugins_invoke(
     app: tauri::AppHandle,
     plugin_id: String,
     method: String,

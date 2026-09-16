@@ -158,6 +158,26 @@ pub fn maybe_start(app: &tauri::AppHandle) -> bool {
                     eprintln!("[gugu] eval 注入失败: {err}");
                     app.exit(1);
                 }
+
+                // 看门狗：注入的脚本要是语法有问题，eval 不会报错、promise 也永远不 settle，
+                // 自检就会一直挂到 harness 超时（实测踩过）。到点没收到回报就自己报一声并退出。
+                let watchdog = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(Duration::from_secs(150)).await;
+                    if !crate::EVAL_REPORTED.load(std::sync::atomic::Ordering::SeqCst) {
+                        use std::io::Write;
+                        println!(
+                            "__EVAL__{}",
+                            serde_json::json!({
+                                "ok": false,
+                                "error": "注入脚本超时未返回（多半是脚本里有语法错误）",
+                                "consoleErrors": []
+                            })
+                        );
+                        let _ = std::io::stdout().flush();
+                        watchdog.exit(2);
+                    }
+                });
             }
             // 没有 eval 时：体检结果打完就收工；体检没注进去就直接收工
             None => {

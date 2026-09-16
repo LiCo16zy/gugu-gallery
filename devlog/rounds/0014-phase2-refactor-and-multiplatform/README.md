@@ -635,3 +635,46 @@ Tauri 的方式是 `data-tauri-drag-region` 属性 —— 已加到 `.topbar` �
 
 ---
 
+## 二十三、自检挂死的真相：模板字面量又把反斜杠吃了（第二次踩同一个坑）
+
+**现象**：`annotatecheck` 突然不再返回结果，每次都跑满 harness 的 180s 超时，
+应用输出里只有第一张截图那一行（导出的轮次目录也没生成）。
+
+**定位过程**（这次靠工具而不是猜）
+
+1. 先验上一层：手动用 `plugins.invoke('devlog','exportAnnotations')` 直接导出 —— 正常出轮次目录，说明 Rust 侧没问题；
+2. 再看脚本本身：把 `check.mjs` 里的注入脚本抽出来手动跑 —— **完全跑通**（9 步全过，导出提示也在）；
+3. 说明差异只可能在"harness 真正注入的那份文本"上：给注入脚本按步插探针（每步回调一次 `debug_report`），
+   再把 harness 运行时真正注入的脚本落盘，跟我手动跑的那份 diff —— **只差一行**：
+
+   ```js
+   // 源文件里写的是           运行时被模板字面量煮成
+   /devlog\/rounds/      →     /devlog/rounds/     ← 语法错误
+   ```
+
+4. Tauri 的 `eval` 对**语法错误**不会返回 Err（脚本是异步丢给 webview 的），
+   promise 永远不 settle，于是自检就"安静地"挂到超时。
+
+**修复**
+
+- 那一行改成 `text.includes('devlog/rounds')` —— 彻底不写反斜杠
+  （项目里早有这条规则：注入脚本里的正则一律用 escape-free 写法）；
+- **加看门狗**：注入脚本 150s 内没回报结果，就自己打印
+  `__EVAL__{ok:false,error:"注入脚本超时未返回（多半是脚本里有语法错误）"}` 并以退出码 2 结束 ——
+  以后同类问题 2 分半就能看到原因，不用再等 harness 超时；
+- 顺手把 `annotatecheck` 的用户数据也隔离了（新增 `GUGU_USER_DATA` + `GUGU_SESSION_EPHEMERAL`）：
+  原来它共用真实的 `%APPDATA%\gugu-gallery`，既会碰用户真实登录态，
+  WebView2 记住的标注工具栏停靠位置也会影响下一轮。
+
+## 二十四、最终交付物（0.7.0 · 第三版安装包）
+
+| 项 | 值 |
+| --- | --- |
+| 安装包 | `release/GuguGallery_0.7.0_x64-setup.exe`（2.83 MB） |
+| SHA-256 | `1d988362147d47cce0b0a80d06e5d111c3bd3d9a4ea13dd1ab0bbd936a1aeb71` |
+| 自检 | `cargo test` 16 ✓ / `npm test` 7 ✓ / `uicheck` 63 ✓ / `annotatecheck` 37 ✓ |
+| 安装实测 | 三件文件齐全（exe + WebView2Loader.dll + uninstall.exe）→ 启动正常 → 首次启动向导正常 |
+| 窗口实测 | 最大化/还原状态正确、最小化成功、关闭退出码 0、顶栏可拖动 |
+
+---
+

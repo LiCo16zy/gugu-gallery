@@ -100,8 +100,18 @@ const SCRIPT = `(async () => {
   setTextarea(noteEl, '自检脚本生成的示例标注，用于验证导出链路。')
   await sleep(150)
   btn('确认导出')?.click()
-  await sleep(2200)
-  out.toastAfterExport = document.querySelector('.toast')?.textContent ?? null
+  // 导出要抓整页截图 + 裁片 + 写文件，耗时随机器负载浮动 —— 轮询等提示，别用固定 sleep
+  const toastDeadline = Date.now() + 12000
+  let seenToast = null
+  while (Date.now() < toastDeadline) {
+    const text = document.querySelector('.toast')?.textContent ?? null
+    if (text) {
+      seenToast = text
+      if (text.includes('devlog/rounds')) break
+    }
+    await sleep(150)
+  }
+  out.toastAfterExport = seenToast
 
   // 6.5) 批注框必须完整落在视口内，且「添加」够得着
   //      挑一个贴右下角的元素，旧实现（按固定高度硬算）会把它顶到屏幕外
@@ -284,9 +294,15 @@ const env = {
   GUGU_LIBRARY_ROOT: libraryRoot,
   GUGU_SETTINGS_FILE: join(root, 'data', 'annotate-settings.json'),
   GUGU_WORKSPACE: workspace,
+  // 用户数据必须隔离：WebView2 的 localStorage 会记住标注工具栏停靠位置，
+  // 上一轮停在窗口顶部时，这一轮的合成鼠标事件就会落到拖动区上触发原生拖窗，把自检挂死
+  GUGU_USER_DATA: join(root, 'data', 'annotate-userdata'),
+  // 自检不碰系统凭据库，也不受本机登录态影响
+  GUGU_SESSION_EPHEMERAL: '1',
   GUGU_EVAL: SCRIPT
 }
 
+await rm(join(root, 'data', 'annotate-userdata'), { recursive: true, force: true })
 await mkdir(join(workspace, 'shots'), { recursive: true })
 
 // 插件只在 debug 构建里启用，界面走 devUrl：先起 Vite，再跑应用本体
