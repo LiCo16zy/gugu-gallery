@@ -437,3 +437,95 @@ devlog/rounds/0001-20260916-1917/
 
 ---
 
+## 十七、里程碑 9：文档改写、0.7.0 打包，以及一个只有打包后才会暴露的缺陷
+
+**文档**
+
+- `README.md` 全量改写（章节结构保持不动）：技术栈、下载与安装、为什么开发、命令行模式、
+  开发与测试、代码结构、安全边界、已知限制全部换成 Tauri 版；体积数字用**实测值**而不是估计值
+- `docs/architecture.md` 重写：分层图、目录结构、数据流（`gugu.localhost` 自定义协议）、
+  「为什么这么选」表格换成 Tauri / rusqlite / 自定义协议的取舍
+- `docs/plugin-development.md` 重写：主进程侧现在是 Rust（写在哪、怎么登记分发）
+- `docs/site-analysis.md`、`docs/release-process.md`、`plugins/*/README.md` 的过时引用跟着改
+
+**版本与打包**
+
+- 版本升到 **0.7.0**（`package.json` / `tauri.conf.json` / `Cargo.toml` 三处，`build.rs` 从前者注入）
+- `docs/release-notes/v0.7.0.md` 写好，可直接做 Release 正文
+- NSIS 安装包出包成功，全程**离线**（第九节准备的工具链缓存生效）：
+
+| 产物 | 体积 | 对比 Electron 版 |
+| --- | --- | --- |
+| `GuguGallery_0.7.0_x64-setup.exe` | **2.76 MB** | 85 MB（1/31） |
+| `gugu-gallery.exe` | **7.42 MB** | 180 MB（1/24） |
+| `node_modules` | **92 MB** | ~700 MB |
+
+- 打包产物实测：release 版加载内嵌前端正常（2,129 条、60 张卡片）、自定义协议出图正常、
+  截图与 DOM 体检正常、exe 版本信息 0.7.0
+
+**发现并修掉一个真实缺陷（只有跑打包产物才会暴露）**
+
+拿 release exe 做「首次启动」测试时发现：**欢迎向导不出现**，直接进了空图库，
+并且悄悄在 `图片\GuguGallery` 建了库。根因 ——
+
+- 渲染层桥里调用的是 `invoke('suggested_library_root')`，Rust 侧却注册成了 `suggested_library_root_cmd`；
+- 初始化那段 `await Promise.all([...])` 里正好有这一句，命令不存在 → 整个 effect 抛错 →
+  `setBootstrapped(true)` 永远不会执行 → 依赖 `bootstrapped` 的向导不渲染；
+- 而图库本体不依赖这个标志，所以界面看起来「一切正常」——**只有首次安装的用户会撞上**。
+
+修法与对账：
+
+- 把 Rust 命令改名为 `suggested_library_root`（顺带解决与 settings 里同名函数的冲突）
+- 顺手做了一次**系统性对账**：桥里 35 个 `invoke` 的**名字与参数名**逐个比对 Rust 注册的 38 个命令 ——
+  现在全部对得上（多出来的两个 `debug_report` / `debug_diag` 只给自检脚本注入用，不在桥里）
+- 修完重打安装包，首次启动实测：向导出现、默认建议 `图片\GuguGallery`
+
+> 教训：**自检跑在 debug 构建 + devUrl 上，覆盖不到"打包后的首次启动"这条路径。**
+> 这次的验证方式是把 release exe 拿 `GUGU_SHOT` 跑一遍首次启动 —— 建议以后每次出包都跑这一条。
+
+---
+
+## 十八、全量自检结果（0.7.0）
+
+| 检查 | 结果 |
+| --- | --- |
+| `cargo test`（解析器 / URL 规则） | 16 项通过 |
+| `npm test`（应用分类表） | 7 项通过 |
+| `node scripts/uicheck.mjs`（真实界面交互） | 63 项通过 |
+| `node plugins/annotator/bin/check.mjs`（标注工具） | 37 项通过 |
+| `node scripts/e2e.mjs`（真连站点抓取下载） | 5 项通过 |
+| 打包产物（release exe） | 内嵌前端正常、自定义协议出图、首次启动向导正常 |
+
+---
+
+## 十九、交付物与人工验收清单
+
+**交付物**
+
+| 东西 | 位置 |
+| --- | --- |
+| 安装包 | `release/GuguGallery_0.7.0_x64-setup.exe`（2.76 MB） |
+| 校验值 | `release/SHA256SUMS.txt`（`d5416949…0741d`） |
+| 发布说明 | `docs/release-notes/v0.7.0.md` |
+| 分支 | `refactor/tauri-2`（本地已提交，**尚未推送**） |
+
+**人工验收清单（用户只需走一遍）**
+
+1. 双击安装包 → 若 SmartScreen 提示「未知发布者」→ 更多信息 → 仍要运行；
+2. 首次启动应看到**「欢迎使用咕咕图库」向导**，默认建议 `图片\GuguGallery`，可改；
+3. 若已有 0.6.3 建的图库：向导里直接选那个目录，索引（schema v3）应直接可用；
+4. 抓取任务页：选分类 / 页数 → 开始；看进度、暂停 / 继续 / 取消；抓几张后看缩略图与灯箱；
+5. 日常操作：筛选、搜索、收藏、评分、主题切换、侧栏拖宽、灯箱缩放与键盘翻页、两步删除；
+6. 登录态（可选）：设置里贴一份**新的** cookie（旧的已失效），校验通过后「泳装分享」出现；
+7. 命令行：`npm run crawl -- --pages 1 --max 3 --library <目录>`（或直接跑 exe）；
+8. 卸载（可选）：确认图库目录不会被删掉。
+
+**用户确认后要做的三件事**（都需要能访问 github.com 的网络）
+
+1. `git push origin refactor/tauri-2`（SSH，本机可做）；
+2. 浏览器打开 compare 链接建 PR（本机 HTTPS 到 github.com 不通，这一步得由用户在浏览器里点）；
+3. 合并到 master → 打 tag `v0.7.0` → 推送 → 把安装包与 `SHA256SUMS.txt` 挂到 Release
+   （或走 `docs/release-process.md` 里的 CI 方案，本地只需推 tag）。
+
+---
+
