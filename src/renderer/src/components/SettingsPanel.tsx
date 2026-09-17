@@ -1,5 +1,5 @@
 import type { AppInfo, AppSettings, LibraryStats } from '@shared/types'
-import { api, formatBytes } from '../api'
+import { api, formatBytes, webviewVersion } from '../api'
 import { IconFolder, IconRefresh } from './Icons'
 
 interface Props {
@@ -234,14 +234,18 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
         <dl className="kv" style={{ gridTemplateColumns: '96px 1fr' }}>
           <dt>应用版本</dt>
           <dd className="mono">{info?.version ?? '—'}</dd>
-          <dt>Electron</dt>
-          <dd className="mono">{info?.electron ?? '—'}</dd>
-          <dt>Chromium</dt>
-          <dd className="mono">{info?.chrome ?? '—'}</dd>
-          <dt>Node</dt>
-          <dd className="mono">{info?.node ?? '—'}</dd>
-          <dt>索引文件</dt>
-          <dd className="mono">{info?.dbPath ?? '—'}</dd>
+          <dt>内核</dt>
+          <dd className="mono">
+            {info ? `Tauri ${info.tauri} · WebView2 ${info.webview2 || webviewVersion()}` : '—'}
+          </dd>
+          <dt>平台</dt>
+          <dd className="mono">{info ? `${info.platform} ${info.arch}` : '—'}</dd>
+          <dt>运行形态</dt>
+          <dd className="mono">{info ? (info.packaged ? '安装版' : '开发模式') : '—'}</dd>
+          <dt>索引库</dt>
+          <dd className="mono">
+            {info ? `${info.dbPath}（${formatBytes(info.dbBytes)} · schema v${info.schemaVersion}）` : '—'}
+          </dd>
           <dt>数据来源</dt>
           <dd>
             <a onClick={() => void api.openExternal('https://www.guguxz.com/')}>www.guguxz.com</a>

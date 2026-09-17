@@ -344,12 +344,15 @@ const SCRIPT = `(async () => {
     // 沉浸模式下切图应当弹出右下角标题条
     {
       const kb = (key) => window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      const titleNow = () => (document.querySelector('.lightbox-side h3')?.textContent || '').trim()
       out.captionHiddenBefore = !document.querySelector('.lb-caption')
+      out.titleBeforeSwitch = titleNow()
       kb('ArrowRight')
       await sleep(350)
       const cap = document.querySelector('.lb-caption')
       out.captionShown = Boolean(cap)
       out.captionText = cap ? (cap.textContent || '').trim() : null
+      out.titleAfterSwitch = titleNow()
       // 2s 保持 + 0.6s 滑出，留足余量地轮询等待它自己消失
       for (let i = 0; i < 20; i += 1) {
         if (!document.querySelector('.lb-caption')) break
@@ -483,6 +486,13 @@ if (!ok) {
   process.exit(1)
 }
 
+const capText = (result.captionText ?? '').trim()
+const titleAfterSwitch = (result.titleAfterSwitch ?? '').trim()
+const captionMatchesCurrent =
+  capText !== '' &&
+  (capText === titleAfterSwitch ||
+    (titleAfterSwitch !== '' && (titleAfterSwitch.startsWith(capText) || capText.startsWith(titleAfterSwitch))))
+
 const checks = [
   ['首页渲染出卡片', result.initialCards > 0],
   ['瀑布流：列宽一致', result.masonryEqualColumns === true],
@@ -502,6 +512,8 @@ const checks = [
   ['灯箱缩放下限为 25%', result.zoomFloor === '25%'],
   ['方向键能翻页', result.arrowChangedImage === true],
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
+  ['沉浸模式切图后标题条显示的是新图标题', captionMatchesCurrent],
+  ['沉浸模式标题条不是上一张的标题', result.captionText !== result.titleBeforeSwitch],
   ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
   ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
   ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '') && result.categoryActive === true],

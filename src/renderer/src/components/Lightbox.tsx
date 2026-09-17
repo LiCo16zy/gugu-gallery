@@ -63,6 +63,9 @@ export default function Lightbox({
    * 只在「已经完全淡出」或「正在淡出」时切图才会重新弹入；
    * 保持期间切图只换文字并重置 2s 计时。
    */
+  // 当前这张的标题：items 是同步就绪的，标题条文案用它而不是异步的 detail
+  const summary = items.find((i) => i.id === id) ?? null
+  const summaryTitle = summary?.title ?? ''
   const [capPhase, setCapPhase] = useState<'hidden' | 'in' | 'hold' | 'out'>('hidden')
   const [capText, setCapText] = useState('')
   const [capNonce, setCapNonce] = useState(0)
@@ -114,7 +117,9 @@ export default function Lightbox({
     }
     if (lastCapId.current === id) return
     lastCapId.current = id
-    const text = detail?.title || summaryTitle || '#' + id
+    // 文案必须取「当前这张」的信息：新图的 detail 是异步加载的，
+    // 这里用同步就绪的 summary 标题（否则会显示上一张的标题）
+    const text = summaryTitle || '#' + id
     setCapText(text)
     setCapPhase((p) => {
       if (p === 'hold') {
@@ -125,7 +130,15 @@ export default function Lightbox({
       return 'in'
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, immersive, detail?.title])
+  }, [id, immersive, summaryTitle])
+
+  // 详情加载回来后把文案补全 —— 只认「当前这张」的 detail，避免又串成上一张
+  useEffect(() => {
+    if (!immersive) return
+    if (!detail || detail.id !== id || !detail.title) return
+    setCapText(detail.title)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail?.id, detail?.title, immersive, id])
 
   // 相位推进
   useEffect(() => {
@@ -259,9 +272,6 @@ export default function Lightbox({
     const from = Math.max(0, index - 12)
     return items.slice(from, from + 25)
   }, [items, index])
-
-  const summary = items.find((i) => i.id === id) ?? null
-  const summaryTitle = summary?.title ?? ''
 
   /**
    * 上传者：站点把所有来源都标成「匿名-分享」，没有信息量。

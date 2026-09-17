@@ -134,16 +134,30 @@ fn run_eval_hook(app: &tauri::AppHandle) {
 
 #[tauri::command]
 fn app_info(state: State<'_, AppState>) -> Json {
-    let lib = state.lib.lock().unwrap();
+    let lib = state.lib.lock().unwrap().clone();
+    let (db_bytes, schema_version) = {
+        let conn = state.db.lock().unwrap();
+        let bytes = std::fs::metadata(&lib.db_path).map(|m| m.len()).unwrap_or(0);
+        let schema: i64 = conn
+            .query_row("SELECT value FROM meta WHERE key = 'schema_version'", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
+        (bytes, schema)
+    };
     json!({
         "version": env!("GUGU_APP_VERSION"),
-        "electron": "",
-        "node": "",
-        "chrome": "",
-        "platform": "win32",
+        "tauri": tauri::VERSION,
+        "webview2": tauri::webview_version().unwrap_or_default(),
+        "platform": std::env::consts::OS,
+        "arch": std::env::consts::ARCH,
         "packaged": PACKAGED,
         "libraryRoot": lib.root.to_string_lossy(),
-        "dbPath": lib.db_path.to_string_lossy()
+        "dbPath": lib.db_path.to_string_lossy(),
+        "dbBytes": db_bytes,
+        "schemaVersion": schema_version
     })
 }
 
