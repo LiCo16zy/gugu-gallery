@@ -7,7 +7,7 @@ use super::parser::{parse_caption, parse_detail, parse_list_items, parse_nav, pa
 use super::site::{decode_item_param, list_url, original_url, parse_human_size, preview_url, SiteTarget};
 
 fn fixture(name: &str) -> String {
-    let path = format!("{}/../tests/fixtures/{}", env!("CARGO_MANIFEST_DIR"), name);
+    let path = format!("{}/tests/fixtures/{}", env!("CARGO_MANIFEST_DIR"), name);
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("读不到样本 {path}: {e}"))
 }
 

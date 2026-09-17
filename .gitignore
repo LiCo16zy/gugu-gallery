@@ -1,25 +1,17 @@
 node_modules/
 src-tauri/target/
 out/
-dist/
 release/
-.vite/
 *.log
-npm-debug.log*
 .DS_Store
 Thumbs.db
 
 # 本地运行产物
 data/
-library/
-_research/
 /screenshots/
 !/devlog/**/screenshots/
 *.db
 *.db-journal
-
-# 图标生成的中间产物
-build/.make-icon.*
 
 # Windows-GNU 工具链需要的动态库（打包时随安装包一起带上）
 src-tauri/WebView2Loader.dll
