@@ -21,6 +21,12 @@ export const api: GuguBridge =
 
 /* ------------------------------------------------------------ 展示层格式化 */
 
+/** WebView2 版本：WebView2 的 UA 里带 `Edg/<版本>`（Electron 时代那套 electron/chrome 字段已经没了） */
+export const webviewVersion = (): string => {
+  const matched = /Edg\/([\d.]+)/.exec(navigator.userAgent)
+  return matched ? matched[1] : '未知'
+}
+
 export const formatBytes = (bytes: number | null | undefined): string => {
   if (bytes == null || bytes <= 0) return '—'
   if (bytes < 1024) return `${bytes} B`

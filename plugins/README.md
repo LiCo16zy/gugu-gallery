@@ -44,4 +44,5 @@ plugins/
 ## 写一个新插件
 
 见 `docs/plugin-development.md`。
-最小插件只需要两个文件：`plugin.json` 和一个 `main/index.ts` 或 `renderer/index.tsx`。
+最小插件只需要一个 `plugin.json` 加一个 `renderer/index.tsx`；
+要主进程能力（读写文件、截图等）就把实现写在 `src-tauri/src/plugins/` 里。

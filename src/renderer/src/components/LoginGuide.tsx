@@ -50,10 +50,14 @@ export default function LoginGuide({ session, onSession, onClose, onToast }: Pro
         setMsg({ kind: 'ok', text: '登录态已生效' })
         onToast('登录态已生效', 1600, 'success')
       } else {
+        // 失败也要弹一下：光有一行小字容易被当成"点了没反应"
         setMsg({ kind: 'error', text: r.verify.message })
+        onToast(r.verify.message, 2800, 'warn')
       }
     } catch (err) {
-      setMsg({ kind: 'error', text: err instanceof Error ? err.message : '保存失败' })
+      const text = err instanceof Error ? err.message : '保存失败'
+      setMsg({ kind: 'error', text })
+      onToast(text, 2800, 'warn')
     }
   }
 
@@ -63,8 +67,11 @@ export default function LoginGuide({ session, onSession, onClose, onToast }: Pro
       const r = await api.session.verify()
       onSession(r.status)
       setMsg({ kind: r.verify.ok ? 'ok' : 'error', text: r.verify.message })
+      if (!r.verify.ok) onToast(r.verify.message, 2800, 'warn')
     } catch (err) {
-      setMsg({ kind: 'error', text: err instanceof Error ? err.message : '校验失败' })
+      const text = err instanceof Error ? err.message : '校验失败'
+      setMsg({ kind: 'error', text })
+      onToast(text, 2800, 'warn')
     }
   }
 

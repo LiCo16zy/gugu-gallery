@@ -82,3 +82,9 @@ npm run round -- finalize <轮次ID>  # 收尾：改动后截图 + 代码 diff +
 按轮次顺序读 `README.md`，配合 `screenshots-before/` 与 `screenshots-after/` 做前后对照，
 再翻 `annotations.md` 看当时的原始反馈、`changes.patch` 看具体改了什么 —— 一条完整的
 「提出意见 → 落地实现 → 验证结果」链路就有了。
+
+## 归档说明
+
+- `rounds/0001`–`0013`：Electron 时代的过程记录，已在 `index.json` 里标 `archived: true`，内容保持原样只作回溯；
+- `rounds/0014` 起：Tauri 重构与新架构下的开发轮次；
+- `archive/`：旧架构的 README 与发布说明（从 `docs/` 移入）。

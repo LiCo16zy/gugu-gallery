@@ -1,5 +1,5 @@
 import type { AppInfo, AppSettings, LibraryStats } from '@shared/types'
-import { api, formatBytes } from '../api'
+import { api, formatBytes, webviewVersion } from '../api'
 import { IconFolder, IconRefresh } from './Icons'
 
 interface Props {
@@ -176,7 +176,10 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
               value={settings.proxy}
               onChange={(e) => void onChange({ proxy: e.target.value })}
             />
-            <span className="help">留空表示直连；填了会走 Chromium 网络栈（支持 PAC / 系统代理）</span>
+            <span className="help">
+              留空表示直连。支持 http / https 代理（如 http://127.0.0.1:7890），暂不支持 PAC、系统代理与 socks5。
+              保存后立即生效：抓取、登录校验都会走它。
+            </span>
           </div>
         </div>
       </section>
@@ -234,14 +237,16 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
         <dl className="kv" style={{ gridTemplateColumns: '96px 1fr' }}>
           <dt>应用版本</dt>
           <dd className="mono">{info?.version ?? '—'}</dd>
-          <dt>Electron</dt>
-          <dd className="mono">{info?.electron ?? '—'}</dd>
-          <dt>Chromium</dt>
-          <dd className="mono">{info?.chrome ?? '—'}</dd>
-          <dt>Node</dt>
-          <dd className="mono">{info?.node ?? '—'}</dd>
-          <dt>索引文件</dt>
-          <dd className="mono">{info?.dbPath ?? '—'}</dd>
+          <dt>内核</dt>
+          <dd className="mono">
+            {info ? `Tauri ${info.tauri} · WebView2 ${info.webview2 || webviewVersion()}` : '—'}
+          </dd>
+          <dt>平台</dt>
+          <dd className="mono">{info ? `${info.platform} ${info.arch}` : '—'}</dd>
+          <dt>索引库</dt>
+          <dd className="mono">
+            {info ? `${info.dbPath}（${formatBytes(info.dbBytes)} · schema v${info.schemaVersion}）` : '—'}
+          </dd>
           <dt>数据来源</dt>
           <dd>
             <a onClick={() => void api.openExternal('https://www.guguxz.com/')}>www.guguxz.com</a>

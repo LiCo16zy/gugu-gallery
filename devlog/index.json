@@ -13,7 +13,8 @@
       "branch": "master",
       "status": "closed",
       "summary": "站点逆向 + 爬虫 + 数据层 + 前端首版；测试与端到端验证全绿，等待界面审阅。",
-      "hasAnnotations": false
+      "hasAnnotations": false,
+      "archived": true
     },
     {
       "id": "0002-annotation-tooling",
@@ -26,7 +27,8 @@
       "branch": "master",
       "status": "closed",
       "summary": "交付页面标注工具（点选/框选/元素自省/导出）与 devlog 轮次档案工具链；顺带修掉版本号取错与文件名标点两个问题。",
-      "hasAnnotations": false
+      "hasAnnotations": false,
+      "archived": true
     },
     {
       "id": "0003-plugin-architecture",
@@ -39,7 +41,8 @@
       "branch": "master",
       "status": "closed",
       "summary": "引入插件宿主，把标注工具与开发档案抽成可选插件；重组 src/plugins/scripts 三段目录；补齐 SKILL 与可复用程序；发布产物经自动校验确认不含插件代码。",
-      "hasAnnotations": false
+      "hasAnnotations": false,
+      "archived": true
     },
     {
       "id": "0004-20260914-1646",
@@ -52,7 +55,8 @@
       "status": "closed",
       "summary": "按 34 条界面标注做整体改版（瀑布流、侧栏、顶栏窗口、卡片、灯箱、设置、过渡），并修掉标注工具的工具栏层级与自动收起问题。",
       "hasAnnotations": true,
-      "finishedAt": "2026-09-14 17:20"
+      "finishedAt": "2026-09-14 17:20",
+      "archived": true
     },
     {
       "id": "0005-20260914-1827",
@@ -65,7 +69,8 @@
       "status": "closed",
       "summary": "处理 23 条标注：修掉筛选 SQL、灯箱长图与滚轮、侧栏收起、工具栏被窗口拖动区吞点击；补齐沉浸模式、回到顶部、两步删除、下载中状态等交互。",
       "hasAnnotations": true,
-      "finishedAt": "2026-09-14 18:55"
+      "finishedAt": "2026-09-14 18:55",
+      "archived": true
     },
     {
       "id": "0006-20260914-2042",
@@ -78,7 +83,8 @@
       "status": "closed",
       "summary": "修标注工具三处易用性问题（批注框出屏、清单显隐、连续标注），处理 10 条界面标注，顺带修掉导航解析把模板占位名当真实分类的缺陷。",
       "hasAnnotations": true,
-      "finishedAt": "2026-09-14 21:20"
+      "finishedAt": "2026-09-14 21:20",
+      "archived": true
     },
     {
       "id": "0007-20260914-2221",
@@ -91,7 +97,8 @@
       "status": "closed",
       "summary": "标注工具栏改为可拖动并支持简易/标准两种形态；处理 4 条动效与沉浸模式标注；版本升至 0.5.0 并产出不含插件的预览发布包。",
       "hasAnnotations": true,
-      "finishedAt": "2026-09-14 23:05"
+      "finishedAt": "2026-09-14 23:05",
+      "archived": true
     },
     {
       "id": "0008-20260914-2255",
@@ -104,7 +111,8 @@
       "status": "closed",
       "summary": "把重排变暗动画回退到 0.16s 并只在视图密度切换时触发；灯箱打开时禁用窗口拖动；版本升到 0.5.1（暂不打包）。",
       "hasAnnotations": true,
-      "finishedAt": "2026-09-14 23:30"
+      "finishedAt": "2026-09-14 23:30",
+      "archived": true
     },
     {
       "id": "0009-installer-polish",
@@ -117,7 +125,8 @@
       "status": "closed",
       "summary": "补齐安装包体验：自绘应用与安装程序图标、安装时可选位置、首次启动向导选择图库目录（默认安装目录下）。",
       "hasAnnotations": false,
-      "finishedAt": "2026-09-14 23:50"
+      "finishedAt": "2026-09-14 23:50",
+      "archived": true
     },
     {
       "id": "0010-categories-login-and-range",
@@ -128,13 +137,15 @@
       "summary": "",
       "status": "closed",
       "finishedAt": "2026-09-15 01:55",
-      "endCommit": "8df047b"
+      "endCommit": "8df047b",
+      "archived": true
     },
     {
       "id": "0011-20260915-0232",
       "finishedAt": "2026-09-15 10:47",
       "endCommit": "0f5a004",
-      "status": "closed"
+      "status": "closed",
+      "archived": true
     },
     {
       "id": "0012-session-keepalive-and-item-targets",
@@ -145,13 +156,15 @@
       "summary": "",
       "status": "closed",
       "finishedAt": "2026-09-16 08:38",
-      "endCommit": "a62e571"
+      "endCommit": "a62e571",
+      "archived": true
     },
     {
       "id": "0013-20260916-0929",
       "finishedAt": "2026-09-16 09:57",
       "endCommit": "8ce20be",
-      "status": "closed"
+      "status": "closed",
+      "archived": true
     },
     {
       "id": "0014-phase2-refactor-and-multiplatform",

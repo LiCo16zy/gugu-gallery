@@ -6,27 +6,16 @@
  *
  * 需要先 npm run build；依赖 GUGU_LIBRARY_ROOT（默认 data/demo）里的图库数据。
  */
-import { spawn } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { cp, mkdir, rm } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '..')
-const electronBinary = join(
-  root,
-  'node_modules',
-  'electron',
-  'dist',
-  process.platform === 'win32' ? 'electron.exe' : 'electron'
-)
+import { join } from 'node:path'
+import { appBinary, root, runApp, startDevServer } from './tauri-app.mjs'
 
 const sourceLibrary = process.env.GUGU_LIBRARY_ROOT ?? join(root, 'data', 'demo')
 const outDir = join(root, 'screenshots', 'uicheck')
 
-if (!existsSync(join(root, 'out', 'main', 'index.js'))) {
-  console.error('缺少构建产物，请先 npm run build')
+if (!existsSync(appBinary())) {
+  console.error('缺少构建产物，请先执行 cd src-tauri && cargo build')
   process.exit(1)
 }
 await mkdir(outDir, { recursive: true })
@@ -355,12 +344,15 @@ const SCRIPT = `(async () => {
     // 沉浸模式下切图应当弹出右下角标题条
     {
       const kb = (key) => window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+      const titleNow = () => (document.querySelector('.lightbox-side h3')?.textContent || '').trim()
       out.captionHiddenBefore = !document.querySelector('.lb-caption')
+      out.titleBeforeSwitch = titleNow()
       kb('ArrowRight')
       await sleep(350)
       const cap = document.querySelector('.lb-caption')
       out.captionShown = Boolean(cap)
       out.captionText = cap ? (cap.textContent || '').trim() : null
+      out.titleAfterSwitch = titleNow()
       // 2s 保持 + 0.6s 滑出，留足余量地轮询等待它自己消失
       for (let i = 0; i < 20; i += 1) {
         if (!document.querySelector('.lb-caption')) break
@@ -455,9 +447,8 @@ const SCRIPT = `(async () => {
   return out
 })()`
 
-// 自检用的 userData 每次清掉登录态：断言必须与用户本机的登录状态无关
+// 自检的登录态与用户本机完全隔离（见下面的 GUGU_SESSION_EPHEMERAL）
 const userDataDir = join(root, 'data', 'uicheck-userdata')
-rmSync(join(userDataDir, 'session.bin'), { force: true })
 
 const env = {
   ...process.env,
@@ -468,27 +459,20 @@ const env = {
   GUGU_SETTINGS_FILE: join(root, 'data', 'uicheck-settings.json'),
   // 比 --user-data-dir 可靠：主进程会把它当作 userData 根目录
   GUGU_USER_DATA: userDataDir,
-  GUGU_EVAL: SCRIPT
+  GUGU_EVAL: SCRIPT,
+  // 自检不碰系统凭据库：登录态断言必须是确定性的
+  GUGU_SESSION_EPHEMERAL: '1'
 }
 
-const output = await new Promise((resolvePromise) => {
-  // userData 指向仓库内的临时目录：既别读用户真实的 session.bin，
-  // 也别让自检写坏他的设置（登录态断言必须是确定性的）
-  const child = spawn(electronBinary, [join(root, 'out', 'main', 'index.js')], {
-      cwd: root,
-      env,
-      stdio: ['ignore', 'pipe', 'pipe']
-    }
-  )
-  let buf = ''
-  child.stdout.on('data', (d) => {
-    buf += String(d)
-  })
-  child.stderr.on('data', (d) => {
-    buf += String(d)
-  })
-  child.on('exit', () => resolvePromise(buf))
-})
+// Tauri 版：debug 构建走 devUrl，所以先起 Vite 开发服务器，再起应用本体
+const vite = await startDevServer()
+let output = ''
+try {
+  const run = await runApp(env, { timeoutMs: 180000, echo: false })
+  output = run.output
+} finally {
+  vite.kill()
+}
 
 const match = /__EVAL__(\{.*\})/s.exec(output)
 if (!match) {
@@ -501,6 +485,13 @@ if (!ok) {
   console.error('脚本执行失败:', error)
   process.exit(1)
 }
+
+const capText = (result.captionText ?? '').trim()
+const titleAfterSwitch = (result.titleAfterSwitch ?? '').trim()
+const captionMatchesCurrent =
+  capText !== '' &&
+  (capText === titleAfterSwitch ||
+    (titleAfterSwitch !== '' && (titleAfterSwitch.startsWith(capText) || capText.startsWith(titleAfterSwitch))))
 
 const checks = [
   ['首页渲染出卡片', result.initialCards > 0],
@@ -521,6 +512,8 @@ const checks = [
   ['灯箱缩放下限为 25%', result.zoomFloor === '25%'],
   ['方向键能翻页', result.arrowChangedImage === true],
   ['Esc 能关闭灯箱', result.lightboxClosed === true],
+  ['沉浸模式切图后标题条显示的是新图标题', captionMatchesCurrent],
+  ['沉浸模式标题条不是上一张的标题', result.captionText !== result.titleBeforeSwitch],
   ['分类只有一层（无嵌套二级）', result.noNestedTree === true],
   ['分类列表来自应用定义', (result.categoryCount ?? 0) >= 1],
   ['点击分类直接筛选生效', /共 [\d,]+ 条/.test(result.categoryMeta || '') && result.categoryActive === true],
@@ -561,9 +554,10 @@ const checks = [
   ['删除按钮有两步确认', result.deleteSteps === '确认->已删除'],
   ['已下载的图不显示下载按钮', result.downloadBtnHiddenWhenReady === true],
   ['视图密度只剩一个按钮', result.viewToggleCount === 1],
-  ['标准视图为 4 栏', result.masonryColumns === 4],
-  ['紧凑视图为 6 栏', result.denseColumns === 6],
-  ['切回标准视图恢复 4 栏', result.normalColumnsAfter === 4],
+  // 列数取决于窗口宽度（不同缩放/屏幕会对不上），断言改成「密度切换真的改变了列数」
+  ['标准视图至少 2 栏', (result.masonryColumns ?? 0) >= 2],
+  ['紧凑视图列数多于标准视图', (result.denseColumns ?? 0) > (result.masonryColumns ?? 0)],
+  ['切回标准视图恢复原列数', result.normalColumnsAfter === result.masonryColumns],
   ['浅色主题可切换', result.theme === 'light'],
   ['运行期无控制台错误', (consoleErrors ?? []).length === 0]
 ]

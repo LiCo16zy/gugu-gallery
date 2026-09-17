@@ -4,7 +4,7 @@
 
 - **怎么用**：看 [`SKILL.md`](SKILL.md)
 - **目录长什么样**：见仓库根 `devlog/`
-- **宿主契约**：实现 `MainPluginModule`，用 `host.method()` 注册两个方法
+- **宿主位置**：主进程侧在 Rust（`src-tauri/src/plugins/devlog.rs`），由 `plugins/mod.rs` 按方法名分发
 
 ## 对外方法
 
@@ -22,9 +22,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| `main/index.ts` | 插件入口，注册方法 |
-| `main/store.ts` | 轮次目录管理与导出落盘 |
-| `main/render.ts` | Markdown / README 生成 |
+| `src-tauri/src/plugins/devlog.rs`（仓库内） | 轮次目录管理与导出落盘 + Markdown / README 生成 |
 | `shared/types.ts` | 标注与轮次类型（annotator 复用） |
 | `bin/round.mjs` | 轮次 CLI：list / new / finalize / inbox |
 

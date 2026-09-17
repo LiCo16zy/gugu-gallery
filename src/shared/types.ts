@@ -211,6 +211,8 @@ export interface CrawlProgress {
   speedBps: number
   etaSeconds: number | null
   currentLabel: string | null
+  /** 是否处于暂停状态（界面据此把「暂停」切成「继续」） */
+  paused: boolean
   logs: CrawlLogLine[]
 }
 
@@ -276,12 +278,18 @@ export interface CrawlSiteInfo {
 
 export interface AppInfo {
   version: string
-  electron: string
-  node: string
-  chrome: string
+  /** Tauri 外壳版本 */
+  tauri: string
+  /** WebView2 运行时版本（拿不到时为空串） */
+  webview2: string
   platform: string
+  arch: string
   /** 是否跑在打包后的安装版里（决定图库默认落在安装目录还是图片目录） */
   packaged: boolean
   libraryRoot: string
   dbPath: string
+  /** 索引库文件字节数 */
+  dbBytes: number
+  /** 索引库 schema 版本 */
+  schemaVersion: number
 }

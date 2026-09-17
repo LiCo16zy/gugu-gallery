@@ -1,0 +1,37 @@
+[package]
+name = "gugu-gallery"
+version = "0.7.1"
+edition = "2021"
+description = "咕咕图库 · GuguGallery"
+authors = ["LiCo16zy"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+keyring = { version = "3", features = ["windows-native"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+regex = "1"
+base64 = "0.22"
+sha2 = "0.10"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }
+# 不开 http2：实测这个站点的 CDN 走 HTTP/1.1 快得多（curl 单连接 ~600 KB/s，h2 只有 ~200 KB/s）
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "gzip", "brotli", "charset", "default-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "fs", "io-util"] }
+futures-util = "0.3"
+chrono = { version = "0.4", features = ["clock"] }
+urlencoding = "2"
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Storage_Xps", "Win32_UI_WindowsAndMessaging"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
