@@ -178,6 +178,19 @@ fn settings_set(patch: Json, state: State<'_, AppState>) -> Result<Json, String>
     if before != after {
         switch_library(&state, &after)?;
     }
+    // 代理改完立即生效：抓取与登录校验都读引擎里这份
+    let proxy = state
+        .settings
+        .lock()
+        .unwrap()
+        .get()
+        .get("proxy")
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    if let Some(engine) = state.engine.lock().unwrap().clone() {
+        engine.set_proxy(proxy);
+    }
     Ok(next)
 }
 

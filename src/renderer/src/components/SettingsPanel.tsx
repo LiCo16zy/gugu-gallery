@@ -176,7 +176,10 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
               value={settings.proxy}
               onChange={(e) => void onChange({ proxy: e.target.value })}
             />
-            <span className="help">留空表示直连；填了会走 Chromium 网络栈（支持 PAC / 系统代理）</span>
+            <span className="help">
+              留空表示直连。支持 http / https 代理（如 http://127.0.0.1:7890），暂不支持 PAC、系统代理与 socks5。
+              保存后立即生效：抓取、登录校验都会走它。
+            </span>
           </div>
         </div>
       </section>
@@ -240,8 +243,6 @@ export default function SettingsPanel({ settings, info, stats, onChange, onToast
           </dd>
           <dt>平台</dt>
           <dd className="mono">{info ? `${info.platform} ${info.arch}` : '—'}</dd>
-          <dt>运行形态</dt>
-          <dd className="mono">{info ? (info.packaged ? '安装版' : '开发模式') : '—'}</dd>
           <dt>索引库</dt>
           <dd className="mono">
             {info ? `${info.dbPath}（${formatBytes(info.dbBytes)} · schema v${info.schemaVersion}）` : '—'}

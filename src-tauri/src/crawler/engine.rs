@@ -119,6 +119,11 @@ impl Engine {
         *self.cookie.lock().unwrap() = cookie;
     }
 
+    /// 代理改完立即生效（不用重启应用）
+    pub fn set_proxy(&self, proxy: Option<String>) {
+        *self.proxy.lock().unwrap() = proxy;
+    }
+
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::SeqCst)
     }
