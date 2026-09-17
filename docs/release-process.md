@@ -3,7 +3,7 @@
 这份文档只回答一件事：**安装包怎么产生、怎么挂到 GitHub Release 上**，以及本机网络限制下的每一条通路。
 
 > 当前是 Tauri 2（Rust）技术栈：本地打包命令与产物路径见第四节，
-> 资产从哪来、怎么上传、怎么校验的流程与旧版（Electron）一致。
+> 资产从哪来、怎么上传、怎么校验见第五节。
 
 ---
 
@@ -255,7 +255,7 @@ jobs:
 - 本机只需要 `git push origin v0.7.0`（SSH，通）；标签推送后 CI 自动出包并挂成 **Draft Release**，
   网页/代理能上的时候看一眼再 Publish；
 - `github.ref_name` 就是标签名，`releaseName`/`releaseBody` 直接对齐；
-- CI 里 `npm ci` 依赖 `package-lock.json`（已提交，且已经是无 Electron 的依赖树）；
+- CI 里 `npm ci` 依赖已提交的 `package-lock.json`；
 - CI 的 `windows-latest` 自带 WebView2 与 Node 20，但**不含 NSIS 工具链** —— 打包器会自己从 GitHub 下
   （GitHub 自己的网络，畅通），本机缓存不需要搬上去；
 - 想只在本地验证 CI 能不能过：`workflow_dispatch` 那行可以手动触发一次。
