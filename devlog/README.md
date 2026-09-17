@@ -7,19 +7,45 @@
 ```
 devlog/
 ├── README.md              本文件：档案使用说明
-├── index.json             轮次索引（编号、时间、起止提交、状态）
-└── rounds/
-    ├── 0001-baseline/     基线：初始可用版本
-    │   ├── README.md              本轮说明（背景 / 改动 / 验证 / 遗留）
-    │   ├── annotations.md         界面标注原文（人会读的版本）
-    │   ├── annotations.json       界面标注原始数据（机器可读）
-    │   ├── changes.md             代码差异概览（变更文件清单 + 统计）
-    │   ├── changes.patch          完整代码差异（可 git apply）
-    │   ├── screenshots/           本轮界面截图
-    │   ├── screenshots-before/    改动前截图（用于前后对照）
-    │   └── screenshots-after/     改动后截图（用于前后对照）
-    └── 0002-.../
+├── index.json             轮次索引（ID、slug、标题、时期、状态、起止提交、归档标记、产物清单）
+├── rounds/                每一轮一个目录（ID 即目录名）
+│   └── 0001-baseline/
+│       ├── README.md              本轮说明（背景 / 改动 / 验证 / 遗留）
+│       ├── annotations.md         界面标注原文（人会读的版本）
+│       ├── annotations.json       界面标注原始数据（机器可读）
+│       ├── changes.md             代码差异概览（变更文件清单 + 统计）
+│       ├── changes.patch          完整代码差异（可 git apply）
+│       ├── screenshots/           本轮界面截图（标注工具导出）
+│       ├── screenshots-before/    改动前截图（前后对照）
+│       ├── screenshots-after/     改动后截图（前后对照）
+│       └── screenshots-verify/    验证截图为个别轮次特有
+└── archive/               旧架构的 README 与发布说明（从 docs/ 移入）
 ```
+
+## 轮次一览
+
+| 轮次 | 标题 | 时期 | 状态 | 一句话 |
+| --- | --- | --- | --- | --- |
+| 0001-baseline | 初始可用版本 | Electron | 归档 | 爬虫 + 图库 + SQLite 索引的第一版跑通 |
+| 0002-annotation-tooling | 页面标注工具与开发过程档案 | Electron | 归档 | 标注工具 + 轮次档案工具落地（本档案体系的开端） |
+| 0003-plugin-architecture | 插件化与目录重组 | Electron | 归档 | 两个工具改造成可选插件；目录与构建整理 |
+| 0004 | 界面大改：瀑布流、侧栏顶栏、灯箱交互 | Electron | 归档 | 用户 34 条标注驱动的一次界面大改 |
+| 0005 | 交互补全与关键缺陷修复 | Electron | 归档 | 验收回合：补交互、修上一轮引入的回归 |
+| 0006 | 标注工具易用性 + 沉浸模式与抓取面板 | Electron | 归档 | 工具自身可用性 + 灯箱沉浸模式与抓取面板调整 |
+| 0007 | 标注工具栏可拖动 / 简易形态 + 动效调整 | Electron | 归档 | 工具栏交互形态重构与动效节奏调整 |
+| 0008 | 回退重排动画速度 + 灯箱下锁定窗口拖动 | Electron | 归档 | 纯反馈修正轮 |
+| 0009-installer-polish | 应用图标、可选安装位置、首次启动选择图库目录 | Electron | 归档 | 安装与首启体验打磨 |
+| 0010-categories-login-and-range | 分类摊平、页码范围、日期筛选、登录态入口 | Electron | 归档 | 方向转向「少动前端、多做后端」 |
+| 0011 | 登录态链路验证与修复 | Electron | 归档 | 会话 cookie 全链路打通与验证 |
+| 0012-session-keepalive-and-item-targets | 会话保活与 item_targets 拆分 | Electron | 归档 | 登录态保活；站点分类与应用分类解耦 |
+| 0013 | 登录 / 退出交互重做（帮助面板三击确认） | Electron | 归档 | Electron 时代的最后一批轮次 |
+| 0014-phase2-refactor-and-multiplatform | 阶段二：Electron → Tauri 2 重构（含多端规划） | Tauri 重构 | **进行中** | 桌面重构完成并发布 v0.7.1；Android 部分待做 |
+| 0015 | 实测反馈：下载损坏 / 登录反馈 / 速度 | Tauri 新架构 | 已收尾 | 详情补全补齐、文件缺失自愈、失败原因提示 |
+| 0016 | 暂停/继续、日志去重、标题条与关于面板 | Tauri 新架构 | 已收尾 | 暂停相关三处缺陷 + 标题条串图 + 关于面板字段 |
+
+> 带 slug 的目录名（如 `0009-installer-polish`）与时间戳式目录名（如 `0011-20260915-0232`）都是合法 ID：
+> 后者是**页面标注工具自动导出**时生成的，友好名记在 `index.json` 的 `slug` / `title` 里（上表也是按它汇总的）。
+> `0015`、`0016` 由标注工具导出，没有 `round/*` tag；`0001`–`0013` 都有 tag，可 `git checkout round/<ID>` 完整复原。
 
 ## 一轮是怎么产生的
 
@@ -48,7 +74,7 @@ devlog/
 **2）轮次工具产出**（我来做）
 
 ```bash
-npm run round -- inbox              # 打印最新未收尾轮次的内容
+npm run round -- inbox              # 打印最新未收尾轮次的内容（拿到反馈的标准入口）
 npm run round -- list               # 看有哪些轮次
 npm run round -- new <slug>         # 开一轮：建目录 + 起始截图 + 元数据
 npm run round -- finalize <轮次ID>  # 收尾：改动后截图 + 代码 diff + 更新说明 + 打 git tag
@@ -59,7 +85,6 @@ npm run round -- finalize <轮次ID>  # 收尾：改动后截图 + 代码 diff +
 
 `finalize` 会自动补上 `changes.md`、`changes.patch`、`screenshots-after/`，
 并在 `README.md` 追加「过程存档」小节，最后打一个 `round/<轮次ID>` 的 git tag。
-每个轮次都能用 `git checkout round/<轮次ID>` 完整复原。
 
 ## 什么时候建轮次
 
@@ -71,20 +96,22 @@ npm run round -- finalize <轮次ID>  # 收尾：改动后截图 + 代码 diff +
 - 做了一次结构性重构、换了技术方案、增删了主要功能
 - 一个功能从无到有做完了
 
-## 命名规范
+## 命名与 ID 规则
 
-- 轮次编号四位递增：`0001`、`0002`……
-- slug 用简短英文或中文，描述本轮主题，例如 `0002-tighten-typography`
-- git tag 与目录同名：`round/0002-tighten-typography`
+- 轮次 ID = **目录名 = git tag 名**（`round/<ID>`），创建之后**不再改动**（tag 指向历史，改名会断链）；
+- ID 有两种形态：`00NN-<slug>`（轮次工具创建）与 `00NN-<yyyyMMdd-HHmm>`（标注工具自动导出）；
+- 友好名（`slug` / `title` / 一句话说明）统一记在 `index.json`，`npm run round -- list` 会读它；
+- 每轮的产物不强制齐全（有的轮次没有标注、有的没打 tag），`index.json` 的 `artifacts` 字段列了实际都有什么。
+
+## 归档说明
+
+- `rounds/0001`–`0013`：**Electron 时代**的过程记录，在 `index.json` 里标 `archived: true`，内容保持原样只作回溯；
+- `rounds/0014`：Tauri 重构轮（**进行中**，Android 迁移还没做），后续同架构的迭代继续挂在这一轮下；
+- `rounds/0015`、`0016`：Tauri 新架构下的实测反馈轮次；
+- `archive/`：旧架构的 README 与发布说明（从 `docs/` 移入）。
 
 ## 怎么用它做展示
 
 按轮次顺序读 `README.md`，配合 `screenshots-before/` 与 `screenshots-after/` 做前后对照，
 再翻 `annotations.md` 看当时的原始反馈、`changes.patch` 看具体改了什么 —— 一条完整的
 「提出意见 → 落地实现 → 验证结果」链路就有了。
-
-## 归档说明
-
-- `rounds/0001`–`0013`：Electron 时代的过程记录，已在 `index.json` 里标 `archived: true`，内容保持原样只作回溯；
-- `rounds/0014` 起：Tauri 重构与新架构下的开发轮次；
-- `archive/`：旧架构的 README 与发布说明（从 `docs/` 移入）。
